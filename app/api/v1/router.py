@@ -5,8 +5,8 @@ Combines all endpoint routers
 
 from fastapi import APIRouter
 
-# from app.api.v1.endpoints import (
-#     auth,
+from app.api.v1.endpoints import (
+    auth,
 #     users,
 #     project_planner,
 #     onboarding,
@@ -23,12 +23,12 @@ from fastapi import APIRouter
 #     chatbot,
 #     finance,
 #     settings as settings_endpoint
-# )
+)
 
 api_router = APIRouter()
 
 # Include all endpoint routers
-# api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 # api_router.include_router(users.router, prefix="/users", tags=["Users"])
 # api_router.include_router(project_planner.router, prefix="/project-planner", tags=["Project Planner"])
 # api_router.include_router(onboarding.router, prefix="/onboarding", tags=["Onboarding"])

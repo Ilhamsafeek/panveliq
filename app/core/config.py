@@ -1,6 +1,6 @@
 """
-Configuration settings for PanvelIQ
-Loads environment variables from .env file
+UPDATE: app/core/config.py
+Add these DB variables to your Settings class
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,
-        extra="ignore"  # Ignore extra fields from .env
+        extra="ignore"
     )
     
     # Application Settings
@@ -26,9 +26,16 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     
-    # Database Configuration
+    # Database Configuration (URL format)
     DATABASE_URL: str
     DB_ECHO: bool = False
+    
+    # Database Configuration (Individual variables) - ADD THESE
+    DB_HOST: str = "209.159.151.58"
+    DB_PORT: int = 3306
+    DB_USER: str = "lpelk_panvel"
+    DB_PASSWORD: str = "Panv3l1q"
+    DB_NAME: str = "lpelk_panveliq_db"
     
     # Security & Authentication
     SECRET_KEY: str

@@ -1,14 +1,15 @@
 """
+REPLACE CONTENT IN: app/main.py (existing file)
+
 PanvelIQ - AI-powered Digital Marketing Intelligence Platform
 Main FastAPI Application Entry Point
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from fastapi import Request
 
 from app.core.config import settings
 from app.api.v1.router import api_router
@@ -26,7 +27,7 @@ app = FastAPI(
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -42,50 +43,120 @@ templates = Jinja2Templates(directory="templates")
 app.include_router(api_router, prefix=f"/api/{settings.API_VERSION}")
 
 
-# Root endpoint - Landing page
+# ========== ROOT & LANDING PAGE ==========
+
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    """
-    Landing page / Homepage
-    """
+    """Landing page / Homepage"""
     return templates.TemplateResponse(
         "index.html",
         {"request": request, "app_name": settings.APP_NAME}
     )
 
 
-# Health check endpoint
+# ========== AUTHENTICATION PAGES ==========
+
+@app.get("/auth/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """Login page"""
+    return templates.TemplateResponse(
+        "auth/login.html",
+        {
+            "request": request,
+            "hide_navbar": True,
+            "hide_footer": True
+        }
+    )
+
+
+@app.get("/auth/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    """Registration page"""
+    return templates.TemplateResponse(
+        "auth/register.html",
+        {
+            "request": request,
+            "hide_navbar": True,
+            "hide_footer": True
+        }
+    )
+
+
+@app.get("/auth/forgot-password", response_class=HTMLResponse)
+async def forgot_password_page(request: Request):
+    """Forgot password page"""
+    return templates.TemplateResponse(
+        "auth/forgot-password.html",
+        {
+            "request": request,
+            "hide_navbar": True,
+            "hide_footer": True
+        }
+    )
+
+
+# ========== DASHBOARD PAGES ==========
+
+@app.get("/dashboard/client", response_class=HTMLResponse)
+async def client_dashboard(request: Request):
+    """Client dashboard"""
+    return templates.TemplateResponse(
+        "dashboard/client.html",
+        {"request": request, "show_sidebar": True}
+    )
+
+
+@app.get("/dashboard/admin", response_class=HTMLResponse)
+async def admin_dashboard(request: Request):
+    """Admin dashboard"""
+    return templates.TemplateResponse(
+        "dashboard/admin.html",
+        {"request": request, "show_sidebar": True}
+    )
+
+
+@app.get("/dashboard/employee", response_class=HTMLResponse)
+async def employee_dashboard(request: Request):
+    """Employee dashboard"""
+    return templates.TemplateResponse(
+        "dashboard/employee.html",
+        {"request": request, "show_sidebar": True}
+    )
+
+
+# ========== HEALTH CHECK ==========
+
 @app.get("/health")
 async def health_check():
-    """
-    Health check endpoint for monitoring
-    """
+    """Health check endpoint for monitoring"""
     return {
         "status": "healthy",
         "app": settings.APP_NAME,
         "version": "1.0.0",
-        "environment": settings.ENVIRONMENT
+        "environment": settings.ENVIRONMENT,
+        "features": {
+            "authentication": "enabled",
+            "database": "mysql"
+        }
     }
 
 
-# Startup event
+# ========== STARTUP & SHUTDOWN EVENTS ==========
+
 @app.on_event("startup")
 async def startup_event():
-    """
-    Actions to perform on application startup
-    """
+    """Actions to perform on application startup"""
     print(f"🚀 {settings.APP_NAME} is starting...")
     print(f"📍 Environment: {settings.ENVIRONMENT}")
     print(f"🔧 Debug mode: {settings.DEBUG}")
     print(f"📊 API Documentation: http://{settings.HOST}:{settings.PORT}/api/{settings.API_VERSION}/docs")
+    print(f"🔐 Login page: http://{settings.HOST}:{settings.PORT}/auth/login")
+    print(f"📝 Register page: http://{settings.HOST}:{settings.PORT}/auth/register")
 
 
-# Shutdown event
 @app.on_event("shutdown")
 async def shutdown_event():
-    """
-    Actions to perform on application shutdown
-    """
+    """Actions to perform on application shutdown"""
     print(f"🛑 {settings.APP_NAME} is shutting down...")
 
 

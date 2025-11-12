@@ -1,3 +1,4 @@
+<!-- REPLACE CONTENT IN: templates/base.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,7 +9,7 @@
     <title>{% block title %}PanvelIQ{% endblock %} - AI-powered Digital Marketing Platform</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="{{ url_for('static', path='/images/logo-icon.png') }}">
+    <link rel="icon" type="image/png" href="/static/images/logo.png">
     
     <!-- Tabler Icons 3.34.0 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css">
@@ -17,28 +18,24 @@
     <style>
         @font-face {
             font-family: 'Gilroy';
-            src: url('{{ url_for("static", path="/fonts/gilroy/Gilroy-Regular.woff2") }}') format('woff2');
             font-weight: 400;
             font-style: normal;
             font-display: swap;
         }
         @font-face {
             font-family: 'Gilroy';
-            src: url('{{ url_for("static", path="/fonts/gilroy/Gilroy-Medium.woff2") }}') format('woff2');
             font-weight: 500;
             font-style: normal;
             font-display: swap;
         }
         @font-face {
             font-family: 'Gilroy';
-            src: url('{{ url_for("static", path="/fonts/gilroy/Gilroy-SemiBold.woff2") }}') format('woff2');
             font-weight: 600;
             font-style: normal;
             font-display: swap;
         }
         @font-face {
             font-family: 'Gilroy';
-            src: url('{{ url_for("static", path="/fonts/gilroy/Gilroy-Bold.woff2") }}') format('woff2');
             font-weight: 700;
             font-style: normal;
             font-display: swap;
@@ -46,9 +43,9 @@
     </style>
     
     <!-- Base CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/responsive.css') }}">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
     
     <!-- Page-specific CSS -->
     {% block extra_css %}{% endblock %}
@@ -139,39 +136,101 @@
         .gradient-bg {
             background: var(--gradient-primary);
         }
+        
+        /* Flash Messages */
+        .flash-messages {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 400px;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 14px;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease;
+            position: relative;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .alert-success {
+            background: #D1FAE5;
+            border: 1px solid #6EE7B7;
+            color: #065F46;
+        }
+        
+        .alert-error {
+            background: #FEE2E2;
+            border: 1px solid #FCA5A5;
+            color: #991B1B;
+        }
+        
+        .alert-warning {
+            background: #FEF3C7;
+            border: 1px solid #FCD34D;
+            color: #92400E;
+        }
+        
+        .alert-info {
+            background: #DBEAFE;
+            border: 1px solid #93C5FD;
+            color: #1E40AF;
+        }
+        
+        .close-alert {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: inherit;
+            padding: 0;
+            margin-left: auto;
+            font-size: 20px;
+            line-height: 1;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .close-alert:hover {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
     <!-- Navbar -->
     {% if not hide_navbar %}
-        {% include 'components/navbar.html' %}
+        {% if show_sidebar is not defined or not show_sidebar %}
+            <!-- Add navbar here if needed -->
+        {% endif %}
     {% endif %}
     
     <!-- Main Content Wrapper -->
     <div class="main-wrapper">
         <!-- Sidebar (for dashboard pages) -->
         {% if show_sidebar %}
-            {% include 'components/sidebar.html' %}
+            <!-- Sidebar will be included here when needed -->
         {% endif %}
         
         <!-- Main Content Area -->
         <main class="main-content">
-            <!-- Flash Messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    <div class="flash-messages">
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category }}">
-                                <i class="ti ti-info-circle"></i>
-                                <span>{{ message }}</span>
-                                <button class="close-alert" onclick="this.parentElement.remove()">
-                                    <i class="ti ti-x"></i>
-                                </button>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            {% endwith %}
+            <!-- Flash Messages Container -->
+            <div class="flash-messages" id="flash-messages"></div>
             
             <!-- Page Content -->
             {% block content %}{% endblock %}
@@ -180,16 +239,15 @@
     
     <!-- Footer -->
     {% if not hide_footer %}
-        {% include 'components/footer.html' %}
+        {% if show_sidebar is not defined or not show_sidebar %}
+            <!-- Add footer here if needed -->
+        {% endif %}
     {% endif %}
     
-    <!-- Chatbot Widget (always visible) -->
-    {% include 'components/chatbot-widget.html' %}
-    
     <!-- Base JavaScript -->
-    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
-    <script src="{{ url_for('static', path='/js/api.js') }}"></script>
-    <script src="{{ url_for('static', path='/js/utils.js') }}"></script>
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/utils.js"></script>
     
     <!-- Page-specific JavaScript -->
     {% block extra_js %}{% endblock %}
@@ -199,28 +257,35 @@
         // Global configuration
         const APP_CONFIG = {
             apiBaseUrl: '/api/v1',
-            staticUrl: '{{ url_for("static", path="/") }}',
-            csrfToken: '{{ csrf_token() if csrf_token else "" }}'
+            staticUrl: '/static/',
         };
         
-        // Flash message auto-dismiss
-        document.addEventListener('DOMContentLoaded', function() {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(alert => {
-                setTimeout(() => {
-                    alert.style.opacity = '0';
-                    setTimeout(() => alert.remove(), 300);
-                }, 5000);
-            });
-        });
+        // Flash message utilities
+        function showFlashMessage(message, type = 'info') {
+            const container = document.getElementById('flash-messages');
+            if (!container) return;
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.innerHTML = `
+                <i class="ti ti-${type === 'error' ? 'alert-circle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+                <button class="close-alert" onclick="this.parentElement.remove()">
+                    <i class="ti ti-x"></i>
+                </button>
+            `;
+            
+            container.appendChild(alertDiv);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                alertDiv.style.opacity = '0';
+                setTimeout(() => alertDiv.remove(), 300);
+            }, 5000);
+        }
         
-        // Close alert functionality
-        document.querySelectorAll('.close-alert').forEach(btn => {
-            btn.addEventListener('click', function() {
-                this.parentElement.style.opacity = '0';
-                setTimeout(() => this.parentElement.remove(), 300);
-            });
-        });
+        // Make showFlashMessage available globally
+        window.showFlashMessage = showFlashMessage;
     </script>
 </body>
 </html>
