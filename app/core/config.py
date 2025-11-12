@@ -31,10 +31,10 @@ class Settings(BaseSettings):
     DB_ECHO: bool = False
     
     # Database Configuration (Individual variables) - ADD THESE
-    DB_HOST: str = "209.159.151.58"
+    DB_HOST: str = "127.0.0.1"
     DB_PORT: int = 3306
-    DB_USER: str = "lpelk_panvel"
-    DB_PASSWORD: str = "Panv3l1q"
+    DB_USER: str = "root"
+    DB_PASSWORD: str = ""
     DB_NAME: str = "lpelk_panveliq_db"
     
     # Security & Authentication

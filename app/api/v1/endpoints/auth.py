@@ -10,8 +10,8 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, validator, Field
 from typing import Optional
-import mysql.connector
-from mysql.connector import Error
+import pymysql
+from pymysql import Error
 
 from app.core.config import settings
 
@@ -69,15 +69,16 @@ class Token(BaseModel):
 def get_db_connection():
     """Get MySQL database connection"""
     try:
-        connection = mysql.connector.connect(
+        connection = pymysql.connect(
             host=settings.DB_HOST,
             port=settings.DB_PORT,
             user=settings.DB_USER,
             password=settings.DB_PASSWORD,
-            database=settings.DB_NAME
+            database=settings.DB_NAME,
+            cursorclass=pymysql.cursors.DictCursor
         )
         return connection
-    except Error as e:
+    except Exception as e:
         print(f"Database connection error: {e}")
         print(f"Host: {settings.DB_HOST}")
         print(f"Port: {settings.DB_PORT}")
@@ -130,7 +131,7 @@ async def register(user: UserCreate):
     
     try:
         connection = get_db_connection()
-        cursor = connection.cursor(dictionary=True)
+        cursor = connection.cursor()
         
         # Check if user already exists
         cursor.execute("SELECT * FROM users WHERE email = %s", (user.email,))
@@ -200,7 +201,7 @@ async def login(user_credentials: UserLogin):
     
     try:
         connection = get_db_connection()
-        cursor = connection.cursor(dictionary=True)
+        cursor = connection.cursor()
         
         # Get user by email - FIXED: use user_credentials.email
         query = "SELECT * FROM users WHERE email = %s"
@@ -303,7 +304,7 @@ async def get_current_user_info(token: str = Depends(oauth2_scheme)):
         
         # Get user from database
         connection = get_db_connection()
-        cursor = connection.cursor(dictionary=True)
+        cursor = connection.cursor()
         
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
