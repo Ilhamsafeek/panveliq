@@ -1,0 +1,521 @@
+<!-- SAVE AS: templates/components/sidebar.html -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-content">
+        <!-- Logo -->
+        <div class="sidebar-logo">
+            <a href="/" class="logo">
+                <div class="logo-icon">P</div>
+                <span class="logo-text">PanvelIQ</span>
+            </a>
+        </div>
+        
+        <!-- User Info Section -->
+        <div class="sidebar-user">
+            <img src="/static/images/default-avatar.png" alt="User" class="sidebar-user-avatar" id="sidebarUserAvatar">
+            <div class="sidebar-user-info">
+                <h4 id="sidebarUserName">Loading...</h4>
+                <p id="sidebarUserRole">-</p>
+            </div>
+        </div>
+        
+        <!-- Navigation Menu -->
+        <nav class="sidebar-nav" id="sidebarNav">
+            <!-- Will be populated dynamically based on user role -->
+        </nav>
+        
+        <!-- Sidebar Footer -->
+        <div class="sidebar-footer">
+            <a href="/help" class="sidebar-footer-link">
+                <i class="ti ti-help-circle"></i>
+                <span>Help & Support</span>
+            </a>
+            <a href="#" class="sidebar-footer-link" id="sidebarLogout">
+                <i class="ti ti-logout"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Sidebar Toggle -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="ti ti-chevron-left"></i>
+    </button>
+</aside>
+
+<style>
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 280px;
+        height: 100vh;
+        background: white;
+        border-right: 1px solid var(--color-gray-200);
+        z-index: 999;
+        transition: transform 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .sidebar.collapsed {
+        transform: translateX(-280px);
+    }
+    
+    .sidebar-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        padding-bottom: 1rem;
+    }
+    
+    /* Logo */
+    .sidebar-logo {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--color-gray-200);
+    }
+    
+    .sidebar-logo .logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        text-decoration: none;
+    }
+    
+    .logo-icon {
+        width: 45px;
+        height: 45px;
+        background: var(--gradient-primary);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 22px;
+    }
+    
+    .logo-text {
+        font-size: 20px;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    /* User Info */
+    .sidebar-user {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--color-gray-200);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: var(--color-gray-50);
+    }
+    
+    .sidebar-user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 2px solid var(--color-gray-200);
+    }
+    
+    .sidebar-user-info h4 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--color-gray-900);
+        margin-bottom: 0.25rem;
+    }
+    
+    .sidebar-user-info p {
+        font-size: 13px;
+        color: var(--color-gray-600);
+        text-transform: capitalize;
+    }
+    
+    /* Navigation */
+    .sidebar-nav {
+        flex: 1;
+        padding: 1rem 0;
+    }
+    
+    .nav-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .nav-section-title {
+        padding: 0 1.5rem;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--color-gray-400);
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1.5rem;
+        color: var(--color-gray-600);
+        text-decoration: none;
+        transition: all 0.2s;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    
+    .nav-item:hover {
+        background: var(--color-gray-50);
+        color: var(--primary-purple);
+    }
+    
+    .nav-item.active {
+        background: linear-gradient(90deg, rgba(153, 38, 243, 0.1) 0%, transparent 100%);
+        color: var(--primary-purple);
+        border-right: 3px solid var(--primary-purple);
+    }
+    
+    .nav-item i {
+        font-size: 20px;
+        width: 20px;
+    }
+    
+    .nav-item-badge {
+        margin-left: auto;
+        padding: 0.125rem 0.5rem;
+        background: var(--color-error);
+        color: white;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    
+    /* Sidebar Footer */
+    .sidebar-footer {
+        padding: 1rem;
+        border-top: 1px solid var(--color-gray-200);
+        margin-top: auto;
+    }
+    
+    .sidebar-footer-link {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 0.5rem;
+        color: var(--color-gray-600);
+        text-decoration: none;
+        transition: all 0.2s;
+        font-weight: 500;
+        border-radius: var(--radius-md);
+    }
+    
+    .sidebar-footer-link:hover {
+        background: var(--color-gray-50);
+        color: var(--primary-purple);
+    }
+    
+    .sidebar-footer-link i {
+        font-size: 20px;
+    }
+    
+    /* Sidebar Toggle */
+    .sidebar-toggle {
+        position: absolute;
+        top: 50%;
+        right: -12px;
+        transform: translateY(-50%);
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 1px solid var(--color-gray-200);
+        background: white;
+        color: var(--color-gray-600);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        transition: all 0.2s;
+        z-index: 1;
+    }
+    
+    .sidebar-toggle:hover {
+        background: var(--primary-purple);
+        color: white;
+        border-color: var(--primary-purple);
+    }
+    
+    .sidebar.collapsed .sidebar-toggle i {
+        transform: rotate(180deg);
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .sidebar {
+            transform: translateX(-280px);
+        }
+        
+        .sidebar.mobile-open {
+            transform: translateX(0);
+        }
+        
+        .sidebar-toggle {
+            display: none;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load user data
+    loadSidebarUser();
+    
+    // Load navigation based on user role
+    loadNavigation();
+    
+    // Sidebar toggle
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('collapsed');
+            document.body.classList.toggle('sidebar-collapsed');
+        });
+    }
+    
+    if (mobileMenuToggle) {
+        mobileMenuToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('mobile-open');
+        });
+    }
+    
+    // Logout
+    const sidebarLogout = document.getElementById('sidebarLogout');
+    if (sidebarLogout) {
+        sidebarLogout.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleLogout();
+        });
+    }
+});
+
+async function loadSidebarUser() {
+    try {
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
+        
+        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/me`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('sidebarUserName').textContent = data.full_name || data.email;
+            document.getElementById('sidebarUserRole').textContent = data.role || 'User';
+            
+            if (data.profile_image) {
+                document.getElementById('sidebarUserAvatar').src = data.profile_image;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading user data:', error);
+    }
+}
+
+async function loadNavigation() {
+    try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const role = user.role || 'client';
+        
+        const sidebarNav = document.getElementById('sidebarNav');
+        sidebarNav.innerHTML = getNavigationByRole(role);
+        
+        // Set active state
+        setActiveNavItem();
+    } catch (error) {
+        console.error('Error loading navigation:', error);
+    }
+}
+
+function getNavigationByRole(role) {
+    const commonModules = `
+        <div class="nav-section">
+            <div class="nav-section-title">Modules</div>
+            <a href="/modules/content" class="nav-item" data-path="/modules/content">
+                <i class="ti ti-file-text"></i>
+                <span>Content Hub</span>
+            </a>
+            <a href="/modules/social-media" class="nav-item" data-path="/modules/social-media">
+                <i class="ti ti-brand-instagram"></i>
+                <span>Social Media</span>
+            </a>
+            <a href="/modules/ads" class="nav-item" data-path="/modules/ads">
+                <i class="ti ti-ad"></i>
+                <span>Ad Campaigns</span>
+            </a>
+            <a href="/modules/seo" class="nav-item" data-path="/modules/seo">
+                <i class="ti ti-search"></i>
+                <span>SEO Toolkit</span>
+            </a>
+            <a href="/modules/media-studio" class="nav-item" data-path="/modules/media-studio">
+                <i class="ti ti-photo"></i>
+                <span>Media Studio</span>
+            </a>
+            <a href="/modules/communication" class="nav-item" data-path="/modules/communication">
+                <i class="ti ti-send"></i>
+                <span>Communication</span>
+            </a>
+            <a href="/modules/analytics" class="nav-item" data-path="/modules/analytics">
+                <i class="ti ti-chart-bar"></i>
+                <span>Analytics</span>
+            </a>
+        </div>
+    `;
+    
+    if (role === 'admin') {
+        return `
+            <div class="nav-section">
+                <div class="nav-section-title">Dashboard</div>
+                <a href="/dashboard/admin" class="nav-item" data-path="/dashboard/admin">
+                    <i class="ti ti-dashboard"></i>
+                    <span>Overview</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Management</div>
+                <a href="/admin/users" class="nav-item" data-path="/admin/users">
+                    <i class="ti ti-users"></i>
+                    <span>User Management</span>
+                </a>
+                <a href="/admin/clients" class="nav-item" data-path="/admin/clients">
+                    <i class="ti ti-briefcase"></i>
+                    <span>Clients</span>
+                </a>
+                <a href="/admin/packages" class="nav-item" data-path="/admin/packages">
+                    <i class="ti ti-package"></i>
+                    <span>Packages</span>
+                </a>
+                <a href="/admin/tasks" class="nav-item" data-path="/admin/tasks">
+                    <i class="ti ti-checklist"></i>
+                    <span>Task Assignment</span>
+                </a>
+                <a href="/admin/finance" class="nav-item" data-path="/admin/finance">
+                    <i class="ti ti-coin"></i>
+                    <span>Finance & P&L</span>
+                </a>
+                <a href="/admin/access-control" class="nav-item" data-path="/admin/access-control">
+                    <i class="ti ti-shield-lock"></i>
+                    <span>Access Control</span>
+                </a>
+            </div>
+            ${commonModules}
+            <div class="nav-section">
+                <div class="nav-section-title">Settings</div>
+                <a href="/settings" class="nav-item" data-path="/settings">
+                    <i class="ti ti-settings"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        `;
+    } else if (role === 'employee') {
+        return `
+            <div class="nav-section">
+                <div class="nav-section-title">Dashboard</div>
+                <a href="/dashboard/employee" class="nav-item" data-path="/dashboard/employee">
+                    <i class="ti ti-dashboard"></i>
+                    <span>Overview</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Work</div>
+                <a href="/tasks" class="nav-item" data-path="/tasks">
+                    <i class="ti ti-checklist"></i>
+                    <span>My Tasks</span>
+                </a>
+                <a href="/clients" class="nav-item" data-path="/clients">
+                    <i class="ti ti-briefcase"></i>
+                    <span>My Clients</span>
+                </a>
+            </div>
+            ${commonModules}
+            <div class="nav-section">
+                <div class="nav-section-title">Account</div>
+                <a href="/settings/profile" class="nav-item" data-path="/settings/profile">
+                    <i class="ti ti-user"></i>
+                    <span>Profile</span>
+                </a>
+            </div>
+        `;
+    } else {
+        // Client navigation
+        return `
+            <div class="nav-section">
+                <div class="nav-section-title">Dashboard</div>
+                <a href="/dashboard/client" class="nav-item" data-path="/dashboard/client">
+                    <i class="ti ti-dashboard"></i>
+                    <span>Overview</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">My Account</div>
+                <a href="/my-package" class="nav-item" data-path="/my-package">
+                    <i class="ti ti-package"></i>
+                    <span>My Package</span>
+                </a>
+                <a href="/reports" class="nav-item" data-path="/reports">
+                    <i class="ti ti-file-text"></i>
+                    <span>Reports</span>
+                </a>
+                <a href="/messages" class="nav-item" data-path="/messages">
+                    <i class="ti ti-message"></i>
+                    <span>Messages</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Performance</div>
+                <a href="/analytics" class="nav-item" data-path="/analytics">
+                    <i class="ti ti-chart-bar"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="/campaigns" class="nav-item" data-path="/campaigns">
+                    <i class="ti ti-ad"></i>
+                    <span>Campaigns</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Account</div>
+                <a href="/settings/profile" class="nav-item" data-path="/settings/profile">
+                    <i class="ti ti-user"></i>
+                    <span>Profile</span>
+                </a>
+            </div>
+        `;
+    }
+}
+
+function setActiveNavItem() {
+    const currentPath = window.location.pathname;
+    const navItems = document.querySelectorAll('.nav-item');
+    
+    navItems.forEach(item => {
+        const itemPath = item.getAttribute('data-path');
+        if (currentPath === itemPath || currentPath.startsWith(itemPath + '/')) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}
+
+function handleLogout() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user');
+    window.location.href = '/auth/login';
+}
+</script>

@@ -124,6 +124,31 @@
             line-height: 1.6;
         }
         
+        /* Layout with Sidebar - No padding needed, sidebar handles it */
+        body.has-sidebar {
+            margin-left: 280px;
+        }
+        
+        body.has-sidebar.sidebar-collapsed {
+            margin-left: 0;
+        }
+        
+        /* Main Content Wrapper */
+        .main-wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .main-content {
+            flex: 1;
+        }
+        
+        /* For pages with navbar (no sidebar) */
+        .main-wrapper.with-navbar .main-content {
+            padding-top: 70px; /* Height of navbar */
+        }
+        
         /* Gradient Text Utility */
         .gradient-text {
             background: var(--gradient-primary);
@@ -144,6 +169,14 @@
             right: 20px;
             z-index: 9999;
             max-width: 400px;
+        }
+        
+        body.has-sidebar .flash-messages {
+            right: calc(20px);
+        }
+        
+        .main-wrapper.with-navbar .flash-messages {
+            top: 90px;
         }
         
         .alert {
@@ -210,23 +243,29 @@
         .close-alert:hover {
             opacity: 1;
         }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            body.has-sidebar {
+                margin-left: 0;
+            }
+        }
     </style>
 </head>
-<body>
-    <!-- Navbar -->
-    {% if not hide_navbar %}
-        {% if show_sidebar is not defined or not show_sidebar %}
-            <!-- Add navbar here if needed -->
-        {% endif %}
+<body class="{% if show_sidebar %}has-sidebar{% endif %}">
+    
+    <!-- Sidebar (for dashboard pages only) -->
+    {% if show_sidebar %}
+        {% include "components/sidebar.html" %}
+    {% endif %}
+    
+    <!-- Navbar (for non-dashboard pages only) -->
+    {% if show_navbar and not show_sidebar %}
+        {% include "components/navbar.html" %}
     {% endif %}
     
     <!-- Main Content Wrapper -->
-    <div class="main-wrapper">
-        <!-- Sidebar (for dashboard pages) -->
-        {% if show_sidebar %}
-            <!-- Sidebar will be included here when needed -->
-        {% endif %}
-        
+    <div class="main-wrapper {% if show_navbar and not show_sidebar %}with-navbar{% endif %}">
         <!-- Main Content Area -->
         <main class="main-content">
             <!-- Flash Messages Container -->
@@ -235,13 +274,16 @@
             <!-- Page Content -->
             {% block content %}{% endblock %}
         </main>
+        
+        <!-- Footer -->
+        {% if not hide_footer %}
+            {% include "components/footer.html" %}
+        {% endif %}
     </div>
     
-    <!-- Footer -->
-    {% if not hide_footer %}
-        {% if show_sidebar is not defined or not show_sidebar %}
-            <!-- Add footer here if needed -->
-        {% endif %}
+    <!-- Chatbot Widget (always visible except on auth pages) -->
+    {% if not hide_chatbot %}
+        {% include "components/chatbot-widget.html" %}
     {% endif %}
     
     <!-- Base JavaScript -->
@@ -286,6 +328,22 @@
         
         // Make showFlashMessage available globally
         window.showFlashMessage = showFlashMessage;
+        
+        // Check authentication on protected pages
+        function checkAuth() {
+            const token = localStorage.getItem('access_token');
+            const publicPages = ['/auth/login', '/auth/register', '/auth/forgot-password', '/'];
+            const currentPath = window.location.pathname;
+            
+            if (!token && !publicPages.includes(currentPath)) {
+                window.location.href = '/auth/login';
+            }
+        }
+        
+        // Run auth check on page load for protected pages
+        if (document.body.classList.contains('has-sidebar')) {
+            checkAuth();
+        }
     </script>
 </body>
 </html>
