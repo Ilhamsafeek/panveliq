@@ -1,2 +1,248 @@
-{% extends 'base.html' %}
-{% block content %}Index{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PanvelIQ - AI-powered Digital Marketing Intelligence Platform</title>
+    
+    <!-- Tabler Icons 3.34.0 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #9926F3 0%, #1DD8FC 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #9926F3 0%, #1DD8FC 100%);
+            border-radius: 20px;
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: 700;
+            color: white;
+        }
+        
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #9926F3 0%, #1DD8FC 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        p {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .status-text {
+            color: #16a34a;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #9926F3 0%, #1DD8FC 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(153, 38, 243, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(153, 38, 243, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .features {
+            margin-top: 50px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            text-align: center;
+        }
+        
+        .feature {
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 12px;
+        }
+        
+        .feature-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #9926F3 0%, #1DD8FC 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .feature-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #e5e7eb;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 40px 25px;
+            }
+            
+            h1 {
+                font-size: 26px;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">P</div>
+        
+        <h1>PanvelIQ</h1>
+        <p>AI-powered Digital Marketing Intelligence Platform</p>
+        
+        <div class="status">
+            <span class="status-dot"></span>
+            <span class="status-text">Server Running</span>
+        </div>
+        
+        <div class="buttons">
+            <a href="/api/v1/docs" class="btn btn-primary">
+                <i class="ti ti-book"></i>
+                API Documentation
+            </a>
+            <a href="/api/v1/test" class="btn btn-secondary">
+                <i class="ti ti-tool"></i>
+                Test API
+            </a>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <i class="ti ti-robot feature-icon"></i>
+                <div class="feature-title">AI-Powered</div>
+            </div>
+            <div class="feature">
+                <i class="ti ti-chart-bar feature-icon"></i>
+                <div class="feature-title">Analytics</div>
+            </div>
+            <div class="feature">
+                <i class="ti ti-rocket feature-icon"></i>
+                <div class="feature-title">Automation</div>
+            </div>
+            <div class="feature">
+                <i class="ti ti-briefcase feature-icon"></i>
+                <div class="feature-title">Enterprise</div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Built with <i class="ti ti-heart-filled" style="color: #ef4444; vertical-align: middle;"></i> by Panvel Consulting<br>
+            Version 1.0.0 | {{ app_name }}
+        </div>
+    </div>
+</body>
+</html>
