@@ -5,18 +5,41 @@
 {% set show_sidebar = True %}
 
 {% block extra_css %}
+<!-- Quill Rich Text Editor -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <style>
+    /* =====================================================
+       VARIABLES & BASE
+       ===================================================== */
+    :root {
+        --primary-purple: #9926F3;
+        --primary-cyan: #1DD8FC;
+        --gradient-primary: linear-gradient(135deg, #9926F3, #1DD8FC);
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
     .planner-container {
         padding: 2rem;
         max-width: 100%;
+        background: var(--color-gray-50);
+        min-height: 100vh;
     }
     
-    /* Header Section */
+    /* =====================================================
+       HEADER SECTION
+       ===================================================== */
     .planner-header {
         margin-bottom: 2rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        /* background: white; */
+        /* padding: 2rem; */
+        /* border-radius: 16px; */
+        /* box-shadow: var(--shadow-md); */
     }
     
     .planner-header h1 {
@@ -26,6 +49,7 @@
         display: flex;
         align-items: center;
         gap: 0.75rem;
+        margin: 0;
     }
     
     .planner-header h1 i {
@@ -34,15 +58,24 @@
         -webkit-text-fill-color: transparent;
         font-size: 32px;
     }
+
+    .header-subtitle {
+        font-size: 14px;
+        color: var(--color-gray-600);
+        margin-top: 0.5rem;
+    }
     
     .header-actions {
         display: flex;
         gap: 1rem;
     }
     
+    /* =====================================================
+       BUTTONS
+       ===================================================== */
     .btn {
         padding: 0.75rem 1.5rem;
-        border-radius: var(--radius-md);
+        border-radius: 10px;
         border: none;
         font-weight: 600;
         font-size: 14px;
@@ -50,7 +83,7 @@
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        transition: all var(--transition-base);
+        transition: all 0.3s ease;
         text-decoration: none;
     }
     
@@ -64,6 +97,28 @@
         transform: translateY(-2px);
         box-shadow: var(--shadow-lg);
     }
+
+    .btn-secondary {
+        background: white;
+        color: var(--color-gray-700);
+        border: 2px solid var(--color-gray-300);
+    }
+
+    .btn-secondary:hover {
+        background: var(--color-gray-50);
+        border-color: var(--color-gray-400);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #10B981, #059669);
+        color: white;
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
     
     .btn-outline {
         background: white;
@@ -74,11 +129,18 @@
     .btn-outline:hover {
         background: rgba(153, 38, 243, 0.05);
     }
+
+    .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 13px;
+    }
     
-    /* Tab Navigation */
+    /* =====================================================
+       TAB NAVIGATION
+       ===================================================== */
     .tab-navigation {
         background: white;
-        border-radius: var(--radius-lg);
+        border-radius: 16px;
         padding: 0.5rem;
         margin-bottom: 2rem;
         display: flex;
@@ -90,11 +152,11 @@
         padding: 0.875rem 1.5rem;
         border: none;
         background: transparent;
-        border-radius: var(--radius-md);
+        border-radius: 10px;
         font-weight: 600;
         font-size: 14px;
         cursor: pointer;
-        transition: all var(--transition-base);
+        transition: all 0.3s ease;
         display: flex;
         align-items: center;
         gap: 0.5rem;
@@ -110,109 +172,605 @@
         background: var(--color-gray-100);
     }
     
-    /* Tab Content */
+    /* =====================================================
+       TAB CONTENT
+       ===================================================== */
     .tab-content {
         display: none;
+        animation: fadeIn 0.3s ease;
     }
     
     .tab-content.active {
         display: block;
     }
-    
-    /* Create Proposal Form */
-    .proposal-form {
-        background: white;
-        border-radius: var(--radius-xl);
-        padding: 2rem;
-        box-shadow: var(--shadow-md);
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
-    
-    .form-section {
-        margin-bottom: 2rem;
+
+    /* =====================================================
+       STEPPER (3-STEP WIZARD)
+       ===================================================== */
+    .stepper-container {
+        /* background: white;
+        border-radius: 16px; */
+        padding-bottom: 1rem;
+        /* box-shadow: var(--shadow-md); */
     }
-    
-    .section-title {
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--color-gray-900);
-        margin-bottom: 1rem;
+
+    .stepper-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .stepper-line-bg {
+        position: absolute;
+        top: 32px;
+        left: 15%;
+        right: 15%;
+        height: 4px;
+        background: var(--color-gray-200);
+        z-index: 1;
+    }
+
+    .stepper-line-progress {
+        position: absolute;
+        top: 32px;
+        left: 15%;
+        height: 4px;
+        background: var(--gradient-primary);
+        z-index: 2;
+        transition: width 0.5s ease;
+        width: 0%;
+    }
+
+    .stepper-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        position: relative;
+        z-index: 3;
+        flex: 1;
+    }
+
+    .step-counter {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        justify-content: center;
+        background: white;
+        color: var(--color-gray-400);
+        font-size: 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: 4px solid var(--color-gray-200);
     }
-    
-    .section-title i {
+
+    .stepper-item.active .step-counter {
+        background: var(--gradient-primary);
+        color: white;
+        border-color: var(--primary-purple);
+        box-shadow: 0 0 0 8px rgba(153, 38, 243, 0.1);
+        transform: scale(1.1);
+    }
+
+    .stepper-item.completed .step-counter {
+        background: #10B981;
+        color: white;
+        border-color: #10B981;
+    }
+
+    .step-info {
+        text-align: center;
+    }
+
+    .step-name {
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--color-gray-500);
+        transition: all 0.3s ease;
+    }
+
+    .stepper-item.active .step-name {
         color: var(--primary-purple);
     }
-    
-    .form-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 1.5rem;
+
+    .stepper-item.completed .step-name {
+        color: #10B981;
     }
-    
+
+    .step-desc {
+        font-size: 0.75rem;
+        color: var(--color-gray-400);
+        margin-top: 0.25rem;
+    }
+
+    /* =====================================================
+       STEP CONTENT CARDS
+       ===================================================== */
+    .step-content {
+        display: none;
+    }
+
+    .step-content.active {
+        display: block;
+        animation: slideInUp 0.4s ease;
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .step-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .step-card-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .step-card-header h2 {
+        font-weight: 700;
+        margin: 0 0 0.5rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .step-card-header h2 i {
+        font-size: 2rem;
+    }
+
+    .step-card-header p {
+        margin: 0;
+        font-size: 1rem;
+        opacity: 0.95;
+    }
+
+    .step-card-body {
+        padding: 2.5rem;
+    }
+
+    /* =====================================================
+       FORM ELEMENTS
+       ===================================================== */
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
     .form-group {
         display: flex;
         flex-direction: column;
     }
-    
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
     .form-label {
         font-weight: 600;
         font-size: 14px;
         color: var(--color-gray-700);
         margin-bottom: 0.5rem;
-    }
-    
-    .form-label .required {
-        color: var(--color-error);
-    }
-    
-    .form-input, .form-textarea, .form-select {
-        padding: 0.875rem 1rem;
-        border: 1px solid var(--color-gray-300);
-        border-radius: var(--radius-md);
-        font-size: 14px;
-        font-family: inherit;
-        transition: all var(--transition-base);
-    }
-    
-    .form-input:focus, .form-textarea:focus, .form-select:focus {
-        outline: none;
-        border-color: var(--primary-purple);
-        box-shadow: 0 0 0 3px rgba(153, 38, 243, 0.1);
-    }
-    
-    .form-textarea {
-        min-height: 100px;
-        resize: vertical;
-    }
-    
-    .presence-checkboxes {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 1rem;
-    }
-    
-    .checkbox-item {
         display: flex;
         align-items: center;
         gap: 0.5rem;
     }
-    
-    .checkbox-item input[type="checkbox"] {
+
+    .form-label i {
+        color: var(--primary-purple);
+        font-size: 18px;
+    }
+
+    .form-label .required {
+        color: #EF4444;
+    }
+
+    .form-input, .form-textarea, .form-select {
+        padding: 0.875rem 1rem;
+        border: 2px solid var(--color-gray-300);
+        border-radius: 10px;
+        font-size: 14px;
+        font-family: 'Gilroy', sans-serif;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+        outline: none;
+        border-color: var(--primary-purple);
+        box-shadow: 0 0 0 4px rgba(153, 38, 243, 0.1);
+    }
+
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .form-select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239926F3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1.25rem;
+        padding-right: 2.5rem;
+    }
+
+    /* =====================================================
+       CHECKBOXES
+       ===================================================== */
+    .checkbox-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        background: var(--color-gray-50);
+        border: 2px solid var(--color-gray-200);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .checkbox-label:hover {
+        border-color: var(--primary-purple);
+        background: rgba(153, 38, 243, 0.05);
+    }
+
+    .checkbox-label input[type="checkbox"] {
         width: 18px;
         height: 18px;
         accent-color: var(--primary-purple);
-    }
-    
-    .checkbox-item label {
-        font-size: 14px;
-        color: var(--color-gray-700);
         cursor: pointer;
     }
-    
-    /* Proposals List */
+
+    .checkbox-label span {
+        font-weight: 500;
+        font-size: 14px;
+        color: var(--color-gray-700);
+    }
+
+    /* =====================================================
+       STEP NAVIGATION
+       ===================================================== */
+    .step-navigation {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 2px solid var(--color-gray-200);
+    }
+
+    /* =====================================================
+       RICH TEXT EDITOR (QUILL)
+       ===================================================== */
+    #editorContainer {
+        margin-top: 1.5rem;
+    }
+
+    #toolbar {
+        background: var(--color-gray-50);
+        border: 2px solid var(--color-gray-200);
+        border-bottom: none;
+        border-radius: 12px 12px 0 0;
+        padding: 0.75rem;
+    }
+
+    #editor {
+        min-height: 600px;
+        background: white;
+        border: 2px solid var(--color-gray-200);
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        font-family: 'Gilroy', sans-serif;
+        font-size: 14px;
+    }
+
+    .ql-container {
+        font-family: 'Gilroy', sans-serif !important;
+        font-size: 14px !important;
+    }
+
+    .ql-editor {
+        padding: 2rem !important;
+        min-height: 600px !important;
+    }
+
+    .ql-toolbar {
+        border: none !important;
+        background: transparent !important;
+    }
+
+    .ql-formats {
+        margin-right: 1rem !important;
+    }
+
+    .ql-stroke {
+        stroke: var(--primary-purple) !important;
+    }
+
+    .ql-fill {
+        fill: var(--primary-purple) !important;
+    }
+
+    .ql-picker-label {
+        color: var(--primary-purple) !important;
+    }
+
+    /* =====================================================
+       AI INSIGHTS PANEL
+       ===================================================== */
+    .ai-insights-panel {
+        margin-top: 1.5rem;
+        background: linear-gradient(135deg, rgba(153, 38, 243, 0.05), rgba(29, 216, 252, 0.05));
+        border: 2px solid rgba(153, 38, 243, 0.2);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+
+    .ai-insights-panel h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--primary-purple);
+        margin: 0 0 1rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .ai-insight-item {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .ai-insight-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .insight-title {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--color-gray-900);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .insight-content {
+        font-size: 13px;
+        color: var(--color-gray-600);
+        line-height: 1.6;
+    }
+
+    /* =====================================================
+       LOADING STATE
+       ===================================================== */
+    .loading-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .loader-spinner {
+        width: 60px;
+        height: 60px;
+        border: 5px solid var(--color-gray-200);
+        border-top-color: var(--primary-purple);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1.5rem;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .loading-state p {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--color-gray-900);
+        margin-bottom: 0.5rem;
+    }
+
+    .loading-state small {
+        font-size: 14px;
+        color: var(--color-gray-600);
+    }
+
+    /* =====================================================
+       EXPORT OPTIONS (STEP 3)
+       ===================================================== */
+    .proposal-summary {
+        background: var(--color-gray-50);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .proposal-summary h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0 0 1rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid var(--color-gray-200);
+    }
+
+    .summary-label {
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--color-gray-600);
+    }
+
+    .summary-value {
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--color-gray-900);
+    }
+
+    .export-options {
+        margin-top: 2rem;
+    }
+
+    .export-options h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0 0 1.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .export-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .export-card {
+        background: white;
+        border: 2px solid var(--color-gray-200);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .export-card:hover {
+        border-color: var(--primary-purple);
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-4px);
+    }
+
+    .export-icon {
+        width: 64px;
+        height: 64px;
+        background: var(--gradient-primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+    }
+
+    .export-icon i {
+        font-size: 2rem;
+        color: white;
+    }
+
+    .export-card h4 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .export-card p {
+        font-size: 13px;
+        color: var(--color-gray-600);
+        margin: 0 0 1rem 0;
+    }
+
+    .share-link-result {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.05));
+        border: 2px solid rgba(16, 185, 129, 0.3);
+        border-radius: 12px;
+    }
+
+    .share-link-container h4 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #10B981;
+        margin: 0 0 1rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .link-display {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .link-display input {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: 2px solid var(--color-gray-300);
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+    }
+
+    .link-info {
+        font-size: 13px;
+        color: var(--color-gray-600);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* =====================================================
+       PROPOSALS LIST (ALL TAB)
+       ===================================================== */
     .proposals-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -221,10 +779,10 @@
     
     .proposal-card {
         background: white;
-        border-radius: var(--radius-lg);
+        border-radius: 16px;
         padding: 1.5rem;
         box-shadow: var(--shadow-md);
-        transition: all var(--transition-base);
+        transition: all 0.3s ease;
         border: 1px solid var(--color-gray-200);
     }
     
@@ -258,7 +816,7 @@
     
     .status-badge {
         padding: 0.375rem 0.75rem;
-        border-radius: var(--radius-md);
+        border-radius: 8px;
         font-size: 12px;
         font-weight: 600;
         text-transform: uppercase;
@@ -288,7 +846,7 @@
         margin: 1rem 0;
         padding: 1rem;
         background: var(--color-gray-50);
-        border-radius: var(--radius-md);
+        border-radius: 12px;
     }
     
     .detail-item {
@@ -321,36 +879,18 @@
         margin-top: 1rem;
     }
     
-    .btn-sm {
-        padding: 0.5rem 1rem;
-        font-size: 13px;
+    .proposal-actions .btn {
         flex: 1;
     }
-    
-    .btn-view {
-        background: var(--gradient-primary);
-        color: white;
-    }
-    
-    .btn-edit {
-        background: white;
-        color: var(--primary-purple);
-        border: 1px solid var(--primary-purple);
-    }
-    
-    .btn-delete {
-        background: white;
-        color: var(--color-error);
-        border: 1px solid var(--color-error);
-        padding: 0.5rem 0.75rem;
-    }
-    
-    /* Empty State */
+
+    /* =====================================================
+       EMPTY STATE
+       ===================================================== */
     .empty-state {
         text-align: center;
         padding: 4rem 2rem;
         background: white;
-        border-radius: var(--radius-xl);
+        border-radius: 16px;
         box-shadow: var(--shadow-sm);
     }
     
@@ -371,8 +911,90 @@
         color: var(--color-gray-600);
         margin-bottom: 1.5rem;
     }
-    
-    /* Loading State */
+
+    /* =====================================================
+       MODAL
+       ===================================================== */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-xl);
+    }
+
+    .modal-header {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 1.5rem 2rem;
+        border-radius: 16px 16px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .modal-close {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .modal-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: rotate(90deg);
+    }
+
+    .modal-body {
+        padding: 2rem;
+    }
+
+    .modal-footer {
+        padding: 1.5rem 2rem;
+        border-top: 1px solid var(--color-gray-200);
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+    /* =====================================================
+       LOADING OVERLAY
+       ===================================================== */
     .loading-overlay {
         position: fixed;
         top: 0;
@@ -393,7 +1015,7 @@
     .loading-content {
         background: white;
         padding: 2rem 3rem;
-        border-radius: var(--radius-xl);
+        border-radius: 16px;
         text-align: center;
         max-width: 400px;
     }
@@ -408,10 +1030,6 @@
         margin: 0 auto 1rem;
     }
     
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-    
     .loading-content h3 {
         font-size: 18px;
         font-weight: 700;
@@ -423,8 +1041,10 @@
         color: var(--color-gray-600);
         font-size: 14px;
     }
-    
-    /* Responsive */
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
     @media (max-width: 768px) {
         .planner-container {
             padding: 1rem;
@@ -438,22 +1058,61 @@
         
         .header-actions {
             width: 100%;
+            flex-direction: column;
         }
         
         .header-actions .btn {
-            flex: 1;
+            width: 100%;
+            justify-content: center;
         }
         
         .tab-navigation {
             flex-direction: column;
         }
+
+        .stepper-wrapper {
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .stepper-line-bg,
+        .stepper-line-progress {
+            display: none;
+        }
+
+        .step-counter {
+            width: 56px;
+            height: 56px;
+            font-size: 1.5rem;
+        }
         
-        .form-row {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .summary-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .export-grid {
             grid-template-columns: 1fr;
         }
         
         .proposals-grid {
             grid-template-columns: 1fr;
+        }
+
+        .step-card-body {
+            padding: 1.5rem;
+        }
+
+        #editor {
+            min-height: 400px;
+        }
+
+        .ql-editor {
+            padding: 1rem !important;
+            min-height: 400px !important;
         }
     }
 </style>
@@ -463,10 +1122,13 @@
 <div class="planner-container">
     <!-- Header -->
     <div class="planner-header">
-        <h1>
-            <i class="ti ti-bulb"></i>
-            AI Project Planner
-        </h1>
+        <div>
+            <h1>
+                <i class="ti ti-bulb"></i>
+                AI Project Planner
+            </h1>
+            <p class="header-subtitle">Generate AI-powered marketing proposals in 3 simple steps</p>
+        </div>
         <div class="header-actions">
             <button class="btn btn-primary" onclick="showCreateTab()">
                 <i class="ti ti-plus"></i>
@@ -487,150 +1149,496 @@
         </button>
     </div>
     
-    <!-- Tab: Create Proposal -->
+    <!-- Tab: Create Proposal (3-Step Wizard) -->
     <div class="tab-content" id="tab-create">
-        <form class="proposal-form" id="proposalForm" onsubmit="handleSubmit(event)">
-            <!-- Lead Information -->
-            <div class="form-section">
-                <div class="section-title">
-                    <i class="ti ti-user"></i>
-                    Lead Information
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">
-                            Lead Name <span class="required">*</span>
-                        </label>
-                        <input type="text" class="form-input" name="lead_name" required placeholder="Enter lead's full name">
+        <!-- Stepper -->
+        <div class="stepper-container">
+            <div class="stepper-wrapper">
+                <div class="stepper-line-bg"></div>
+                <div class="stepper-line-progress" id="stepperProgress"></div>
+                
+                <div class="stepper-item active" data-step="1">
+                    <div class="step-counter">
+                        <i class="ti ti-user"></i>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            Lead Email <span class="required">*</span>
-                        </label>
-                        <input type="email" class="form-input" name="lead_email" required placeholder="lead@company.com">
+                    <div class="step-info">
+                        <div class="step-name">Client Details</div>
+                        <!-- <div class="step-desc">Basic information</div> -->
                     </div>
                 </div>
-            </div>
-            
-            <!-- Company Information -->
-            <div class="form-section">
-                <div class="section-title">
-                    <i class="ti ti-building"></i>
-                    Company Information
+                
+                <div class="stepper-item" data-step="2">
+                    <div class="step-counter">
+                        <i class="ti ti-brain"></i>
+                    </div>
+                    <div class="step-info">
+                        <div class="step-name">AI Strategy</div>
+                        <!-- <div class="step-desc">Generated & editable</div> -->
+                    </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">
-                            Company Name <span class="required">*</span>
-                        </label>
-                        <input type="text" class="form-input" name="company_name" required placeholder="Company Name">
+                
+                <div class="stepper-item" data-step="3">
+                    <div class="step-counter">
+                        <i class="ti ti-send"></i>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            Business Type <span class="required">*</span>
-                        </label>
-                        <select class="form-select" name="business_type" required>
-                            <option value="">Select business type</option>
-                            <option value="E-commerce">E-commerce</option>
-                            <option value="SaaS">SaaS</option>
-                            <option value="Healthcare">Healthcare</option>
-                            <option value="Education">Education</option>
-                            <option value="Real Estate">Real Estate</option>
-                            <option value="Restaurant">Restaurant</option>
-                            <option value="Retail">Retail</option>
-                            <option value="Finance">Finance</option>
-                            <option value="Manufacturing">Manufacturing</option>
-                            <option value="Professional Services">Professional Services</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            Budget (USD) <span class="required">*</span>
-                        </label>
-                        <input type="number" class="form-input" name="budget" required min="1000" step="100" placeholder="10000">
+                    <div class="step-info">
+                        <div class="step-name">Export & Share</div>
+                        <!-- <div class="step-desc">Final delivery</div> -->
                     </div>
                 </div>
             </div>
-            
-            <!-- Marketing Details -->
-            <div class="form-section">
-                <div class="section-title">
-                    <i class="ti ti-target"></i>
-                    Marketing Details
+        </div>
+
+        <!-- STEP 1: Client Details -->
+        <div class="step-content active" id="step1">
+            <div class="step-card">
+                <div class="step-card-header">
+                    <h2>
+                        <i class="ti ti-user-circle"></i>
+                        Client Information
+                    </h2>
+                    <p>Enter the client's business details to generate a personalized proposal</p>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">
-                            Current Challenges <span class="required">*</span>
-                        </label>
-                        <textarea class="form-textarea" name="challenges" required placeholder="Describe the main challenges they're facing (e.g., low website traffic, poor lead quality, lack of social media engagement)"></textarea>
+                
+                <div class="step-card-body">
+                    <form id="clientDetailsForm">
+                        <div class="form-grid">
+                            <!-- Lead Name -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="ti ti-user"></i>
+                                    Contact Person Name <span class="required">*</span>
+                                </label>
+                                <input type="text" id="leadName" name="lead_name" required 
+                                       placeholder="John Doe" class="form-input">
+                            </div>
+
+                            <!-- Lead Email -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="ti ti-mail"></i>
+                                    Email Address <span class="required">*</span>
+                                </label>
+                                <input type="email" id="leadEmail" name="lead_email" required 
+                                       placeholder="john@company.com" class="form-input">
+                            </div>
+
+                            <!-- Company Name -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="ti ti-building"></i>
+                                    Company Name <span class="required">*</span>
+                                </label>
+                                <input type="text" id="companyName" name="company_name" required 
+                                       placeholder="Acme Corporation" class="form-input">
+                            </div>
+
+                            <!-- Business Type -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="ti ti-briefcase"></i>
+                                    Business Type <span class="required">*</span>
+                                </label>
+                                <select id="businessType" name="business_type" required class="form-select">
+                                    <option value="">Select business type</option>
+                                    <option value="E-commerce">E-Commerce</option>
+                                    <option value="SaaS">SaaS / Technology</option>
+                                    <option value="Healthcare">Healthcare</option>
+                                    <option value="Education">Education</option>
+                                    <option value="Real Estate">Real Estate</option>
+                                    <option value="Hospitality">Hospitality</option>
+                                    <option value="Finance">Finance</option>
+                                    <option value="Retail">Retail</option>
+                                    <option value="Manufacturing">Manufacturing</option>
+                                    <option value="Professional Services">Professional Services</option>
+                                    <option value="Restaurant">Restaurant</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <!-- Budget -->
+                            <div class="form-group full-width">
+                                <label class="form-label">
+                                    <i class="ti ti-currency-dollar"></i>
+                                    Marketing Budget (USD) <span class="required">*</span>
+                                </label>
+                                <input type="number" id="budget" name="budget" required 
+                                       placeholder="50000" min="1000" class="form-input">
+                            </div>
+
+                            <!-- Target Audience -->
+                            <div class="form-group full-width">
+                                <label class="form-label">
+                                    <i class="ti ti-users"></i>
+                                    Target Audience <span class="required">*</span>
+                                </label>
+                                <textarea id="targetAudience" name="target_audience" required 
+                                          placeholder="Describe the target audience: demographics, interests, pain points..." 
+                                          rows="3" class="form-textarea"></textarea>
+                            </div>
+
+                            <!-- Current Challenges -->
+                            <div class="form-group full-width">
+                                <label class="form-label">
+                                    <i class="ti ti-alert-circle"></i>
+                                    Current Marketing Challenges <span class="required">*</span>
+                                </label>
+                                <textarea id="challenges" name="challenges" required 
+                                          placeholder="What are the main marketing challenges the client is facing?" 
+                                          rows="3" class="form-textarea"></textarea>
+                            </div>
+
+                            <!-- Existing Digital Presence -->
+                            <div class="form-group full-width">
+                                <label class="form-label">
+                                    <i class="ti ti-world"></i>
+                                    Existing Digital Presence
+                                </label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="existing_website" value="true">
+                                        <span>Website</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="existing_facebook" value="true">
+                                        <span>Facebook</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="existing_instagram" value="true">
+                                        <span>Instagram</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="existing_linkedin" value="true">
+                                        <span>LinkedIn</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="existing_google_ads" value="true">
+                                        <span>Google Ads</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="existing_seo" value="true">
+                                        <span>SEO</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="existing_youtube" value="true">
+                                        <span>YouTube</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="existing_email" value="true">
+                                        <span>Email Marketing</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Navigation -->
+                        <div class="step-navigation">
+                            <button type="button" class="btn btn-secondary" disabled>
+                                <i class="ti ti-arrow-left"></i>
+                                Previous
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                Generate AI Strategy
+                                <i class="ti ti-sparkles"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 2: AI Strategy (Rich Editor) -->
+        <div class="step-content" id="step2">
+            <div class="step-card">
+                <div class="step-card-header">
+                    <h2>
+                        <i class="ti ti-brain"></i>
+                        AI-Generated Strategy
+                    </h2>
+                    <p>Review and customize the AI-generated proposal using the rich text editor</p>
+                </div>
+                
+                <div class="step-card-body">
+                    <!-- Loading State -->
+                    <div id="aiLoadingState" class="loading-state">
+                        <div class="loader-spinner"></div>
+                        <p>AI is generating your personalized strategy...</p>
+                        <small>This may take a few moments</small>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            Target Audience <span class="required">*</span>
-                        </label>
-                        <textarea class="form-textarea" name="target_audience" required placeholder="Describe their target audience (demographics, interests, behavior, pain points)"></textarea>
+
+                    <!-- Editor Container -->
+                    <div id="editorContainer" style="display: none;">
+                        <!-- Rich Text Editor Toolbar -->
+                        <div id="toolbar">
+                            <!-- Text Formatting -->
+                            <span class="ql-formats">
+                                <select class="ql-font"></select>
+                                <select class="ql-size"></select>
+                            </span>
+                            
+                            <span class="ql-formats">
+                                <button class="ql-bold"></button>
+                                <button class="ql-italic"></button>
+                                <button class="ql-underline"></button>
+                                <button class="ql-strike"></button>
+                            </span>
+                            
+                            <!-- Color -->
+                            <span class="ql-formats">
+                                <select class="ql-color"></select>
+                                <select class="ql-background"></select>
+                            </span>
+                            
+                            <!-- Text Alignment -->
+                            <span class="ql-formats">
+                                <button class="ql-align" value=""></button>
+                                <button class="ql-align" value="center"></button>
+                                <button class="ql-align" value="right"></button>
+                                <button class="ql-align" value="justify"></button>
+                            </span>
+                            
+                            <!-- Lists -->
+                            <span class="ql-formats">
+                                <button class="ql-list" value="ordered"></button>
+                                <button class="ql-list" value="bullet"></button>
+                                <button class="ql-indent" value="-1"></button>
+                                <button class="ql-indent" value="+1"></button>
+                            </span>
+                            
+                            <!-- Headings -->
+                            <span class="ql-formats">
+                                <button class="ql-header" value="1"></button>
+                                <button class="ql-header" value="2"></button>
+                                <button class="ql-blockquote"></button>
+                            </span>
+                            
+                            <!-- Insert -->
+                            <span class="ql-formats">
+                                <button class="ql-link"></button>
+                                <button class="ql-image"></button>
+                            </span>
+                            
+                            <!-- Clear Formatting -->
+                            <span class="ql-formats">
+                                <button class="ql-clean"></button>
+                            </span>
+                        </div>
+
+                        <!-- Editor Area -->
+                        <div id="editor"></div>
+
+                        <!-- AI Insights Panel -->
+                        <div class="ai-insights-panel">
+                            <h3>
+                                <i class="ti ti-bulb"></i>
+                                AI Insights
+                            </h3>
+                            <div id="aiInsightsContent">
+                                <!-- Will be populated with AI suggestions -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="step-navigation" id="step2Navigation" style="display: none;">
+                        <button type="button" class="btn btn-secondary" onclick="goToStep(1)">
+                            <i class="ti ti-arrow-left"></i>
+                            Previous
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="goToStep(3)">
+                            Continue to Export
+                            <i class="ti ti-arrow-right"></i>
+                        </button>
                     </div>
                 </div>
             </div>
-            
-            <!-- Existing Digital Presence -->
-            <div class="form-section">
-                <div class="section-title">
-                    <i class="ti ti-world"></i>
-                    Existing Digital Presence
+        </div>
+
+        <!-- STEP 3: Export & Share -->
+        <div class="step-content" id="step3">
+            <div class="step-card">
+                <div class="step-card-header">
+                    <h2>
+                        <i class="ti ti-send"></i>
+                        Export & Share Proposal
+                    </h2>
+                    <p>Choose how to deliver the proposal to your client</p>
                 </div>
-                <div class="presence-checkboxes">
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="presence_website" name="presence_website" value="website">
-                        <label for="presence_website">Website</label>
+                
+                <div class="step-card-body">
+                    <!-- Preview Summary -->
+                    <div class="proposal-summary">
+                        <h3>
+                            <i class="ti ti-file-check"></i>
+                            Proposal Summary
+                        </h3>
+                        <div id="proposalSummaryContent" class="summary-grid">
+                            <!-- Will be populated with proposal details -->
+                        </div>
                     </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="presence_facebook" name="presence_facebook" value="facebook">
-                        <label for="presence_facebook">Facebook</label>
+
+                    <!-- Export Options -->
+                    <div class="export-options">
+                        <h3>
+                            <i class="ti ti-download"></i>
+                            Export Options
+                        </h3>
+                        
+                        <div class="export-grid">
+                            <!-- PDF Export -->
+                            <div class="export-card" onclick="exportProposal('pdf')">
+                                <div class="export-icon">
+                                    <i class="ti ti-file-type-pdf"></i>
+                                </div>
+                                <h4>Download PDF</h4>
+                                <p>Professional PDF document</p>
+                                <button type="button" class="btn btn-outline-primary">
+                                    <i class="ti ti-download"></i>
+                                    Export PDF
+                                </button>
+                            </div>
+
+                            <!-- Share Link -->
+                            <div class="export-card" onclick="generateShareLink()">
+                                <div class="export-icon">
+                                    <i class="ti ti-link"></i>
+                                </div>
+                                <h4>Share Link</h4>
+                                <p>Interactive web link</p>
+                                <button type="button" class="btn btn-outline-primary">
+                                    <i class="ti ti-share"></i>
+                                    Generate Link
+                                </button>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="export-card" onclick="openEmailModal()">
+                                <div class="export-icon">
+                                    <i class="ti ti-mail"></i>
+                                </div>
+                                <h4>Send Email</h4>
+                                <p>Email directly to client</p>
+                                <button type="button" class="btn btn-outline-primary">
+                                    <i class="ti ti-send"></i>
+                                    Send Email
+                                </button>
+                            </div>
+
+                            <!-- Client Dashboard -->
+                            <div class="export-card" onclick="sendToDashboard()">
+                                <div class="export-icon">
+                                    <i class="ti ti-layout-dashboard"></i>
+                                </div>
+                                <h4>Client Dashboard</h4>
+                                <p>Add to client portal</p>
+                                <button type="button" class="btn btn-outline-primary">
+                                    <i class="ti ti-upload"></i>
+                                    Send to Dashboard
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="presence_instagram" name="presence_instagram" value="instagram">
-                        <label for="presence_instagram">Instagram</label>
+
+                    <!-- Share Link Result -->
+                    <div id="shareLinkResult" class="share-link-result" style="display: none;">
+                        <div class="share-link-container">
+                            <h4>
+                                <i class="ti ti-check-circle"></i>
+                                Share Link Generated
+                            </h4>
+                            <div class="link-display">
+                                <input type="text" id="generatedLink" readonly class="form-input">
+                                <button type="button" class="btn btn-primary" onclick="copyShareLink()">
+                                    <i class="ti ti-copy"></i>
+                                    Copy
+                                </button>
+                            </div>
+                            <p class="link-info">
+                                <i class="ti ti-info-circle"></i>
+                                This link will expire in 30 days
+                            </p>
+                        </div>
                     </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="presence_linkedin" name="presence_linkedin" value="linkedin">
-                        <label for="presence_linkedin">LinkedIn</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="presence_twitter" name="presence_twitter" value="twitter">
-                        <label for="presence_twitter">Twitter/X</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="presence_youtube" name="presence_youtube" value="youtube">
-                        <label for="presence_youtube">YouTube</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="presence_google_ads" name="presence_google_ads" value="google_ads">
-                        <label for="presence_google_ads">Google Ads</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="presence_email" name="presence_email" value="email">
-                        <label for="presence_email">Email Marketing</label>
+
+                    <!-- Navigation -->
+                    <div class="step-navigation">
+                        <button type="button" class="btn btn-secondary" onclick="goToStep(2)">
+                            <i class="ti ti-arrow-left"></i>
+                            Back to Editor
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="finishProposal()">
+                            <i class="ti ti-check"></i>
+                            Complete Proposal
+                        </button>
                     </div>
                 </div>
             </div>
-            
-            <!-- Submit Button -->
-            <div style="text-align: right; margin-top: 2rem;">
-                <button type="submit" class="btn btn-primary" style="padding: 1rem 2.5rem;">
-                    <i class="ti ti-sparkles"></i>
-                    Generate AI Proposal
-                </button>
-            </div>
-        </form>
+        </div>
     </div>
     
     <!-- Tab: All Proposals -->
     <div class="tab-content active" id="tab-proposals">
         <div id="proposalsContainer">
             <!-- Proposals will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Email Modal -->
+<div class="modal" id="emailModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>
+                <i class="ti ti-mail"></i>
+                Send Proposal via Email
+            </h3>
+            <button class="modal-close" onclick="closeModal('emailModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="emailForm">
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="ti ti-mail"></i>
+                        Recipient Email
+                    </label>
+                    <input type="email" id="recipientEmail" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="ti ti-edit"></i>
+                        Subject
+                    </label>
+                    <input type="text" id="emailSubject" class="form-input" 
+                           value="Marketing Proposal for Your Review" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="ti ti-message"></i>
+                        Message
+                    </label>
+                    <textarea id="emailMessage" class="form-textarea" rows="5" required>Dear Client,
+
+Please find attached our comprehensive marketing proposal tailored to your business needs.
+
+We look forward to discussing this proposal with you.
+
+Best regards,
+PanvelIQ Team</textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('emailModal')">
+                Cancel
+            </button>
+            <button type="button" class="btn btn-primary" onclick="sendEmail()">
+                <i class="ti ti-send"></i>
+                Send Email
+            </button>
         </div>
     </div>
 </div>
@@ -646,5 +1654,6 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script src="/static/js/project-planner.js"></script>
 {% endblock %}
