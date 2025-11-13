@@ -2,6 +2,9 @@
 
 {% block title %}Login{% endblock %}
 
+{% set hide_navbar = True %}
+{% set hide_footer = True %}
+
 {% block extra_css %}
 <style>
     .auth-wrapper {
@@ -357,8 +360,10 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', path='/js/auth.js') }}"></script>
 <script>
+    // Define API base URL
+    const API_BASE = '/api/v1';
+    
     document.addEventListener('DOMContentLoaded', function() {
         const loginForm = document.getElementById('loginForm');
         const loginBtn = document.getElementById('loginBtn');
@@ -410,7 +415,7 @@
             return re.test(email);
         }
         
-        // Form Submit
+        // Form Submit - FIXED VERSION
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -438,9 +443,6 @@
             if (!password) {
                 showError('password', 'Password is required');
                 isValid = false;
-            } else if (password.length < 6) {
-                showError('password', 'Password must be at least 6 characters');
-                isValid = false;
             }
             
             if (!isValid) return;
@@ -450,18 +452,27 @@
             loginBtn.disabled = true;
             
             try {
-                // API Call
-                const response = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/login`, {
+                console.log('Attempting login...', { email });
+                
+                // API Call - CORRECT FORMAT
+                const response = await fetch(`${API_BASE}/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ email, password, remember })
+                    body: JSON.stringify({
+                        email: email,
+                        password: password,
+                        remember: remember
+                    })
                 });
                 
-                const data = await response.json();
+                console.log('Response status:', response.status);
                 
-                if (response.ok) {
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (response.ok && data.access_token) {
                     // Store token
                     localStorage.setItem('access_token', data.access_token);
                     if (data.user) {

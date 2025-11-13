@@ -1,20 +1,17 @@
 """
 AI Project Planner - API Endpoints
-File: app/api/v1/endpoints/project_planner.py
-
-UPDATED WITH ROLE-BASED ACCESS CONTROL
+COPY THIS ENTIRE FILE to: app/api/v1/endpoints/project_planner.py
 """
 
 from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, Dict
 import pymysql
-from datetime import datetime
 import json
 
 from app.core.config import settings
 from app.services.ai_service import AIService
-from app.core.security import require_admin_or_employee, get_current_user
+from app.core.security import require_admin_or_employee
 
 router = APIRouter()
 
@@ -22,23 +19,15 @@ router = APIRouter()
 # ========== PYDANTIC MODELS ==========
 
 class ProjectInput(BaseModel):
-    """Lead/Prospect project discovery input"""
-    lead_name: str = Field(..., min_length=2, max_length=255)
-    lead_email: str = Field(..., min_length=3)
-    company_name: str = Field(..., min_length=2, max_length=255)
-    business_type: str = Field(..., min_length=2, max_length=100)
-    budget: float = Field(..., gt=0)
-    challenges: str = Field(..., min_length=10)
-    target_audience: str = Field(..., min_length=10)
-    existing_presence: Dict = Field(default_factory=dict)
-
-
-class ProposalUpdate(BaseModel):
-    """Update proposal content"""
-    ai_generated_strategy: Optional[Dict] = None
-    competitive_differentiators: Optional[Dict] = None
-    suggested_timeline: Optional[Dict] = None
-    status: Optional[str] = None
+    """Lead/Prospect project discovery input - NO client_id needed"""
+    lead_name: str = Field(..., min_length=2, max_length=255, description="Lead's full name")
+    lead_email: EmailStr = Field(..., description="Lead's email address")
+    company_name: str = Field(..., min_length=2, max_length=255, description="Company name")
+    business_type: str = Field(..., min_length=2, max_length=100, description="Type of business")
+    budget: float = Field(..., gt=0, description="Marketing budget in USD")
+    challenges: str = Field(..., min_length=10, description="Current marketing challenges")
+    target_audience: str = Field(..., min_length=10, description="Target audience description")
+    existing_presence: Dict = Field(default_factory=dict, description="Existing digital presence")
 
 
 # ========== DATABASE CONNECTION ==========
@@ -56,6 +45,7 @@ def get_db_connection():
         )
         return connection
     except Exception as e:
+        print(f"Database connection error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Database connection failed: {str(e)}"
@@ -70,14 +60,32 @@ async def generate_proposal(
     current_user: dict = Depends(require_admin_or_employee)
 ):
     """
-    Generate AI-powered project proposal based on client inputs
+    Generate AI-powered project proposal for a lead/prospect
     
     **Access**: Admin and Employee only
+    
+    **Request Body**:
+    - lead_name: Lead's full name
+    - lead_email: Lead's email
+    - company_name: Company name
+    - business_type: Type of business (e.g., E-commerce, SaaS)
+    - budget: Marketing budget in USD
+    - challenges: Current marketing challenges
+    - target_audience: Target audience description
+    - existing_presence: Dict with platforms list
     """
     connection = None
     cursor = None
     
     try:
+        print(f"[PROPOSAL] === Received Request ===")
+        print(f"[PROPOSAL] Lead: {project_input.lead_name} ({project_input.lead_email})")
+        print(f"[PROPOSAL] Company: {project_input.company_name}")
+        print(f"[PROPOSAL] Business Type: {project_input.business_type}")
+        print(f"[PROPOSAL] Budget: ${project_input.budget}")
+        print(f"[PROPOSAL] User: {current_user.get('email', 'Unknown')} (ID: {current_user.get('user_id', 'Unknown')})")
+        print(f"[PROPOSAL] Starting generation for: {project_input.lead_email}")
+        
         # Initialize AI Service
         ai_service = AIService()
         
@@ -85,6 +93,7 @@ async def generate_proposal(
         strategy_prompt = f"""
         Generate a comprehensive digital marketing strategy for:
         
+        Company: {project_input.company_name}
         Business Type: {project_input.business_type}
         Budget: ${project_input.budget}
         Challenges: {project_input.challenges}
@@ -102,6 +111,7 @@ async def generate_proposal(
         Format as JSON with clear sections.
         """
         
+        print("[PROPOSAL] Generating AI strategy...")
         ai_strategy = await ai_service.generate_strategy(strategy_prompt)
         
         # Generate Competitive Differentiators
@@ -121,6 +131,7 @@ async def generate_proposal(
         Format as JSON.
         """
         
+        print("[PROPOSAL] Generating differentiators...")
         differentiators = await ai_service.generate_differentiators(differentiator_prompt)
         
         # Generate Timeline
@@ -138,12 +149,41 @@ async def generate_proposal(
         Format as JSON with phases and dates.
         """
         
+        print("[PROPOSAL] Generating timeline...")
         timeline = await ai_service.generate_timeline(timeline_prompt)
         
         # Save to Database
+        print("[PROPOSAL] Saving to database...")
         connection = get_db_connection()
         cursor = connection.cursor()
         
+        # Check if lead exists as user
+        check_lead = "SELECT user_id FROM users WHERE email = %s"
+        cursor.execute(check_lead, (project_input.lead_email,))
+        lead_user = cursor.fetchone()
+        
+        if not lead_user:
+            # Create a pending user record for the lead
+            print(f"[PROPOSAL] Creating new lead user: {project_input.lead_email}")
+            insert_lead = """
+                INSERT INTO users (email, password_hash, full_name, role, status)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            cursor.execute(insert_lead, (
+                project_input.lead_email,
+                '',  # No password yet
+                project_input.lead_name,
+                'client',
+                'pending'
+            ))
+            connection.commit()
+            lead_user_id = cursor.lastrowid
+            print(f"[PROPOSAL] Created lead user with ID: {lead_user_id}")
+        else:
+            lead_user_id = lead_user['user_id']
+            print(f"[PROPOSAL] Using existing user ID: {lead_user_id}")
+        
+        # Insert the proposal
         insert_query = """
             INSERT INTO project_proposals 
             (client_id, created_by, business_type, budget, challenges, 
@@ -153,8 +193,8 @@ async def generate_proposal(
         """
         
         cursor.execute(insert_query, (
-            project_input.client_id,
-            current_user['user_id'],  # Use authenticated user ID
+            lead_user_id,
+            current_user['user_id'],
             project_input.business_type,
             project_input.budget,
             project_input.challenges,
@@ -168,6 +208,8 @@ async def generate_proposal(
         
         connection.commit()
         proposal_id = cursor.lastrowid
+        
+        print(f"[PROPOSAL] ✅ Success! Proposal ID: {proposal_id}")
         
         return {
             "success": True,
@@ -183,6 +225,9 @@ async def generate_proposal(
     except Exception as e:
         if connection:
             connection.rollback()
+        print(f"[PROPOSAL] ❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate proposal: {str(e)}"
@@ -196,14 +241,9 @@ async def generate_proposal(
 
 @router.get("/proposals/list")
 async def list_proposals(
-    client_id: Optional[int] = None,
     current_user: dict = Depends(require_admin_or_employee)
 ):
-    """
-    Get all proposals, optionally filtered by client
-    
-    **Access**: Admin and Employee only
-    """
+    """Get all proposals - Admin and Employee only"""
     connection = None
     cursor = None
     
@@ -211,24 +251,13 @@ async def list_proposals(
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        if client_id:
-            query = """
-                SELECT p.*, u.full_name as client_name, u.email as client_email
-                FROM project_proposals p
-                JOIN users u ON p.client_id = u.user_id
-                WHERE p.client_id = %s
-                ORDER BY p.created_at DESC
-            """
-            cursor.execute(query, (client_id,))
-        else:
-            query = """
-                SELECT p.*, u.full_name as client_name, u.email as client_email
-                FROM project_proposals p
-                JOIN users u ON p.client_id = u.user_id
-                ORDER BY p.created_at DESC
-            """
-            cursor.execute(query)
-        
+        query = """
+            SELECT p.*, u.full_name as client_name, u.email as client_email
+            FROM project_proposals p
+            JOIN users u ON p.client_id = u.user_id
+            ORDER BY p.created_at DESC
+        """
+        cursor.execute(query)
         proposals = cursor.fetchall()
         
         # Convert datetime and JSON fields
@@ -240,15 +269,14 @@ async def list_proposals(
             if proposal['sent_at']:
                 proposal['sent_at'] = proposal['sent_at'].isoformat()
             
-            # Parse JSON fields
-            if proposal['existing_presence']:
-                proposal['existing_presence'] = json.loads(proposal['existing_presence'])
-            if proposal['ai_generated_strategy']:
-                proposal['ai_generated_strategy'] = json.loads(proposal['ai_generated_strategy'])
-            if proposal['competitive_differentiators']:
-                proposal['competitive_differentiators'] = json.loads(proposal['competitive_differentiators'])
-            if proposal['suggested_timeline']:
-                proposal['suggested_timeline'] = json.loads(proposal['suggested_timeline'])
+            # Parse JSON fields safely
+            for json_field in ['existing_presence', 'ai_generated_strategy', 
+                             'competitive_differentiators', 'suggested_timeline']:
+                if proposal[json_field]:
+                    try:
+                        proposal[json_field] = json.loads(proposal[json_field])
+                    except:
+                        proposal[json_field] = {}
         
         return {
             "success": True,
@@ -257,6 +285,7 @@ async def list_proposals(
         }
     
     except Exception as e:
+        print(f"Error fetching proposals: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch proposals: {str(e)}"
@@ -273,11 +302,7 @@ async def get_proposal(
     proposal_id: int,
     current_user: dict = Depends(require_admin_or_employee)
 ):
-    """
-    Get specific proposal details
-    
-    **Access**: Admin and Employee only
-    """
+    """Get specific proposal details"""
     connection = None
     cursor = None
     
@@ -303,22 +328,19 @@ async def get_proposal(
                 detail="Proposal not found"
             )
         
-        # Convert datetime and JSON
-        if proposal['created_at']:
-            proposal['created_at'] = proposal['created_at'].isoformat()
-        if proposal['updated_at']:
-            proposal['updated_at'] = proposal['updated_at'].isoformat()
-        if proposal['sent_at']:
-            proposal['sent_at'] = proposal['sent_at'].isoformat()
+        # Convert datetime
+        for date_field in ['created_at', 'updated_at', 'sent_at']:
+            if proposal[date_field]:
+                proposal[date_field] = proposal[date_field].isoformat()
         
-        if proposal['existing_presence']:
-            proposal['existing_presence'] = json.loads(proposal['existing_presence'])
-        if proposal['ai_generated_strategy']:
-            proposal['ai_generated_strategy'] = json.loads(proposal['ai_generated_strategy'])
-        if proposal['competitive_differentiators']:
-            proposal['competitive_differentiators'] = json.loads(proposal['competitive_differentiators'])
-        if proposal['suggested_timeline']:
-            proposal['suggested_timeline'] = json.loads(proposal['suggested_timeline'])
+        # Parse JSON fields
+        for json_field in ['existing_presence', 'ai_generated_strategy', 
+                         'competitive_differentiators', 'suggested_timeline']:
+            if proposal[json_field]:
+                try:
+                    proposal[json_field] = json.loads(proposal[json_field])
+                except:
+                    proposal[json_field] = {}
         
         return {
             "success": True,
@@ -339,107 +361,12 @@ async def get_proposal(
             connection.close()
 
 
-@router.put("/proposals/{proposal_id}")
-async def update_proposal(
-    proposal_id: int,
-    update_data: ProposalUpdate,
-    current_user: dict = Depends(require_admin_or_employee)
-):
-    """
-    Update proposal content (edit draft)
-    
-    **Access**: Admin and Employee only
-    """
-    connection = None
-    cursor = None
-    
-    try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        
-        # Check if proposal exists
-        cursor.execute(
-            "SELECT proposal_id FROM project_proposals WHERE proposal_id = %s",
-            (proposal_id,)
-        )
-        if not cursor.fetchone():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Proposal not found"
-            )
-        
-        # Build update query
-        update_fields = []
-        values = []
-        
-        if update_data.ai_generated_strategy:
-            update_fields.append("ai_generated_strategy = %s")
-            values.append(json.dumps(update_data.ai_generated_strategy))
-        
-        if update_data.competitive_differentiators:
-            update_fields.append("competitive_differentiators = %s")
-            values.append(json.dumps(update_data.competitive_differentiators))
-        
-        if update_data.suggested_timeline:
-            update_fields.append("suggested_timeline = %s")
-            values.append(json.dumps(update_data.suggested_timeline))
-        
-        if update_data.status:
-            if update_data.status not in ['draft', 'sent', 'accepted', 'rejected']:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid status"
-                )
-            update_fields.append("status = %s")
-            values.append(update_data.status)
-            
-            if update_data.status == 'sent':
-                update_fields.append("sent_at = NOW()")
-        
-        if not update_fields:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No fields to update"
-            )
-        
-        update_fields.append("updated_at = NOW()")
-        values.append(proposal_id)
-        
-        query = f"UPDATE project_proposals SET {', '.join(update_fields)} WHERE proposal_id = %s"
-        cursor.execute(query, values)
-        connection.commit()
-        
-        return {
-            "success": True,
-            "message": "Proposal updated successfully"
-        }
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        if connection:
-            connection.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update proposal: {str(e)}"
-        )
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
-
 @router.post("/proposals/{proposal_id}/send")
 async def send_proposal(
     proposal_id: int,
     current_user: dict = Depends(require_admin_or_employee)
 ):
-    """
-    Mark proposal as sent to client
-    
-    **Access**: Admin and Employee only
-    """
+    """Mark proposal as sent to lead"""
     connection = None
     cursor = None
     
@@ -447,29 +374,22 @@ async def send_proposal(
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        # Check if proposal exists
         cursor.execute(
-            "SELECT client_id FROM project_proposals WHERE proposal_id = %s",
+            "UPDATE project_proposals SET status = 'sent', sent_at = NOW() WHERE proposal_id = %s",
             (proposal_id,)
         )
-        proposal = cursor.fetchone()
         
-        if not proposal:
+        if cursor.rowcount == 0:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Proposal not found"
             )
         
-        # Update status to sent
-        cursor.execute(
-            "UPDATE project_proposals SET status = 'sent', sent_at = NOW() WHERE proposal_id = %s",
-            (proposal_id,)
-        )
         connection.commit()
         
         return {
             "success": True,
-            "message": "Proposal sent to client successfully"
+            "message": "Proposal sent successfully"
         }
     
     except HTTPException:
@@ -488,74 +408,12 @@ async def send_proposal(
             connection.close()
 
 
-@router.delete("/proposals/{proposal_id}")
-async def delete_proposal(
-    proposal_id: int,
-    current_user: dict = Depends(require_admin_or_employee)
-):
-    """
-    Delete a proposal permanently
-    
-    **Access**: Admin and Employee only
-    """
-    connection = None
-    cursor = None
-    
-    try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        
-        # Check if proposal exists
-        cursor.execute(
-            "SELECT proposal_id FROM project_proposals WHERE proposal_id = %s",
-            (proposal_id,)
-        )
-        if not cursor.fetchone():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Proposal not found"
-            )
-        
-        # Delete proposal
-        cursor.execute(
-            "DELETE FROM project_proposals WHERE proposal_id = %s",
-            (proposal_id,)
-        )
-        connection.commit()
-        
-        return {
-            "success": True,
-            "message": "Proposal deleted successfully"
-        }
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        if connection:
-            connection.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete proposal: {str(e)}"
-        )
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
-
 @router.get("/proposals/{proposal_id}/export")
 async def export_proposal_pdf(
     proposal_id: int,
     current_user: dict = Depends(require_admin_or_employee)
 ):
-    """
-    Export proposal as PDF
-    Note: This endpoint returns the data needed for PDF generation
-    Actual PDF generation would be done client-side or using a library like ReportLab
-    
-    **Access**: Admin and Employee only
-    """
+    """Export proposal data for PDF generation"""
     connection = None
     cursor = None
     
@@ -581,7 +439,6 @@ async def export_proposal_pdf(
                 detail="Proposal not found"
             )
         
-        # Format data for PDF export
         export_data = {
             "proposal_id": proposal['proposal_id'],
             "client_name": proposal['client_name'],
@@ -599,8 +456,7 @@ async def export_proposal_pdf(
         
         return {
             "success": True,
-            "export_data": export_data,
-            "message": "Proposal data ready for PDF export"
+            "export_data": export_data
         }
     
     except HTTPException:

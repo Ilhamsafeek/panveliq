@@ -2,10 +2,34 @@
 
 {% block title %}AI Project Planner{% endblock %}
 
+{% set show_sidebar = True %}
+
 {% block extra_css %}
 <style>
-    /* Dashboard Layout - Match existing pages */
-   
+    .dashboard-container {
+        padding: 2rem;
+        max-width: 100%;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .page-header p {
+        color: var(--color-gray-600);
+        font-size: 15px;
+    }
+
     .tabs {
         display: flex;
         gap: 0.5rem;
@@ -180,10 +204,11 @@
         padding: 1.5rem;
         background: var(--color-gray-50);
         border-radius: 0.5rem;
+        position: relative;
     }
 
     .section-title {
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 700;
         color: var(--color-gray-900);
         margin-bottom: 1rem;
@@ -197,30 +222,14 @@
         line-height: 1.6;
     }
 
-    .editable-section {
-        position: relative;
-    }
-
-    .edit-btn {
-        position: absolute;
-        top: 0;
-        right: 0;
-        padding: 0.5rem 1rem;
-        background: white;
-        border: 1px solid var(--color-gray-200);
-        border-radius: 0.375rem;
-        cursor: pointer;
-        font-size: 13px;
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-
     .json-content {
         background: white;
         padding: 1rem;
         border-radius: 0.375rem;
         overflow-x: auto;
+        white-space: pre-wrap;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
     }
 
     .actions {
@@ -282,6 +291,12 @@
         color: var(--color-gray-900);
     }
 
+    .proposal-meta {
+        font-size: 14px;
+        color: var(--color-gray-600);
+        margin-top: 0.5rem;
+    }
+
     .badge {
         padding: 0.25rem 0.75rem;
         border-radius: 12px;
@@ -309,6 +324,17 @@
         color: #EF4444;
     }
 
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--color-gray-400);
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 1rem;
+    }
+
     @media (max-width: 768px) {
         .form-row {
             grid-template-columns: 1fr;
@@ -317,6 +343,10 @@
         .tabs {
             overflow-x: auto;
         }
+
+        .actions {
+            flex-direction: column;
+        }
     }
 </style>
 {% endblock %}
@@ -324,16 +354,19 @@
 {% block content %}
 <div class="dashboard-container">
     <div class="page-header">
-        <h1>🤖 AI Project Planner</h1>
+        <h1>
+            <i class="ti ti-wand"></i>
+            AI Project Planner
+        </h1>
         <p>Generate personalized proposals for leads and prospects</p>
     </div>
 
     <div class="tabs">
-        <button class="tab active" onclick="switchTab('create')">
+        <button class="tab active" onclick="switchTab(event, 'create')">
             <i class="ti ti-plus"></i>
             <span>Create New Proposal</span>
         </button>
-        <button class="tab" onclick="switchTab('list')">
+        <button class="tab" onclick="switchTab(event, 'list')">
             <i class="ti ti-list"></i>
             <span>All Proposals</span>
         </button>
@@ -430,13 +463,10 @@
             <div id="proposalOutput" class="proposal-output" style="display: none;">
                 <div class="card-header">
                     <h2>Generated Proposal</h2>
-                    <p>Review and edit the AI-generated proposal sections below</p>
+                    <p>Review the AI-generated proposal sections below</p>
                 </div>
 
                 <div class="section">
-                    <button class="edit-btn" onclick="editSection('strategy')">
-                        <i class="ti ti-edit"></i> Edit
-                    </button>
                     <div class="section-title">
                         <i class="ti ti-strategy"></i>
                         AI-Generated Strategy
@@ -445,9 +475,6 @@
                 </div>
 
                 <div class="section">
-                    <button class="edit-btn" onclick="editSection('differentiators')">
-                        <i class="ti ti-edit"></i> Edit
-                    </button>
                     <div class="section-title">
                         <i class="ti ti-award"></i>
                         Competitive Differentiators
@@ -456,9 +483,6 @@
                 </div>
 
                 <div class="section">
-                    <button class="edit-btn" onclick="editSection('timeline')">
-                        <i class="ti ti-edit"></i> Edit
-                    </button>
                     <div class="section-title">
                         <i class="ti ti-calendar"></i>
                         Suggested Timeline
@@ -494,7 +518,6 @@
         </div>
     </div>
 </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -505,7 +528,7 @@
     let currentLeadInfo = null;
 
     // Tab Switching
-    function switchTab(tab) {
+    function switchTab(event, tab) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
@@ -517,7 +540,7 @@
         }
     }
 
-    // Generate Proposal (for leads, not existing clients)
+    // Generate Proposal
     document.getElementById('discoveryForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -525,33 +548,73 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="loading"></span> Generating...';
 
+        // Get form values
+        const leadName = document.getElementById('leadName').value.trim();
+        const leadEmail = document.getElementById('leadEmail').value.trim();
+        const companyName = document.getElementById('companyName').value.trim();
+        const businessType = document.getElementById('businessType').value.trim();
+        const budget = document.getElementById('budget').value.trim();
+        const challenges = document.getElementById('challenges').value.trim();
+        const targetAudience = document.getElementById('targetAudience').value.trim();
+        
+        // Validate all fields are filled
+        if (!leadName || !leadEmail || !companyName || !businessType || !budget || !challenges || !targetAudience) {
+            showAlert('Please fill in all required fields', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-wand"></i> Generate AI Proposal';
+            return;
+        }
+        
+        // Validate budget is a number
+        const budgetNum = parseFloat(budget);
+        if (isNaN(budgetNum) || budgetNum <= 0) {
+            showAlert('Budget must be a positive number', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-wand"></i> Generate AI Proposal';
+            return;
+        }
+
         const presenceCheckboxes = document.querySelectorAll('input[name="presence"]:checked');
         const existingPresence = {
             platforms: Array.from(presenceCheckboxes).map(cb => cb.value)
         };
 
-        // Store lead information
         currentLeadInfo = {
-            name: document.getElementById('leadName').value.trim(),
-            email: document.getElementById('leadEmail').value.trim(),
-            company: document.getElementById('companyName').value.trim()
+            name: leadName,
+            email: leadEmail,
+            company: companyName
         };
 
+        // IMPORTANT: Match exact field names expected by API
         const formData = {
-            lead_name: currentLeadInfo.name,
-            lead_email: currentLeadInfo.email,
-            company_name: currentLeadInfo.company,
-            business_type: document.getElementById('businessType').value,
-            budget: parseFloat(document.getElementById('budget').value),
-            challenges: document.getElementById('challenges').value,
-            target_audience: document.getElementById('targetAudience').value,
+            lead_name: leadName,
+            lead_email: leadEmail,
+            company_name: companyName,
+            business_type: businessType,
+            budget: budgetNum,
+            challenges: challenges,
+            target_audience: targetAudience,
             existing_presence: existingPresence
         };
+        
+        // Debug: Log the data being sent
+        console.log('Sending proposal data:', JSON.stringify(formData, null, 2));
 
         try {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                showAlert('Please login to generate proposals', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ti ti-wand"></i> Generate AI Proposal';
+                return;
+            }
+
             const response = await fetch(`${API_BASE}/project-planner/generate-proposal`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(formData)
             });
 
@@ -566,6 +629,7 @@
                 showAlert(data.detail || 'Failed to generate proposal', 'error');
             }
         } catch (error) {
+            console.error('Error:', error);
             showAlert('An error occurred. Please try again.', 'error');
         } finally {
             btn.disabled = false;
@@ -587,43 +651,74 @@
     // Load Proposals
     async function loadProposals() {
         try {
-            const response = await fetch(`${API_BASE}/project-planner/proposals/list`);
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                document.getElementById('proposalsList').innerHTML = `
+                    <div class="empty-state">
+                        <i class="ti ti-lock"></i>
+                        <p>Please login to view proposals</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const response = await fetch(`${API_BASE}/project-planner/proposals/list`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             const data = await response.json();
 
             const container = document.getElementById('proposalsList');
 
-            if (data.proposals.length === 0) {
+            if (!data.proposals || data.proposals.length === 0) {
                 container.innerHTML = `
-                        <div class="empty-state">
-                            <i class="ti ti-file-off"></i>
-                            <p>No proposals found. Create your first proposal!</p>
-                        </div>
-                    `;
+                    <div class="empty-state">
+                        <i class="ti ti-file-off"></i>
+                        <p>No proposals found. Create your first proposal!</p>
+                    </div>
+                `;
                 return;
             }
 
             container.innerHTML = data.proposals.map(p => `
-                    <div class="proposal-item" onclick="viewProposal(${p.proposal_id})">
-                        <div class="proposal-header">
-                            <div>
-                                <div class="proposal-title">${p.client_name} - ${p.business_type}</div>
-                                <div class="proposal-meta">
-                                    Budget: ${parseFloat(p.budget).toLocaleString()} | Created: ${new Date(p.created_at).toLocaleDateString()}
-                                </div>
+                <div class="proposal-item" onclick="viewProposal(${p.proposal_id})">
+                    <div class="proposal-header">
+                        <div>
+                            <div class="proposal-title">${p.client_name || p.lead_name || 'Unnamed'} - ${p.business_type}</div>
+                            <div class="proposal-meta">
+                                Budget: $${parseFloat(p.budget).toLocaleString()} | Created: ${new Date(p.created_at).toLocaleDateString()}
                             </div>
-                            <span class="badge badge-${p.status}">${p.status.toUpperCase()}</span>
                         </div>
+                        <span class="badge badge-${p.status}">${p.status.toUpperCase()}</span>
                     </div>
-                `).join('');
+                </div>
+            `).join('');
         } catch (error) {
             console.error('Failed to load proposals:', error);
+            document.getElementById('proposalsList').innerHTML = `
+                <div class="empty-state">
+                    <i class="ti ti-alert-circle"></i>
+                    <p>Failed to load proposals</p>
+                </div>
+            `;
         }
     }
 
     // View Proposal
     async function viewProposal(id) {
         try {
-            const response = await fetch(`${API_BASE}/project-planner/proposals/${id}`);
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                showAlert('Please login to view proposal', 'error');
+                return;
+            }
+
+            const response = await fetch(`${API_BASE}/project-planner/proposals/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             const data = await response.json();
 
             if (data.success) {
@@ -633,16 +728,24 @@
                     differentiators: data.proposal.competitive_differentiators,
                     timeline: data.proposal.suggested_timeline
                 };
+                currentLeadInfo = {
+                    name: data.proposal.client_name || data.proposal.lead_name,
+                    email: data.proposal.client_email,
+                    company: data.proposal.company_name
+                };
 
-                switchTab('create');
+                // Switch to create tab and show proposal
+                const createTab = document.querySelector('.tab:first-child');
+                switchTab({ target: createTab }, 'create');
                 displayProposal(currentProposalData);
             }
         } catch (error) {
             console.error('Failed to load proposal:', error);
+            showAlert('Failed to load proposal', 'error');
         }
     }
 
-    // Send Proposal to Lead (with onboarding link)
+    // Send Proposal to Lead
     async function sendProposalToLead() {
         if (!currentProposalId || !currentLeadInfo) {
             showAlert('Please generate a proposal first', 'error');
@@ -654,9 +757,18 @@
         }
 
         try {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                showAlert('Please login to send proposal', 'error');
+                return;
+            }
+
             const response = await fetch(`${API_BASE}/project-planner/proposals/${currentProposalId}/send`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     lead_email: currentLeadInfo.email,
                     lead_name: currentLeadInfo.name
@@ -665,59 +777,74 @@
             const data = await response.json();
 
             if (data.success) {
-                showAlert(`Proposal sent to ${currentLeadInfo.email} with onboarding link!`, 'success');
-                // Optionally redirect to onboarding management
+                showAlert(`Proposal sent to ${currentLeadInfo.email}!`, 'success');
             } else {
                 showAlert(data.detail || 'Failed to send proposal', 'error');
             }
         } catch (error) {
+            console.error('Error:', error);
             showAlert('Failed to send proposal', 'error');
         }
     }
 
     // Export PDF
     async function exportPDF() {
-        if (!currentProposalId) return;
+        if (!currentProposalId) {
+            showAlert('Please generate a proposal first', 'error');
+            return;
+        }
 
         try {
-            const response = await fetch(`${API_BASE}/project-planner/proposals/${currentProposalId}/export`);
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                showAlert('Please login to export PDF', 'error');
+                return;
+            }
+
+            const response = await fetch(`${API_BASE}/project-planner/proposals/${currentProposalId}/export`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             const data = await response.json();
 
             if (data.success) {
-                showAlert('PDF export data ready. Implement PDF generation library for full export.', 'success');
+                showAlert('Export data ready. PDF generation pending...', 'success');
                 console.log('Export Data:', data.export_data);
             }
         } catch (error) {
+            console.error('Error:', error);
             showAlert('Failed to export PDF', 'error');
         }
     }
 
     // Save as Draft
     async function saveAsDraft() {
-        if (!currentProposalId) return;
+        if (!currentProposalId) {
+            showAlert('Please generate a proposal first', 'error');
+            return;
+        }
         showAlert('Proposal saved as draft', 'success');
-    }
-
-    // Edit Section
-    function editSection(section) {
-        alert(`Edit functionality for ${section} - Implement modal editor`);
     }
 
     // Show Alert
     function showAlert(message, type) {
         const container = document.getElementById('alert-container');
         container.innerHTML = `
-                <div class="alert alert-${type}">
-                    <i class="ti ti-${type === 'success' ? 'check-circle' : 'alert-circle'}"></i>
-                    <span>${message}</span>
-                </div>
-            `;
+            <div class="alert alert-${type}">
+                <i class="ti ti-${type === 'success' ? 'check-circle' : 'alert-circle'}"></i>
+                <span>${message}</span>
+            </div>
+        `;
         setTimeout(() => container.innerHTML = '', 5000);
     }
 
-    // Initialize
+    // Initialize - Check authentication
     document.addEventListener('DOMContentLoaded', () => {
-        // No need to load clients anymore - we work with leads
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            showAlert('Please login to use the AI Project Planner', 'error');
+        }
     });
 </script>
 {% endblock %}
