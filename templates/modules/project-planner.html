@@ -1,0 +1,650 @@
+{% extends "base.html" %}
+
+{% block title %}AI Project Planner{% endblock %}
+
+{% set show_sidebar = True %}
+
+{% block extra_css %}
+<style>
+    .planner-container {
+        padding: 2rem;
+        max-width: 100%;
+    }
+    
+    /* Header Section */
+    .planner-header {
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .planner-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .planner-header h1 i {
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 32px;
+    }
+    
+    .header-actions {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--radius-md);
+        border: none;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all var(--transition-base);
+        text-decoration: none;
+    }
+    
+    .btn-primary {
+        background: var(--gradient-primary);
+        color: white;
+        box-shadow: var(--shadow-md);
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .btn-outline {
+        background: white;
+        color: var(--primary-purple);
+        border: 2px solid var(--primary-purple);
+    }
+    
+    .btn-outline:hover {
+        background: rgba(153, 38, 243, 0.05);
+    }
+    
+    /* Tab Navigation */
+    .tab-navigation {
+        background: white;
+        border-radius: var(--radius-lg);
+        padding: 0.5rem;
+        margin-bottom: 2rem;
+        display: flex;
+        gap: 0.5rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .tab-btn {
+        padding: 0.875rem 1.5rem;
+        border: none;
+        background: transparent;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--color-gray-600);
+    }
+    
+    .tab-btn.active {
+        background: var(--gradient-primary);
+        color: white;
+    }
+    
+    .tab-btn:not(.active):hover {
+        background: var(--color-gray-100);
+    }
+    
+    /* Tab Content */
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    /* Create Proposal Form */
+    .proposal-form {
+        background: white;
+        border-radius: var(--radius-xl);
+        padding: 2rem;
+        box-shadow: var(--shadow-md);
+    }
+    
+    .form-section {
+        margin-bottom: 2rem;
+    }
+    
+    .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .section-title i {
+        color: var(--primary-purple);
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--color-gray-700);
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-label .required {
+        color: var(--color-error);
+    }
+    
+    .form-input, .form-textarea, .form-select {
+        padding: 0.875rem 1rem;
+        border: 1px solid var(--color-gray-300);
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        font-family: inherit;
+        transition: all var(--transition-base);
+    }
+    
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+        outline: none;
+        border-color: var(--primary-purple);
+        box-shadow: 0 0 0 3px rgba(153, 38, 243, 0.1);
+    }
+    
+    .form-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .presence-checkboxes {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary-purple);
+    }
+    
+    .checkbox-item label {
+        font-size: 14px;
+        color: var(--color-gray-700);
+        cursor: pointer;
+    }
+    
+    /* Proposals List */
+    .proposals-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .proposal-card {
+        background: white;
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+        transition: all var(--transition-base);
+        border: 1px solid var(--color-gray-200);
+    }
+    
+    .proposal-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+    }
+    
+    .proposal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 1rem;
+    }
+    
+    .proposal-client {
+        flex: 1;
+    }
+    
+    .proposal-client h3 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin-bottom: 0.25rem;
+    }
+    
+    .proposal-client p {
+        font-size: 14px;
+        color: var(--color-gray-600);
+    }
+    
+    .status-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: var(--radius-md);
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-draft {
+        background: rgba(251, 191, 36, 0.1);
+        color: #F59E0B;
+    }
+    
+    .status-sent {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3B82F6;
+    }
+    
+    .status-accepted {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+    }
+    
+    .status-rejected {
+        background: rgba(239, 68, 68, 0.1);
+        color: #EF4444;
+    }
+    
+    .proposal-details {
+        margin: 1rem 0;
+        padding: 1rem;
+        background: var(--color-gray-50);
+        border-radius: var(--radius-md);
+    }
+    
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        font-size: 14px;
+    }
+    
+    .detail-item:not(:last-child) {
+        border-bottom: 1px solid var(--color-gray-200);
+    }
+    
+    .detail-label {
+        color: var(--color-gray-600);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .detail-value {
+        font-weight: 600;
+        color: var(--color-gray-900);
+    }
+    
+    .proposal-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 13px;
+        flex: 1;
+    }
+    
+    .btn-view {
+        background: var(--gradient-primary);
+        color: white;
+    }
+    
+    .btn-edit {
+        background: white;
+        color: var(--primary-purple);
+        border: 1px solid var(--primary-purple);
+    }
+    
+    .btn-delete {
+        background: white;
+        color: var(--color-error);
+        border: 1px solid var(--color-error);
+        padding: 0.5rem 0.75rem;
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .empty-state i {
+        font-size: 80px;
+        color: var(--color-gray-300);
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state h3 {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state p {
+        color: var(--color-gray-600);
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Loading State */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+    
+    .loading-overlay.active {
+        display: flex;
+    }
+    
+    .loading-content {
+        background: white;
+        padding: 2rem 3rem;
+        border-radius: var(--radius-xl);
+        text-align: center;
+        max-width: 400px;
+    }
+    
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid var(--color-gray-200);
+        border-top-color: var(--primary-purple);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    .loading-content h3 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin-bottom: 0.5rem;
+    }
+    
+    .loading-content p {
+        color: var(--color-gray-600);
+        font-size: 14px;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .planner-container {
+            padding: 1rem;
+        }
+        
+        .planner-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn {
+            flex: 1;
+        }
+        
+        .tab-navigation {
+            flex-direction: column;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .proposals-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="planner-container">
+    <!-- Header -->
+    <div class="planner-header">
+        <h1>
+            <i class="ti ti-bulb"></i>
+            AI Project Planner
+        </h1>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="showCreateTab()">
+                <i class="ti ti-plus"></i>
+                Create New Proposal
+            </button>
+        </div>
+    </div>
+    
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+        <button class="tab-btn" data-tab="create" onclick="switchTab('create')">
+            <i class="ti ti-file-plus"></i>
+            Create Proposal
+        </button>
+        <button class="tab-btn active" data-tab="proposals" onclick="switchTab('proposals')">
+            <i class="ti ti-list"></i>
+            All Proposals
+        </button>
+    </div>
+    
+    <!-- Tab: Create Proposal -->
+    <div class="tab-content" id="tab-create">
+        <form class="proposal-form" id="proposalForm" onsubmit="handleSubmit(event)">
+            <!-- Lead Information -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="ti ti-user"></i>
+                    Lead Information
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Lead Name <span class="required">*</span>
+                        </label>
+                        <input type="text" class="form-input" name="lead_name" required placeholder="Enter lead's full name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            Lead Email <span class="required">*</span>
+                        </label>
+                        <input type="email" class="form-input" name="lead_email" required placeholder="lead@company.com">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Company Information -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="ti ti-building"></i>
+                    Company Information
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Company Name <span class="required">*</span>
+                        </label>
+                        <input type="text" class="form-input" name="company_name" required placeholder="Company Name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            Business Type <span class="required">*</span>
+                        </label>
+                        <select class="form-select" name="business_type" required>
+                            <option value="">Select business type</option>
+                            <option value="E-commerce">E-commerce</option>
+                            <option value="SaaS">SaaS</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Education">Education</option>
+                            <option value="Real Estate">Real Estate</option>
+                            <option value="Restaurant">Restaurant</option>
+                            <option value="Retail">Retail</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Manufacturing">Manufacturing</option>
+                            <option value="Professional Services">Professional Services</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            Budget (USD) <span class="required">*</span>
+                        </label>
+                        <input type="number" class="form-input" name="budget" required min="1000" step="100" placeholder="10000">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Marketing Details -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="ti ti-target"></i>
+                    Marketing Details
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">
+                            Current Challenges <span class="required">*</span>
+                        </label>
+                        <textarea class="form-textarea" name="challenges" required placeholder="Describe the main challenges they're facing (e.g., low website traffic, poor lead quality, lack of social media engagement)"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            Target Audience <span class="required">*</span>
+                        </label>
+                        <textarea class="form-textarea" name="target_audience" required placeholder="Describe their target audience (demographics, interests, behavior, pain points)"></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Existing Digital Presence -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="ti ti-world"></i>
+                    Existing Digital Presence
+                </div>
+                <div class="presence-checkboxes">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="presence_website" name="presence_website" value="website">
+                        <label for="presence_website">Website</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="presence_facebook" name="presence_facebook" value="facebook">
+                        <label for="presence_facebook">Facebook</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="presence_instagram" name="presence_instagram" value="instagram">
+                        <label for="presence_instagram">Instagram</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="presence_linkedin" name="presence_linkedin" value="linkedin">
+                        <label for="presence_linkedin">LinkedIn</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="presence_twitter" name="presence_twitter" value="twitter">
+                        <label for="presence_twitter">Twitter/X</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="presence_youtube" name="presence_youtube" value="youtube">
+                        <label for="presence_youtube">YouTube</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="presence_google_ads" name="presence_google_ads" value="google_ads">
+                        <label for="presence_google_ads">Google Ads</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="presence_email" name="presence_email" value="email">
+                        <label for="presence_email">Email Marketing</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <div style="text-align: right; margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary" style="padding: 1rem 2.5rem;">
+                    <i class="ti ti-sparkles"></i>
+                    Generate AI Proposal
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Tab: All Proposals -->
+    <div class="tab-content active" id="tab-proposals">
+        <div id="proposalsContainer">
+            <!-- Proposals will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <h3>Generating AI Proposal</h3>
+        <p>Please wait while we create your personalized proposal...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/project-planner.js"></script>
+{% endblock %}
