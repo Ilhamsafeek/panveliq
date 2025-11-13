@@ -5,11 +5,13 @@ PanvelIQ - AI-powered Digital Marketing Intelligence Platform
 Main FastAPI Application Entry Point
 """
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException, status, Cookie
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from typing import Optional
+
 
 from app.core.config import settings
 from app.api.v1.router import api_router
@@ -123,6 +125,51 @@ async def employee_dashboard(request: Request):
         {"request": request, "show_sidebar": True}
     )
 
+
+@app.get("/modules/project-planner", response_class=HTMLResponse)
+async def project_planner_page(request: Request, access_token: Optional[str] = Cookie(None)):
+    """
+    AI Project Planner page
+    
+    **Access**: Admin and Employee only
+    """
+    # Check if user is authenticated
+    if not access_token:
+        # Redirect to login if no token
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+    
+    try:
+        # Verify token and get user
+        from jose import jwt, JWTError
+        from app.core.config import settings
+        
+        payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        role = payload.get("role")
+        
+        # Check if user is admin or employee
+        if role not in ['admin', 'employee']:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied. Admin or Employee role required."
+            )
+        
+        return templates.TemplateResponse(
+            "modules/project-planner.html",
+            {
+                "request": request,
+                "show_sidebar": True,
+                "user_role": role
+            }
+        )
+    
+    except JWTError:
+        # Invalid token, redirect to login
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Authentication error: {str(e)}"
+        )
 
 # ========== HEALTH CHECK ==========
 

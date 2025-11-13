@@ -1,19 +1,20 @@
 <!-- REPLACE CONTENT IN: templates/base.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    
+
     <title>{% block title %}PanvelIQ{% endblock %} - AI-powered Digital Marketing Platform</title>
-    
+
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/static/images/logo.png">
-    
+
     <!-- Tabler Icons 3.34.0 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css">
-    
+
     <!-- Gilroy Font -->
     <style>
         @font-face {
@@ -22,18 +23,21 @@
             font-style: normal;
             font-display: swap;
         }
+
         @font-face {
             font-family: 'Gilroy';
             font-weight: 500;
             font-style: normal;
             font-display: swap;
         }
+
         @font-face {
             font-family: 'Gilroy';
             font-weight: 600;
             font-style: normal;
             font-display: swap;
         }
+
         @font-face {
             font-family: 'Gilroy';
             font-weight: 700;
@@ -41,15 +45,15 @@
             font-display: swap;
         }
     </style>
-    
+
     <!-- Base CSS -->
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="/static/css/dashboard.css">
     <link rel="stylesheet" href="/static/css/responsive.css">
-    
+
     <!-- Page-specific CSS -->
     {% block extra_css %}{% endblock %}
-    
+
     <!-- Global CSS Variables -->
     <style>
         :root {
@@ -57,11 +61,11 @@
             --gradient-start: #9926F3;
             --gradient-end: #1DD8FC;
             --gradient-primary: linear-gradient(135deg, #9926F3 0%, #1DD8FC 100%);
-            
+
             /* Primary Colors */
             --primary-purple: #9926F3;
             --primary-cyan: #1DD8FC;
-            
+
             /* Neutral Colors */
             --color-white: #FFFFFF;
             --color-black: #000000;
@@ -75,16 +79,16 @@
             --color-gray-700: #374151;
             --color-gray-800: #1F2937;
             --color-gray-900: #111827;
-            
+
             /* Status Colors */
             --color-success: #10B981;
             --color-warning: #F59E0B;
             --color-error: #EF4444;
             --color-info: #3B82F6;
-            
+
             /* Typography */
             --font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            
+
             /* Spacing */
             --spacing-xs: 0.25rem;
             --spacing-sm: 0.5rem;
@@ -92,63 +96,64 @@
             --spacing-lg: 1.5rem;
             --spacing-xl: 2rem;
             --spacing-2xl: 3rem;
-            
+
             /* Border Radius */
             --radius-sm: 0.375rem;
             --radius-md: 0.5rem;
             --radius-lg: 0.75rem;
             --radius-xl: 1rem;
-            
+
             /* Shadows */
             --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            
+
             /* Transitions */
             --transition-fast: 150ms ease;
             --transition-base: 200ms ease;
             --transition-slow: 300ms ease;
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: var(--font-family);
             background-color: var(--color-gray-50);
             color: var(--color-gray-900);
             line-height: 1.6;
         }
-        
+
         /* Layout with Sidebar - No padding needed, sidebar handles it */
         body.has-sidebar {
             margin-left: 280px;
         }
-        
+
         body.has-sidebar.sidebar-collapsed {
             margin-left: 0;
         }
-        
+
         /* Main Content Wrapper */
         .main-wrapper {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
-        
+
         .main-content {
             flex: 1;
         }
-        
+
         /* For pages with navbar (no sidebar) */
         .main-wrapper.with-navbar .main-content {
-            padding-top: 70px; /* Height of navbar */
+            padding-top: 70px;
+            /* Height of navbar */
         }
-        
+
         /* Gradient Text Utility */
         .gradient-text {
             background: var(--gradient-primary);
@@ -156,12 +161,12 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        
+
         /* Gradient Background Utility */
         .gradient-bg {
             background: var(--gradient-primary);
         }
-        
+
         /* Flash Messages */
         .flash-messages {
             position: fixed;
@@ -170,15 +175,15 @@
             z-index: 9999;
             max-width: 400px;
         }
-        
+
         body.has-sidebar .flash-messages {
             right: calc(20px);
         }
-        
+
         .main-wrapper.with-navbar .flash-messages {
             top: 90px;
         }
-        
+
         .alert {
             padding: 1rem;
             border-radius: var(--radius-md);
@@ -191,42 +196,43 @@
             animation: slideIn 0.3s ease;
             position: relative;
         }
-        
+
         @keyframes slideIn {
             from {
                 transform: translateX(100%);
                 opacity: 0;
             }
+
             to {
                 transform: translateX(0);
                 opacity: 1;
             }
         }
-        
+
         .alert-success {
             background: #D1FAE5;
             border: 1px solid #6EE7B7;
             color: #065F46;
         }
-        
+
         .alert-error {
             background: #FEE2E2;
             border: 1px solid #FCA5A5;
             color: #991B1B;
         }
-        
+
         .alert-warning {
             background: #FEF3C7;
             border: 1px solid #FCD34D;
             color: #92400E;
         }
-        
+
         .alert-info {
             background: #DBEAFE;
             border: 1px solid #93C5FD;
             color: #1E40AF;
         }
-        
+
         .close-alert {
             background: none;
             border: none;
@@ -239,61 +245,67 @@
             opacity: 0.7;
             transition: opacity 0.2s;
         }
-        
+
         .close-alert:hover {
             opacity: 1;
         }
-        
+
         /* Mobile Responsive */
         @media (max-width: 768px) {
             body.has-sidebar {
                 margin-left: 0;
             }
         }
+
+        .dashboard-container {
+            padding: 2rem;
+            max-width: 100%;
+        }
     </style>
 </head>
+
 <body class="{% if show_sidebar %}has-sidebar{% endif %}">
-    
+
     <!-- Sidebar (for dashboard pages only) -->
     {% if show_sidebar %}
-        {% include "components/sidebar.html" %}
+    {% include "components/sidebar.html" %}
     {% endif %}
-    
+
     <!-- Navbar (for non-dashboard pages only) -->
     {% if show_navbar and not show_sidebar %}
-        {% include "components/navbar.html" %}
+    {% include "components/navbar.html" %}
     {% endif %}
-    
+
     <!-- Main Content Wrapper -->
     <div class="main-wrapper {% if show_navbar and not show_sidebar %}with-navbar{% endif %}">
         <!-- Main Content Area -->
         <main class="main-content">
             <!-- Flash Messages Container -->
             <div class="flash-messages" id="flash-messages"></div>
-            
+
             <!-- Page Content -->
             {% block content %}{% endblock %}
         </main>
-        
+
         <!-- Footer -->
         {% if not hide_footer %}
-            {% include "components/footer.html" %}
+        {% include "components/footer.html" %}
         {% endif %}
     </div>
-    
+
     <!-- Chatbot Widget (always visible except on auth pages) -->
     {% if not hide_chatbot %}
-        {% include "components/chatbot-widget.html" %}
+    {% include "components/chatbot-widget.html" %}
     {% endif %}
-    
+
     <!-- Base JavaScript -->
     <script src="/static/js/main.js"></script>
     <script src="/static/js/api.js"></script>
     <script src="/static/js/utils.js"></script>
-    
+
     <!-- Page-specific JavaScript -->
     {% block extra_js %}{% endblock %}
-    
+
     <!-- Global JavaScript -->
     <script>
         // Global configuration
@@ -301,12 +313,12 @@
             apiBaseUrl: '/api/v1',
             staticUrl: '/static/',
         };
-        
+
         // Flash message utilities
         function showFlashMessage(message, type = 'info') {
             const container = document.getElementById('flash-messages');
             if (!container) return;
-            
+
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type}`;
             alertDiv.innerHTML = `
@@ -316,34 +328,35 @@
                     <i class="ti ti-x"></i>
                 </button>
             `;
-            
+
             container.appendChild(alertDiv);
-            
+
             // Auto-dismiss after 5 seconds
             setTimeout(() => {
                 alertDiv.style.opacity = '0';
                 setTimeout(() => alertDiv.remove(), 300);
             }, 5000);
         }
-        
+
         // Make showFlashMessage available globally
         window.showFlashMessage = showFlashMessage;
-        
+
         // Check authentication on protected pages
         function checkAuth() {
             const token = localStorage.getItem('access_token');
             const publicPages = ['/auth/login', '/auth/register', '/auth/forgot-password', '/'];
             const currentPath = window.location.pathname;
-            
+
             if (!token && !publicPages.includes(currentPath)) {
                 window.location.href = '/auth/login';
             }
         }
-        
+
         // Run auth check on page load for protected pages
         if (document.body.classList.contains('has-sidebar')) {
             checkAuth();
         }
     </script>
 </body>
+
 </html>

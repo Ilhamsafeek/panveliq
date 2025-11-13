@@ -164,6 +164,7 @@
         transition: all 0.2s;
         font-weight: 500;
         cursor: pointer;
+        position: relative;
     }
     
     .nav-item:hover {
@@ -185,11 +186,19 @@
     .nav-item-badge {
         margin-left: auto;
         padding: 0.125rem 0.5rem;
-        background: var(--color-error);
+        background: var(--gradient-primary);
         color: white;
         border-radius: 12px;
-        font-size: 11px;
-        font-weight: 600;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
     }
     
     /* Sidebar Footer */
@@ -388,10 +397,11 @@ function getNavigationByRole(role) {
                 </a>
             </div>
             <div class="nav-section">
-                <div class="nav-section-title">Management</div>
-                <a href="/admin/users" class="nav-item" data-path="/admin/users">
-                    <i class="ti ti-users"></i>
-                    <span>User Management</span>
+                <div class="nav-section-title">Client Management</div>
+                <a href="/modules/project-planner" class="nav-item" data-path="/modules/project-planner">
+                    <i class="ti ti-wand"></i>
+                    <span>AI Project Planner</span>
+                    <span class="nav-item-badge">NEW</span>
                 </a>
                 <a href="/admin/clients" class="nav-item" data-path="/admin/clients">
                     <i class="ti ti-briefcase"></i>
@@ -400,6 +410,13 @@ function getNavigationByRole(role) {
                 <a href="/admin/packages" class="nav-item" data-path="/admin/packages">
                     <i class="ti ti-package"></i>
                     <span>Packages</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Management</div>
+                <a href="/admin/users" class="nav-item" data-path="/admin/users">
+                    <i class="ti ti-users"></i>
+                    <span>User Management</span>
                 </a>
                 <a href="/admin/tasks" class="nav-item" data-path="/admin/tasks">
                     <i class="ti ti-checklist"></i>
@@ -433,14 +450,22 @@ function getNavigationByRole(role) {
                 </a>
             </div>
             <div class="nav-section">
-                <div class="nav-section-title">Work</div>
-                <a href="/tasks" class="nav-item" data-path="/tasks">
-                    <i class="ti ti-checklist"></i>
-                    <span>My Tasks</span>
+                <div class="nav-section-title">Client Management</div>
+                <a href="/modules/project-planner" class="nav-item" data-path="/modules/project-planner">
+                    <i class="ti ti-wand"></i>
+                    <span>AI Project Planner</span>
+                    <span class="nav-item-badge">NEW</span>
                 </a>
                 <a href="/clients" class="nav-item" data-path="/clients">
                     <i class="ti ti-briefcase"></i>
                     <span>My Clients</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Work</div>
+                <a href="/tasks" class="nav-item" data-path="/tasks">
+                    <i class="ti ti-checklist"></i>
+                    <span>My Tasks</span>
                 </a>
             </div>
             ${commonModules}
@@ -453,7 +478,7 @@ function getNavigationByRole(role) {
             </div>
         `;
     } else {
-        // Client navigation
+        // Client navigation - NO AI Project Planner
         return `
             <div class="nav-section">
                 <div class="nav-section-title">Dashboard</div>
