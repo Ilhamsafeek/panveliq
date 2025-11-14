@@ -4,7 +4,7 @@
         <!-- Logo -->
         <div class="sidebar-logo">
             <a href="/" class="logo">
-                <img src="{{ url_for('static', path='images/panvel-logo.webp') }}" alt="PanvelIQ">
+                <img src="{{ url_for('static', path='images/panvel-logo.webp') }}" alt="PanvelIQ" width="40px">
                 <span class="logo-text">PanvelIQ</span>
             </a>
         </div>
@@ -341,6 +341,7 @@ async function loadNavigation() {
     try {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const role = user.role || 'client';
+        alert(user);
         
         const sidebarNav = document.getElementById('sidebarNav');
         sidebarNav.innerHTML = getNavigationByRole(role);

@@ -187,13 +187,13 @@ async def register(user: UserCreate):
         if connection:
             connection.close()
 
-
 @router.post("/login", response_model=Token)
 async def login(user_credentials: UserLogin):
     """
     Login with email and password
     
     Returns JWT access token and user information
+    ⚠️ Users with status='pending' cannot login
     """
     
     connection = None
@@ -203,7 +203,7 @@ async def login(user_credentials: UserLogin):
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        # Get user by email - FIXED: use user_credentials.email
+        # Get user by email
         query = "SELECT * FROM users WHERE email = %s"
         cursor.execute(query, (user_credentials.email,))
         user = cursor.fetchone()
@@ -223,14 +223,33 @@ async def login(user_credentials: UserLogin):
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
-        # Check if user is active
+        # ⭐ NEW: Check user status BEFORE allowing login
+        if user['status'] == 'pending':
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account is pending verification. Please wait for admin approval."
+            )
+        
         if user['status'] == 'suspended':
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Account is suspended. Please contact support."
+                detail="Your account has been suspended. Please contact support."
             )
         
-        # Create access token
+        if user['status'] == 'inactive':
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account is inactive. Please contact support."
+            )
+        
+        # Only allow login for 'active' users
+        if user['status'] != 'active':
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account cannot login at this time. Please contact support."
+            )
+        
+        # User is active, create access token
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={
@@ -241,7 +260,7 @@ async def login(user_credentials: UserLogin):
             expires_delta=access_token_expires
         )
         
-        # Update last login - FIXED: simpler query
+        # Update last login
         update_query = "UPDATE users SET last_login = NOW() WHERE user_id = %s"
         cursor.execute(update_query, (user['user_id'],))
         connection.commit()
@@ -262,9 +281,9 @@ async def login(user_credentials: UserLogin):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Login error details: {e}")  # Debug print
+        print(f"Login error details: {e}")
         import traceback
-        traceback.print_exc()  # Print full traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Login failed: {str(e)}"
@@ -274,8 +293,7 @@ async def login(user_credentials: UserLogin):
             cursor.close()
         if connection:
             connection.close()
-
-
+            
 @router.post("/logout")
 async def logout():
     """Logout user (client-side token removal)"""

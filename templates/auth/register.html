@@ -383,206 +383,244 @@
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const registerForm = document.getElementById('registerForm');
-        const registerBtn = document.getElementById('registerBtn');
-        const togglePassword = document.getElementById('togglePassword');
-        const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
-        const passwordInput = document.getElementById('password');
-        const confirmPasswordInput = document.getElementById('confirmPassword');
-        const alertContainer = document.getElementById('alert-container');
-
-        // Password Toggle
-        togglePassword.addEventListener('click', function () {
+document.addEventListener('DOMContentLoaded', function() {
+    const registerForm = document.getElementById('registerForm');
+    const registerBtn = document.getElementById('registerBtn');
+    const alertContainer = document.getElementById('alert-container'); // ← FIXED: with hyphen
+    
+    // Password toggle functionality
+    const togglePassword = document.getElementById('togglePassword');
+    const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    
+    if (togglePassword) {
+        togglePassword.addEventListener('click', function() {
             const type = passwordInput.type === 'password' ? 'text' : 'password';
             passwordInput.type = type;
-            const icon = this.querySelector('i');
-            icon.className = type === 'password' ? 'ti ti-eye' : 'ti ti-eye-off';
+            this.querySelector('i').classList.toggle('ti-eye');
+            this.querySelector('i').classList.toggle('ti-eye-off');
         });
-
-        toggleConfirmPassword.addEventListener('click', function () {
+    }
+    
+    if (toggleConfirmPassword) {
+        toggleConfirmPassword.addEventListener('click', function() {
             const type = confirmPasswordInput.type === 'password' ? 'text' : 'password';
             confirmPasswordInput.type = type;
-            const icon = this.querySelector('i');
-            icon.className = type === 'password' ? 'ti ti-eye' : 'ti ti-eye-off';
+            this.querySelector('i').classList.toggle('ti-eye');
+            this.querySelector('i').classList.toggle('ti-eye-off');
         });
-
-        // Show Alert
-        function showAlert(message, type = 'error') {
-            alertContainer.innerHTML = `
-                <div class="alert alert-${type}">
-                    <i class="ti ti-${type === 'error' ? 'alert-circle' : 'check-circle'}"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-            setTimeout(() => {
-                alertContainer.innerHTML = '';
-            }, 5000);
+    }
+    
+    // Error handling functions
+    function showError(fieldId, message) {
+        const field = document.getElementById(fieldId);
+        const errorDiv = document.getElementById(`${fieldId}-error`);
+        
+        if (field && errorDiv) {
+            field.classList.add('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
         }
-
-        // Clear Error
-        function clearError(inputId) {
-            const input = document.getElementById(inputId);
-            const error = document.getElementById(`${inputId}-error`);
-            input.classList.remove('error');
-            error.classList.remove('show');
+    }
+    
+    function clearError(fieldId) {
+        const field = document.getElementById(fieldId);
+        const errorDiv = document.getElementById(`${fieldId}-error`);
+        
+        if (field && errorDiv) {
+            field.classList.remove('error');
+            errorDiv.textContent = '';
+            errorDiv.style.display = 'none';
         }
-
-        // Show Error
-        function showError(inputId, message) {
-            const input = document.getElementById(inputId);
-            const error = document.getElementById(`${inputId}-error`);
-            input.classList.add('error');
-            error.textContent = message;
-            error.classList.add('show');
+    }
+    
+    function showAlert(message, type) {
+        if (!alertContainer) {
+            console.error('Alert container not found!');
+            return;
         }
-
-        // Validate Email
-        function validateEmail(email) {
-            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return re.test(email);
-        }
-
-        // Form Submit
-        // ============================================================
-        // REPLACE THE REGISTRATION FORM SUBMIT HANDLER IN:
-        // templates/auth/register.html
-        // (Find the registerForm.addEventListener('submit') section)
-        // ============================================================
-
-        registerForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            // Clear previous errors
-            ['firstName', 'lastName', 'email', 'phone', 'password', 'confirmPassword', 'terms'].forEach(clearError);
+        
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.innerHTML = `
+            <i class="ti ti-${type === 'success' ? 'check-circle' : 'alert-circle'}"></i>
+            <span>${message}</span>
+        `;
+        
+        alertContainer.innerHTML = '';
+        alertContainer.appendChild(alert);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
+    }
+    
+    function validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    }
+    
+    // Form Submit Handler with Auto-Login
+    registerForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Clear previous errors
+        ['firstName', 'lastName', 'email', 'phone', 'password', 'confirmPassword', 'terms'].forEach(clearError);
+        if (alertContainer) {
             alertContainer.innerHTML = '';
-
-            // Get form data
-            const firstName = document.getElementById('firstName').value.trim();
-            const lastName = document.getElementById('lastName').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            const terms = document.getElementById('terms').checked;
-
-            // Validation
-            let isValid = true;
-
-            if (!firstName) {
-                showError('firstName', 'First name is required');
-                isValid = false;
+        }
+        
+        // Get form data
+        const firstName = document.getElementById('firstName').value.trim();
+        const lastName = document.getElementById('lastName').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const terms = document.getElementById('terms').checked;
+        
+        // Validation
+        let isValid = true;
+        
+        if (!firstName) {
+            showError('firstName', 'First name is required');
+            isValid = false;
+        }
+        
+        if (!lastName) {
+            showError('lastName', 'Last name is required');
+            isValid = false;
+        }
+        
+        if (!email) {
+            showError('email', 'Email is required');
+            isValid = false;
+        } else if (!validateEmail(email)) {
+            showError('email', 'Please enter a valid email address');
+            isValid = false;
+        }
+        
+        if (!password) {
+            showError('password', 'Password is required');
+            isValid = false;
+        } else if (password.length < 8) {
+            showError('password', 'Password must be at least 8 characters');
+            isValid = false;
+        }
+        
+        if (!confirmPassword) {
+            showError('confirmPassword', 'Please confirm your password');
+            isValid = false;
+        } else if (password !== confirmPassword) {
+            showError('confirmPassword', 'Passwords do not match');
+            isValid = false;
+        }
+        
+        if (!terms) {
+            showError('terms', 'You must agree to the Terms of Service');
+            isValid = false;
+        }
+        
+        if (!isValid) return;
+        
+        // Show loading
+        registerBtn.classList.add('loading');
+        registerBtn.disabled = true;
+        
+        try {
+            console.log('🚀 Starting registration process...');
+            
+            // Step 1: Register the user
+            const registerResponse = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password,
+                    full_name: `${firstName} ${lastName}`,
+                    phone: phone
+                })
+            });
+            
+            const registerData = await registerResponse.json();
+            
+            if (!registerResponse.ok) {
+                throw new Error(registerData.detail || 'Registration failed');
             }
-
-            if (!lastName) {
-                showError('lastName', 'Last name is required');
-                isValid = false;
-            }
-
-            if (!email) {
-                showError('email', 'Email is required');
-                isValid = false;
-            } else if (!validateEmail(email)) {
-                showError('email', 'Please enter a valid email address');
-                isValid = false;
-            }
-
-            if (!password) {
-                showError('password', 'Password is required');
-                isValid = false;
-            } else if (password.length < 8) {
-                showError('password', 'Password must be at least 8 characters');
-                isValid = false;
-            }
-
-            if (!confirmPassword) {
-                showError('confirmPassword', 'Please confirm your password');
-                isValid = false;
-            } else if (password !== confirmPassword) {
-                showError('confirmPassword', 'Passwords do not match');
-                isValid = false;
-            }
-
-            if (!terms) {
-                showError('terms', 'You must agree to the Terms of Service');
-                isValid = false;
-            }
-
-            if (!isValid) return;
-
-            // Show loading
-            registerBtn.classList.add('loading');
-            registerBtn.disabled = true;
-
-            try {
-                // Step 1: Register the user
-                const registerResponse = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/register`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        email,
-                        password,
-                        full_name: `${firstName} ${lastName}`,
-                        phone
-                    })
-                });
-
-                const registerData = await registerResponse.json();
-
-                if (!registerResponse.ok) {
-                    throw new Error(registerData.detail || 'Registration failed');
-                }
-
-                console.log('✅ Registration successful');
-
-                // Step 2: Automatically log in the user
-                const loginResponse = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        email,
-                        password
-                    })
-                });
-
-                const loginData = await loginResponse.json();
-
-                if (!loginResponse.ok) {
-                    throw new Error('Registration successful but auto-login failed. Please login manually.');
-                }
-
-                console.log('✅ Auto-login successful');
-
-                // Step 3: Store the access token
-                if (loginData.access_token) {
-                    localStorage.setItem('access_token', loginData.access_token);
-                    console.log('✅ Token stored');
-                }
-
-                // Step 4: Redirect to package selection
-                showAlert('Account created successfully! Redirecting to package selection...', 'success');
-
+            
+            console.log('✅ Registration successful!');
+            console.log('User ID:', registerData.user_id);
+            
+            // Step 2: Automatically log in the user
+            console.log('🔐 Auto-login starting...');
+            
+            const loginResponse = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            });
+            
+            const loginData = await loginResponse.json();
+            
+            if (!loginResponse.ok) {
+                // Registration succeeded but login failed
+                console.warn('⚠️ Auto-login failed, redirecting to login page');
+                showAlert('Account created successfully! Please login.', 'success');
                 setTimeout(() => {
-                    window.location.href = '/onboarding/select-package';
-                }, 1500);
-
-            } catch (error) {
-                console.error('Registration error:', error);
-                showAlert(error.message || 'Registration failed. Please try again.', 'error');
-                registerBtn.classList.remove('loading');
-                registerBtn.disabled = false;
+                    window.location.href = '/auth/login';
+                }, 2000);
+                return;
             }
-        });
-
-        // Clear errors on input
-        ['firstName', 'lastName', 'email', 'phone', 'password', 'confirmPassword'].forEach(id => {
-            document.getElementById(id).addEventListener('input', () => clearError(id));
-        });
-        document.getElementById('terms').addEventListener('change', () => clearError('terms'));
+            
+            console.log('✅ Auto-login successful!');
+            
+            // Step 3: Store the access token
+            if (loginData.access_token) {
+                localStorage.setItem('access_token', loginData.access_token);
+                console.log('✅ Token stored in localStorage');
+                console.log('Token preview:', loginData.access_token.substring(0, 30) + '...');
+            } else {
+                throw new Error('No access token received');
+            }
+            
+            // Step 4: Show success message and redirect
+            showAlert('Account created successfully! Redirecting to package selection...', 'success');
+            
+            console.log('🎉 Registration complete! Redirecting...');
+            
+            setTimeout(() => {
+                window.location.href = '/onboarding/select-package';
+            }, 1500);
+            
+        } catch (error) {
+            console.error('❌ Registration error:', error);
+            showAlert(error.message || 'Registration failed. Please try again.', 'error');
+            registerBtn.classList.remove('loading');
+            registerBtn.disabled = false;
+        }
     });
+    
+    // Clear errors on input
+    ['firstName', 'lastName', 'email', 'phone', 'password', 'confirmPassword'].forEach(id => {
+        const field = document.getElementById(id);
+        if (field) {
+            field.addEventListener('input', () => clearError(id));
+        }
+    });
+    
+    const termsCheckbox = document.getElementById('terms');
+    if (termsCheckbox) {
+        termsCheckbox.addEventListener('change', () => clearError('terms'));
+    }
+});
 </script>
 {% endblock %}
