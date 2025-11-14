@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request, HTTPException, status, Cookie
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Optional
 
 
@@ -127,16 +127,32 @@ async def employee_dashboard(request: Request):
 
 
 @app.get("/modules/project-planner", response_class=HTMLResponse)
-async def project_planner_page(request: Request, access_token: Optional[str] = Cookie(None)):
+async def project_planner_page(request: Request):
     """
     AI Project Planner page
     
     **Access**: Admin and Employee only
     """
-    # Check if user is authenticated
+    # Get token from cookie or Authorization header
+    access_token = request.cookies.get('access_token')
+    
+    # If no cookie, check Authorization header
     if not access_token:
-        # Redirect to login if no token
-        return RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            access_token = auth_header.replace('Bearer ', '')
+    
+    # If still no token, serve the page but let JavaScript handle auth
+    if not access_token:
+        # Return the page - JavaScript will check localStorage and redirect if needed
+        return templates.TemplateResponse(
+            "modules/project-planner.html",
+            {
+                "request": request,
+                "show_sidebar": True,
+                "user_role": None
+            }
+        )
     
     try:
         # Verify token and get user
@@ -163,12 +179,24 @@ async def project_planner_page(request: Request, access_token: Optional[str] = C
         )
     
     except JWTError:
-        # Invalid token, redirect to login
-        return RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+        # Invalid token, serve page and let JS handle it
+        return templates.TemplateResponse(
+            "modules/project-planner.html",
+            {
+                "request": request,
+                "show_sidebar": True,
+                "user_role": None
+            }
+        )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Authentication error: {str(e)}"
+        # Serve page and let JS handle auth
+        return templates.TemplateResponse(
+            "modules/project-planner.html",
+            {
+                "request": request,
+                "show_sidebar": True,
+                "user_role": None
+            }
         )
 
 # ========== HEALTH CHECK ==========

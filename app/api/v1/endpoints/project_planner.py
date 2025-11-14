@@ -194,8 +194,8 @@ async def generate_proposal(
             INSERT INTO project_proposals 
             (client_id, created_by, business_type, budget, challenges, 
              target_audience, existing_presence, ai_generated_strategy, 
-             competitive_differentiators, suggested_timeline, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             competitive_differentiators, suggested_timeline, status, company_name)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             lead_user_id,
             current_user['user_id'],
@@ -207,7 +207,8 @@ async def generate_proposal(
             json.dumps(ai_strategy),
             json.dumps(differentiators),
             json.dumps(timeline),
-            'draft'
+            'draft',
+            project_input.company_name
         ))
         
         connection.commit()
@@ -216,15 +217,39 @@ async def generate_proposal(
         print(f"\n✅ SUCCESS! Proposal ID: {proposal_id}")
         print(f"{'='*60}\n")
         
+        print(f"\n✅ SUCCESS! Proposal ID: {proposal_id}")
+        print(f"{'='*60}\n")
+        
+        # Fetch the complete proposal record with all client details
+        query = """
+            SELECT p.*, u.full_name as lead_name, u.email as lead_email
+            FROM project_proposals p
+            JOIN users u ON p.client_id = u.user_id
+            WHERE p.proposal_id = %s
+        """
+        cursor.execute(query, (proposal_id,))
+        complete_proposal = cursor.fetchone()
+        
+        # Add company_name from input since it's not stored in database
+        complete_proposal['company_name'] = project_input.company_name
+        
+        # Parse JSON fields for frontend
+        json_fields = ['existing_presence', 'ai_generated_strategy', 
+                      'competitive_differentiators', 'suggested_timeline']
+        
+        for field in json_fields:
+            if complete_proposal.get(field):
+                if isinstance(complete_proposal[field], str):
+                    try:
+                        complete_proposal[field] = json.loads(complete_proposal[field])
+                    except:
+                        complete_proposal[field] = {}
+        
         return {
             "success": True,
             "message": "Proposal generated successfully",
             "proposal_id": proposal_id,
-            "data": {
-                "strategy": ai_strategy,
-                "differentiators": differentiators,
-                "timeline": timeline
-            }
+            "proposal": complete_proposal
         }
     
     except Exception as e:
@@ -352,7 +377,7 @@ async def list_proposals(current_user: dict = Depends(require_admin_or_employee)
         
         query = """
             SELECT p.proposal_id, p.business_type, p.budget, p.status, p.created_at,
-                   u.full_name as client_name, u.email as client_email
+                   u.full_name as client_name, u.email as client_email,u.email as client_email, p.company_name
             FROM project_proposals p
             JOIN users u ON p.client_id = u.user_id
             ORDER BY p.created_at DESC
@@ -439,13 +464,12 @@ async def debug_proposal(
         if connection:
             connection.close()
 
-
 @router.get("/proposals/{proposal_id}")
 async def get_proposal(
     proposal_id: int,
     current_user: dict = Depends(require_admin_or_employee)
 ):
-    """Get specific proposal"""
+    """Get specific proposal with edited content support"""
     connection = None
     cursor = None
     
@@ -496,11 +520,29 @@ async def get_proposal(
             else:
                 proposal[field] = {}
         
+        # Check for custom edited content
+        if proposal.get('custom_strategy_html'):
+            # New schema - dedicated column for edited HTML
+            proposal['edited_content'] = proposal['custom_strategy_html']
+            print(f"[GET PROPOSAL] Found edited content in custom_strategy_html")
+        elif proposal.get('custom_notes'):
+            # Old schema - check custom_notes for edited content
+            try:
+                notes = proposal['custom_notes']
+                if isinstance(notes, str):
+                    notes = json.loads(notes)
+                if isinstance(notes, dict) and 'edited_content' in notes:
+                    proposal['edited_content'] = notes['edited_content']
+                    print(f"[GET PROPOSAL] Found edited content in custom_notes")
+            except Exception as e:
+                print(f"Error parsing custom_notes for edited content: {e}")
+        
         # Debug log
         print(f"[GET PROPOSAL {proposal_id}] Parsed data:")
         print(f"  Strategy keys: {list(proposal.get('ai_generated_strategy', {}).keys())}")
         print(f"  Differentiators keys: {list(proposal.get('competitive_differentiators', {}).keys())}")
         print(f"  Timeline keys: {list(proposal.get('suggested_timeline', {}).keys())}")
+        print(f"  Has edited content: {bool(proposal.get('edited_content'))}")
         
         return {
             "success": True,
@@ -519,7 +561,6 @@ async def get_proposal(
             cursor.close()
         if connection:
             connection.close()
-
 
 @router.post("/proposals/{proposal_id}/send")
 async def send_proposal(
@@ -970,6 +1011,69 @@ async def export_proposal_pdf(
         print(f"Error exporting PDF: {e}")
         import traceback
         traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+
+@router.put("/proposals/{proposal_id}/update-content")
+async def update_proposal_content(
+    proposal_id: int,
+    content: dict,
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """Update proposal content from editor"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Check if proposal exists
+        cursor.execute("SELECT proposal_id FROM project_proposals WHERE proposal_id = %s", (proposal_id,))
+        proposal = cursor.fetchone()
+        
+        if not proposal:
+            raise HTTPException(status_code=404, detail="Proposal not found")
+        
+        # Check if custom_strategy_html column exists
+        has_custom_html = column_exists(cursor, 'project_proposals', 'custom_strategy_html')
+        
+        if has_custom_html:
+            # Store in dedicated column
+            cursor.execute("""
+                UPDATE project_proposals 
+                SET custom_strategy_html = %s, updated_at = NOW()
+                WHERE proposal_id = %s
+            """, (content.get('content'), proposal_id))
+        else:
+            # Store in custom_notes
+            cursor.execute("""
+                UPDATE project_proposals 
+                SET custom_notes = %s, updated_at = NOW()
+                WHERE proposal_id = %s
+            """, (json.dumps({"edited_content": content.get('content')}), proposal_id))
+        
+        connection.commit()
+        
+        print(f"[UPDATE] Proposal {proposal_id} content saved")
+        
+        return {
+            "success": True,
+            "message": "Content saved successfully"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        if connection:
+            connection.rollback()
+        print(f"Error updating content: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if cursor:

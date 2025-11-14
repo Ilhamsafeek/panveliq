@@ -7,6 +7,7 @@ let quillEditor = null;
 let currentProposalId = null;
 
 const API_BASE = '/api/v1';
+
 // =====================================================
 // INITIALIZATION
 // =====================================================
@@ -70,6 +71,11 @@ function goToStep(stepNumber) {
         }
     }
     
+    // Save editor content before leaving step 2
+    if (currentStep === 2 && stepNumber !== 2 && quillEditor) {
+        saveProposalContent();
+    }
+    
     // Hide current step
     document.querySelectorAll('.step-content').forEach(content => {
         content.classList.remove('active');
@@ -105,6 +111,43 @@ function goToStep(stepNumber) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// =====================================================
+// SAVE PROPOSAL CONTENT
+// =====================================================
+async function saveProposalContent() {
+    if (!currentProposalId || !quillEditor) {
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            return;
+        }
+        
+        const content = quillEditor.root.innerHTML;
+        
+        const response = await fetch(`${API_BASE}/project-planner/proposals/${currentProposalId}/update-content`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                content: content
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('Proposal content saved');
+        }
+    } catch (error) {
+        console.error('Error saving content:', error);
+    }
+}
+
 function updateProgressBar() {
     const progress = document.getElementById('stepperProgress');
     if (progress) {
@@ -130,11 +173,17 @@ function resetWizard() {
     const form = document.getElementById('clientDetailsForm');
     if (form) {
         form.reset();
+        
+        // Re-enable all form inputs
+        document.querySelectorAll('#clientDetailsForm input, #clientDetailsForm select, #clientDetailsForm textarea').forEach(input => {
+            input.disabled = false;
+        });
     }
     
     // Reset editor
     if (quillEditor) {
         quillEditor.setContents([]);
+        quillEditor.enable(true); // Re-enable editor
     }
     
     // Show step 1
@@ -190,8 +239,6 @@ async function handleClientFormSubmit(e) {
             },
             body: JSON.stringify(payload)
         });
-
-        
         
         const result = await response.json();
         
@@ -267,16 +314,66 @@ function initializeEditor() {
     }, 500);
 }
 
+
 function loadGeneratedContent(proposal) {
     if (!quillEditor) {
         console.error('Editor not initialized');
+        // Retry after a short delay if editor not ready
+        setTimeout(() => loadGeneratedContent(proposal), 300);
         return;
     }
     
-    // Generate comprehensive proposal content
-    const strategy = proposal.ai_generated_strategy || {};
-    const differentiators = proposal.competitive_differentiators || {};
-    const timeline = proposal.suggested_timeline || {};
+    console.log('=== LOADING GENERATED CONTENT ===');
+    console.log('Raw proposal object:', proposal);
+
+        // Check if there's edited content saved
+    if (proposal.edited_content) {
+        console.log('Loading previously edited content');
+        quillEditor.clipboard.dangerouslyPasteHTML(proposal.edited_content);
+        populateAIInsights(proposal.ai_generated_strategy || {}, proposal.competitive_differentiators || {});
+        return;
+    }
+    
+    // Parse JSON fields if they are strings
+    let strategy = {};
+    let differentiators = {};
+    let timeline = {};
+    
+    try {
+        strategy = typeof proposal.ai_generated_strategy === 'string' 
+            ? JSON.parse(proposal.ai_generated_strategy) 
+            : (proposal.ai_generated_strategy || {});
+        console.log('Parsed strategy:', strategy);
+        console.log('Strategy keys:', Object.keys(strategy));
+    } catch (e) {
+        console.error('Error parsing strategy:', e);
+        strategy = {};
+    }
+    
+    try {
+        differentiators = typeof proposal.competitive_differentiators === 'string'
+            ? JSON.parse(proposal.competitive_differentiators)
+            : (proposal.competitive_differentiators || {});
+        console.log('Parsed differentiators:', differentiators);
+    } catch (e) {
+        console.error('Error parsing differentiators:', e);
+        differentiators = {};
+    }
+    
+    try {
+        timeline = typeof proposal.suggested_timeline === 'string'
+            ? JSON.parse(proposal.suggested_timeline)
+            : (proposal.suggested_timeline || {});
+        console.log('Parsed timeline:', timeline);
+    } catch (e) {
+        console.error('Error parsing timeline:', e);
+        timeline = {};
+    }
+    
+    console.log('=== CHECKING DATA AVAILABILITY ===');
+    console.log('Campaigns:', strategy.campaigns || strategy.Recommended_Campaigns);
+    console.log('Tools:', strategy.automation_tools || strategy.Automation_Tools);
+    console.log('Company:', proposal.company_name || proposal.Company || strategy.Company);
     
     const content = generateProposalHTML(proposal, strategy, differentiators, timeline);
     
@@ -286,70 +383,131 @@ function loadGeneratedContent(proposal) {
     // Populate AI Insights
     populateAIInsights(strategy, differentiators);
     
-    console.log('Content loaded into editor');
+    console.log('=== CONTENT LOADED SUCCESSFULLY ===');
 }
 
+
 function generateProposalHTML(proposal, strategy, differentiators, timeline) {
-    const campaigns = strategy.campaigns || [];
-    const tools = strategy.automation_tools || [];
+    console.log('=== GENERATING PROPOSAL HTML ===');
+    console.log('Strategy:', strategy);
+    
+    // Extract data - checking capitalized keys first since that's what API returns
+    const campaigns = strategy.Recommended_Campaigns || strategy.campaigns || [];
+    const tools = strategy.Automation_Tools || strategy.automation_tools || [];
     const diffItems = differentiators.differentiators || [];
     const phases = timeline.phases || [];
     
+    console.log('Campaigns found:', campaigns.length);
+    console.log('Tools found:', tools.length);
+    
+    // Extract company name from multiple possible sources
+    const companyName = proposal.company_name || strategy.Company || 'Your Company';
+    
+    // Build campaigns HTML
+    const campaignsHTML = campaigns.length > 0 
+        ? campaigns.map(camp => {
+            const type = camp.Type || camp.type || 'Campaign';
+            const platform = camp.Platform || camp.platform || '';
+            const platformText = Array.isArray(platform) ? platform.join(', ') : platform;
+            const topics = camp.Content_Topics || camp.content_topics || [];
+            const topicsText = Array.isArray(topics) ? topics.join(', ') : '';
+            const budget = camp.Budget_Allocation_Percentage || '';
+            
+            let html = `<li><strong>${type}</strong>`;
+            if (platformText) html += ` (${platformText})`;
+            html += `: ${topicsText}`;
+            if (budget) html += ` <em>(${budget}% of budget)</em>`;
+            html += `</li>`;
+            
+            return html;
+          }).join('')
+        : '<li>AI-powered digital marketing campaigns tailored to your business needs</li>';
+    
+    // Build tools HTML
+    const toolsHTML = tools.length > 0
+        ? tools.map(tool => {
+            const name = tool.Tool || tool.tool || tool.name || 'Marketing Tool';
+            const purpose = tool.Purpose || tool.purpose || 'Campaign enhancement';
+            const budget = tool.Budget_Allocation_Percentage || '';
+            
+            let html = `<li><strong>${name}:</strong> ${purpose}`;
+            if (budget) html += ` <em>(${budget}% of budget)</em>`;
+            html += `</li>`;
+            
+            return html;
+          }).join('')
+        : '<li>Marketing automation and analytics tools</li>';
+    
+    // Build differentiators HTML
+    const diffHTML = diffItems.length > 0
+        ? diffItems.map(diff => `
+            <li>
+                <strong>${diff.title}:</strong> ${diff.description}<br>
+                <em>Impact: ${diff.impact}</em>
+            </li>
+          `).join('')
+        : `<li><strong>AI-Powered Approach:</strong> Leveraging cutting-edge technology for optimal results<br><em>Impact: Increased efficiency and ROI</em></li>`;
+    
+    // Build timeline HTML
+    const timelineHTML = phases.length > 0
+        ? phases.map((phase, idx) => `
+            <h3><strong>Phase ${idx + 1}: ${phase.phase || phase.name || `Phase ${idx + 1}`}</strong></h3>
+            <p><strong>Duration:</strong> ${phase.duration}</p>
+            <p><strong>Key Deliverables:</strong></p>
+            <ul>
+                ${(phase.deliverables || []).map(del => `<li>${del}</li>`).join('')}
+            </ul>
+          `).join('')
+        : `<h3><strong>Phase 1: Planning & Setup</strong></h3><p><strong>Duration:</strong> 2-4 weeks</p><ul><li>Initial strategy development</li></ul>`;
+    
+    const challenges = proposal.challenges || (strategy.Challenges ? strategy.Challenges.join(', ') : 'Enhancing digital presence');
+    const targetAudience = proposal.target_audience || strategy.Target_Audience || 'Target market segments';
+    const budget = proposal.budget || strategy.Budget || 0;
+    const businessType = proposal.business_type || strategy.Business_Type || 'organization';
+    
     return `
         <h1 style="text-align: center; color: #9926F3;">Digital Marketing Proposal</h1>
-        <h2 style="text-align: center; color: #1DD8FC;">for ${proposal.company_name || 'Your Company'}</h2>
+        <h2 style="text-align: center; color: #1DD8FC;">for ${companyName}</h2>
         <p style="text-align: center; margin-bottom: 2rem;"><em>Prepared by PanvelIQ</em></p>
         
         <hr style="margin: 2rem 0;">
         
         <h2><strong>Executive Summary</strong></h2>
-        <p>This comprehensive digital marketing proposal has been specifically designed for <strong>${proposal.company_name || 'your organization'}</strong>, a ${proposal.business_type} looking to enhance their digital presence and drive measurable growth.</p>
-        <p>Our AI-powered approach combines cutting-edge marketing technology with proven strategies to deliver exceptional results within your investment budget of <strong>$${(proposal.budget || 0).toLocaleString()}</strong>.</p>
+        <p>This comprehensive digital marketing proposal has been specifically designed for <strong>${companyName}</strong>, a ${businessType} looking to enhance their digital presence and drive measurable growth.</p>
+        <p>Our AI-powered approach combines cutting-edge marketing technology with proven strategies to deliver exceptional results within your investment budget of <strong>$${budget.toLocaleString()}</strong>.</p>
         
         <h2><strong>Current Challenges</strong></h2>
-        <p>${proposal.challenges || 'No specific challenges mentioned.'}</p>
+        <p>${challenges}</p>
         
         <h2><strong>Target Audience Analysis</strong></h2>
-        <p>${proposal.target_audience || 'Target audience not specified.'}</p>
+        <p>${targetAudience}</p>
         
         <h2><strong>Recommended Marketing Strategy</strong></h2>
-        <p>Based on our AI analysis, we recommend the following comprehensive marketing approach:</p>
+        <p>Based on our AI analysis, we recommend a comprehensive marketing approach across multiple channels.</p>
         
         <h3><strong>Recommended Campaigns</strong></h3>
         <ul>
-            ${campaigns.map(camp => `<li><strong>${camp.name || 'Campaign'}:</strong> ${camp.description || ''}</li>`).join('')}
+            ${campaignsHTML}
         </ul>
         
         <h3><strong>Automation Tools & Technologies</strong></h3>
         <ul>
-            ${tools.map(tool => `<li>${tool.name || tool}: ${tool.purpose || ''}</li>`).join('')}
+            ${toolsHTML}
         </ul>
         
         <h2><strong>Competitive Differentiators</strong></h2>
         <p>What sets our approach apart:</p>
         <ul>
-            ${diffItems.map(diff => `
-                <li>
-                    <strong>${diff.title || 'Differentiator'}:</strong> ${diff.description || ''}<br>
-                    <em>Impact: ${diff.impact || 'Significant improvement expected'}</em>
-                </li>
-            `).join('')}
+            ${diffHTML}
         </ul>
         
         <h2><strong>Project Timeline</strong></h2>
-        ${phases.map((phase, idx) => `
-            <h3><strong>Phase ${idx + 1}: ${phase.name || 'Phase ' + (idx + 1)}</strong></h3>
-            <p><strong>Duration:</strong> ${phase.duration || 'TBD'}</p>
-            <p><strong>Key Deliverables:</strong></p>
-            <ul>
-                ${(phase.deliverables || []).map(del => `<li>${del}</li>`).join('')}
-            </ul>
-        `).join('')}
+        ${timelineHTML}
         
         <hr style="margin: 2rem 0;">
         
         <h2><strong>Investment & ROI</strong></h2>
-        <p><strong>Total Investment:</strong> $${(proposal.budget || 0).toLocaleString()}</p>
+        <p><strong>Total Investment:</strong> $${budget.toLocaleString()}</p>
         <p>Our data-driven approach ensures maximum return on investment through:</p>
         <ul>
             <li>Continuous performance optimization</li>
@@ -372,6 +530,7 @@ function generateProposalHTML(proposal, strategy, differentiators, timeline) {
         <p style="text-align: center;"><em>Contact: info@panveliq.com | www.panveliq.com</em></p>
     `;
 }
+
 
 function populateAIInsights(strategy, differentiators) {
     const insightsContainer = document.getElementById('aiInsightsContent');
@@ -449,8 +608,13 @@ async function exportProposal(format) {
     showLoading();
     
     try {
-        const response = await fetch(`${API_BASE}/project-planner/proposals/${currentProposalId}/export/pdf`);
-        
+
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE}/project-planner/proposals/${currentProposalId}/export/pdf`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         if (response.ok) {
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -483,8 +647,12 @@ async function generateShareLink() {
     showLoading();
     
     try {
-        const response = await fetch(`${API_BASE}/project-planner/proposals/${currentProposalId}/share-link`, {
-            method: 'POST'
+       const token = localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE}/project-planner/proposals/${proposalId}/generate-link`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
         });
         
         const result = await response.json();
@@ -619,13 +787,12 @@ async function loadProposals() {
     container.innerHTML = '<div class="loading-state"><div class="loader-spinner"></div><p>Loading proposals...</p></div>';
     
     try {
-
-         const token = localStorage.getItem('access_token');
+        const token = localStorage.getItem('access_token');
         if (!token) {
             window.location.href = '/auth/login';
             return;
         }
-
+        
         const response = await fetch(`${API_BASE}/project-planner/proposals/list`, {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -646,7 +813,6 @@ async function loadProposals() {
                     <h3>No Proposals Yet</h3>
                     <p>Create your first AI-powered marketing proposal</p>
                     <button class="btn btn-primary" onclick="showCreateTab()">
-                        <i class="ti ti-plus"></i>
                         Create New Proposal
                     </button>
                 </div>
@@ -691,7 +857,7 @@ function createProposalCard(proposal) {
                         <i class="ti ti-user"></i>
                         Contact
                     </span>
-                    <span class="detail-value">${proposal.lead_name || 'N/A'}</span>
+                    <span class="detail-value">${proposal.client_name || 'N/A'}</span>
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">
@@ -722,12 +888,130 @@ function createProposalCard(proposal) {
 // =====================================================
 // PROPOSAL ACTIONS
 // =====================================================
-function viewProposal(proposalId) {
-    window.location.href = `/project-planner/view/${proposalId}`;
+async function viewProposal(proposalId) {
+    showLoading();
+    
+    try {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            window.location.href = '/auth/login';
+            return;
+        }
+        
+        // Fetch proposal details
+        const response = await fetch(`${API_BASE}/project-planner/proposals/${proposalId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.proposal) {
+            // Store proposal data
+            proposalData = result.proposal;
+            currentProposalId = proposalId;
+            
+            // Switch to create tab in view mode
+            switchTab('create');
+            
+            // Populate form with existing data (read-only)
+            populateEditForm(result.proposal);
+            
+            // Disable form inputs for view mode
+            document.querySelectorAll('#clientDetailsForm input, #clientDetailsForm select, #clientDetailsForm textarea').forEach(input => {
+                input.disabled = true;
+            });
+            
+            // Go directly to step 2 to show content
+            setTimeout(() => {
+                goToStep(2);
+                loadGeneratedContent(result.proposal);
+                
+                // Make editor read-only
+                if (quillEditor) {
+                    quillEditor.enable(false);
+                }
+                
+                hideLoading();
+                showNotification('Viewing proposal in read-only mode', 'info');
+            }, 500);
+        } else {
+            throw new Error(result.message || 'Failed to load proposal');
+        }
+    } catch (error) {
+        console.error('View error:', error);
+        showNotification('Failed to load proposal details', 'error');
+        hideLoading();
+    }
 }
 
-function editProposal(proposalId) {
-    showNotification('Edit functionality coming soon!', 'info');
+async function editProposal(proposalId) {
+    showLoading();
+    
+    try {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            window.location.href = '/auth/login';
+            return;
+        }
+        
+        // Fetch proposal details
+        const response = await fetch(`${API_BASE}/project-planner/proposals/${proposalId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.proposal) {
+            // Store proposal data
+            proposalData = result.proposal;
+            currentProposalId = proposalId;
+            
+            // Switch to create tab
+            switchTab('create');
+            
+            // Populate form with existing data
+            populateEditForm(result.proposal);
+            
+            // Go to step 2 with editor
+            setTimeout(() => {
+                goToStep(2);
+                loadGeneratedContent(result.proposal);
+                hideLoading();
+            }, 500);
+            
+            showNotification('Proposal loaded for editing', 'success');
+        } else {
+            throw new Error(result.message || 'Failed to load proposal');
+        }
+    } catch (error) {
+        console.error('Edit error:', error);
+        showNotification('Failed to load proposal for editing', 'error');
+        hideLoading();
+    }
+}
+
+function populateEditForm(proposal) {
+    // Populate form fields
+    document.getElementById('leadName').value = proposal.lead_name || '';
+    document.getElementById('leadEmail').value = proposal.lead_email || '';
+    document.getElementById('companyName').value = proposal.company_name || '';
+    document.getElementById('businessType').value = proposal.business_type || '';
+    document.getElementById('budget').value = proposal.budget || '';
+    document.getElementById('targetAudience').value = proposal.target_audience || '';
+    document.getElementById('challenges').value = proposal.challenges || '';
+    
+    // Populate checkboxes for existing presence
+    const existingPresence = proposal.existing_presence || {};
+    Object.keys(existingPresence).forEach(key => {
+        const checkbox = document.querySelector(`input[name="existing_${key}"]`);
+        if (checkbox) {
+            checkbox.checked = existingPresence[key];
+        }
+    });
 }
 
 async function deleteProposal(proposalId) {
@@ -738,8 +1022,12 @@ async function deleteProposal(proposalId) {
     showLoading();
     
     try {
+        const token = localStorage.getItem('access_token');
         const response = await fetch(`${API_BASE}/project-planner/proposals/${proposalId}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
         });
         
         const result = await response.json();
