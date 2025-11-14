@@ -32,7 +32,7 @@ PanvelIQ is a comprehensive AI-powered digital marketing intelligence platform d
 - **AI Integration**: OpenAI API
 - **External APIs**: 
   - WhatsApp Business API
-  - SendGrid/Mailchimp
+  - Mailchimp
   - Meta Ads API
   - Google Ads API
   - Google Analytics

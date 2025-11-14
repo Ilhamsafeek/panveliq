@@ -1,178 +1,31 @@
 """
-Email Service Integration (SendGrid & Mailchimp)
+Email Service Integration (Mailchimp)
 File: app/services/email_service.py
 """
 
 import requests
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Personalization, Email, Content
 from typing import List, Dict, Any, Optional
 from app.core.config import settings
 
 
 class EmailService:
-    """Email service supporting SendGrid and Mailchimp"""
+    """Email service supporting Mailchimp"""
     
-    def __init__(self, provider: str = "sendgrid"):
+    def __init__(self, provider: str = "mailchimp"):
         """
         Initialize email service
         
         Args:
-            provider: Email provider (sendgrid or mailchimp)
+            provider: Email provider (mailchimp)
         """
         self.provider = provider.lower()
         
-        if self.provider == "sendgrid":
-            if not settings.SENDGRID_API_KEY:
-                raise ValueError("SendGrid API key not configured")
-            self.client = SendGridAPIClient(settings.SENDGRID_API_KEY)
-        
-        elif self.provider == "mailchimp":
+        if self.provider == "mailchimp":
             if not settings.MAILCHIMP_API_KEY or not settings.MAILCHIMP_SERVER_PREFIX:
                 raise ValueError("Mailchimp credentials not configured")
             self.api_key = settings.MAILCHIMP_API_KEY
             self.server_prefix = settings.MAILCHIMP_SERVER_PREFIX
             self.base_url = f"https://{self.server_prefix}.api.mailchimp.com/3.0"
-    
-    # =====================================================
-    # SENDGRID METHODS
-    # =====================================================
-    
-    async def send_email_sendgrid(
-        self,
-        to_email: str,
-        subject: str,
-        html_content: str,
-        from_email: str = "noreply@panveliq.com",
-        from_name: str = "PanvelIQ"
-    ) -> Dict[str, Any]:
-        """
-        Send email using SendGrid
-        
-        Args:
-            to_email: Recipient email
-            subject: Email subject
-            html_content: HTML email content
-            from_email: Sender email
-            from_name: Sender name
-            
-        Returns:
-            Response from SendGrid
-        """
-        try:
-            message = Mail(
-                from_email=(from_email, from_name),
-                to_emails=to_email,
-                subject=subject,
-                html_content=html_content
-            )
-            
-            response = self.client.send(message)
-            
-            return {
-                "success": True,
-                "status_code": response.status_code,
-                "message_id": response.headers.get("X-Message-Id"),
-                "recipient": to_email
-            }
-        
-        except Exception as e:
-            print(f"SendGrid Error for {to_email}: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "recipient": to_email
-            }
-    
-    async def send_bulk_email_sendgrid(
-        self,
-        recipients: List[str],
-        subject: str,
-        html_content: str,
-        from_email: str = "noreply@panveliq.com",
-        from_name: str = "PanvelIQ"
-    ) -> Dict[str, Any]:
-        """
-        Send bulk emails using SendGrid
-        
-        Args:
-            recipients: List of recipient emails
-            subject: Email subject
-            html_content: HTML email content
-            from_email: Sender email
-            from_name: Sender name
-            
-        Returns:
-            Summary of sent emails
-        """
-        results = {
-            "total": len(recipients),
-            "successful": 0,
-            "failed": 0,
-            "details": []
-        }
-        
-        for recipient in recipients:
-            result = await self.send_email_sendgrid(
-                to_email=recipient,
-                subject=subject,
-                html_content=html_content,
-                from_email=from_email,
-                from_name=from_name
-            )
-            
-            if result["success"]:
-                results["successful"] += 1
-            else:
-                results["failed"] += 1
-            
-            results["details"].append(result)
-        
-        return results
-    
-    async def send_template_email_sendgrid(
-        self,
-        to_email: str,
-        template_id: str,
-        dynamic_data: Dict[str, Any],
-        from_email: str = "noreply@panveliq.com"
-    ) -> Dict[str, Any]:
-        """
-        Send email using SendGrid dynamic template
-        
-        Args:
-            to_email: Recipient email
-            template_id: SendGrid template ID
-            dynamic_data: Template variables
-            from_email: Sender email
-            
-        Returns:
-            Response from SendGrid
-        """
-        try:
-            message = Mail(
-                from_email=from_email,
-                to_emails=to_email
-            )
-            message.template_id = template_id
-            message.dynamic_template_data = dynamic_data
-            
-            response = self.client.send(message)
-            
-            return {
-                "success": True,
-                "status_code": response.status_code,
-                "message_id": response.headers.get("X-Message-Id"),
-                "recipient": to_email
-            }
-        
-        except Exception as e:
-            print(f"SendGrid Template Error for {to_email}: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "recipient": to_email
-            }
     
     # =====================================================
     # MAILCHIMP METHODS
@@ -460,11 +313,7 @@ class EmailService:
         Returns:
             Response from email provider
         """
-        if self.provider == "sendgrid":
-            return await self.send_email_sendgrid(
-                to_email, subject, html_content, from_email, from_name
-            )
-        elif self.provider == "mailchimp":
+        if self.provider == "mailchimp":
             return await self.send_email_mailchimp(
                 to_email, subject, html_content, from_email, from_name
             )
@@ -495,11 +344,7 @@ class EmailService:
         Returns:
             Summary of sent emails
         """
-        if self.provider == "sendgrid":
-            return await self.send_bulk_email_sendgrid(
-                recipients, subject, html_content, from_email, from_name
-            )
-        else:
+        if self.provider == "mailchimp":
             # For Mailchimp, send individually
             results = {
                 "total": len(recipients),
