@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+
+{% block title %}Communication Hub - PanvelIQ{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/communication.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="communication-hub">
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">
+                <i class="ti ti-send"></i>
+                Communication Hub
+            </h1>
+            <p class="page-subtitle">Manage WhatsApp & Email campaigns with intelligent automation</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn-secondary" onclick="loadAnalytics()">
+                <i class="ti ti-chart-bar"></i>
+                Analytics
+            </button>
+            <button class="btn-primary" onclick="openCreateCampaignModal()">
+                <i class="ti ti-plus"></i>
+                New Campaign
+            </button>
+        </div>
+    </div>
+
+    <!-- Analytics Overview Cards -->
+    <div class="analytics-cards" id="analyticsCards">
+        <div class="stat-card whatsapp-card">
+            <div class="stat-icon">
+                <i class="ti ti-brand-whatsapp"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value" id="whatsappCampaigns">0</div>
+                <div class="stat-label">WhatsApp Campaigns</div>
+                <div class="stat-meta" id="whatsappDeliveryRate">0% delivery rate</div>
+            </div>
+        </div>
+
+        <div class="stat-card email-card">
+            <div class="stat-icon">
+                <i class="ti ti-mail"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value" id="emailCampaigns">0</div>
+                <div class="stat-label">Email Campaigns</div>
+                <div class="stat-meta" id="emailOpenRate">0% open rate</div>
+            </div>
+        </div>
+
+        <div class="stat-card flow-card">
+            <div class="stat-icon">
+                <i class="ti ti-git-branch"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value" id="activeFlows">0</div>
+                <div class="stat-label">Active Flows</div>
+                <div class="stat-meta" id="totalFlows">0 total automation flows</div>
+            </div>
+        </div>
+
+        <div class="stat-card segment-card">
+            <div class="stat-icon">
+                <i class="ti ti-users"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value" id="totalSegments">0</div>
+                <div class="stat-label">Audience Segments</div>
+                <div class="stat-meta">Multi-channel targeting</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tabs-container">
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="whatsapp" onclick="switchTab('whatsapp')">
+                <i class="ti ti-brand-whatsapp"></i>
+                WhatsApp Campaigns
+            </button>
+            <button class="tab-btn" data-tab="email" onclick="switchTab('email')">
+                <i class="ti ti-mail"></i>
+                Email Campaigns
+            </button>
+            <button class="tab-btn" data-tab="flows" onclick="switchTab('flows')">
+                <i class="ti ti-git-branch"></i>
+                Automation Flows
+            </button>
+            <button class="tab-btn" data-tab="segments" onclick="switchTab('segments')">
+                <i class="ti ti-users"></i>
+                Audience Management
+            </button>
+        </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content-container">
+        <!-- WhatsApp Tab -->
+        <div class="tab-content active" id="whatsapp-tab">
+            <div class="content-header">
+                <h2>WhatsApp Campaigns</h2>
+                <button class="btn-primary" onclick="openWhatsAppModal()">
+                    <i class="ti ti-plus"></i>
+                    Create WhatsApp Campaign
+                </button>
+            </div>
+
+            <div class="campaigns-list" id="whatsappCampaignsList">
+                <div class="loading-state">
+                    <div class="loader-spinner"></div>
+                    <p>Loading campaigns...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Tab -->
+        <div class="tab-content" id="email-tab">
+            <div class="content-header">
+                <h2>Email Campaigns</h2>
+                <button class="btn-primary" onclick="openEmailModal()">
+                    <i class="ti ti-plus"></i>
+                    Create Email Campaign
+                </button>
+            </div>
+
+            <div class="campaigns-list" id="emailCampaignsList">
+                <div class="loading-state">
+                    <div class="loader-spinner"></div>
+                    <p>Loading campaigns...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Automation Flows Tab -->
+        <div class="tab-content" id="flows-tab">
+            <div class="content-header">
+                <h2>Automation Flows</h2>
+                <button class="btn-primary" onclick="openFlowModal()">
+                    <i class="ti ti-plus"></i>
+                    Create Automation Flow
+                </button>
+            </div>
+
+            <div class="flows-list" id="flowsList">
+                <div class="loading-state">
+                    <div class="loader-spinner"></div>
+                    <p>Loading flows...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audience Management Tab -->
+        <div class="tab-content" id="segments-tab">
+            <div class="content-header">
+                <h2>Audience Segments</h2>
+                <button class="btn-primary" onclick="openSegmentModal()">
+                    <i class="ti ti-plus"></i>
+                    Upload Audience
+                </button>
+            </div>
+
+            <div class="segments-list" id="segmentsList">
+                <div class="loading-state">
+                    <div class="loader-spinner"></div>
+                    <p>Loading segments...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODALS - COMFORTABLE SIZE -->
+
+<!-- WhatsApp Campaign Modal -->
+<div class="modal" id="whatsappModal">
+    <div class="modal-content modal-comfortable">
+        <div class="modal-header">
+            <h2><i class="ti ti-brand-whatsapp"></i> Create WhatsApp Campaign</h2>
+            <button class="modal-close" onclick="closeModal('whatsappModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="whatsappForm">
+                <div class="form-group">
+                    <label>Campaign Name <span class="required">*</span></label>
+                    <input type="text" id="wa_campaign_name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Client <span class="required">*</span></label>
+                    <select id="wa_client_id" required>
+                        <option value="">Choose client...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Template Name (Optional)</label>
+                    <input type="text" id="wa_template_name" placeholder="e.g., welcome_message">
+                </div>
+
+                <div class="form-group">
+                    <label>Message Content <span class="required">*</span></label>
+                    <textarea id="wa_message_content" rows="6" required placeholder="Enter your WhatsApp message here..."></textarea>
+                    <small class="form-hint">Use variables: {{name}}, {{company}}, {{link}}</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Audience <span class="required">*</span></label>
+                    <select id="wa_audience_segment" onchange="loadAudienceRecipients('wa')" required>
+                        <option value="">Choose audience segment...</option>
+                    </select>
+                    <small class="form-hint" id="wa_recipient_count">0 recipients selected</small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Schedule Type <span class="required">*</span></label>
+                        <select id="wa_schedule_type" onchange="toggleScheduleTime('wa')">
+                            <option value="immediate">Send Immediately</option>
+                            <option value="scheduled">Schedule for Later</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="wa_schedule_time_group" style="display: none;">
+                        <label>Schedule Date & Time</label>
+                        <input type="datetime-local" id="wa_scheduled_at">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('whatsappModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="ti ti-send"></i>
+                        Create Campaign
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Email Campaign Modal -->
+<div class="modal" id="emailModal">
+    <div class="modal-content modal-xlarge">
+        <div class="modal-header">
+            <h2><i class="ti ti-mail"></i> Create Email Campaign</h2>
+            <button class="modal-close" onclick="closeModal('emailModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="emailForm">
+                <div class="form-group">
+                    <label>Campaign Name <span class="required">*</span></label>
+                    <input type="text" id="email_campaign_name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Client <span class="required">*</span></label>
+                    <select id="email_client_id" required>
+                        <option value="">Choose client...</option>
+                    </select>
+                </div>
+
+                <div class="ai-section">
+                    <button type="button" class="btn-ai" onclick="generateEmailCopy()">
+                        <i class="ti ti-sparkles"></i>
+                        Generate Email with AI
+                    </button>
+                    <small>Let AI create compelling email copy for you</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Subject Line <span class="required">*</span></label>
+                    <input type="text" id="email_subject" required placeholder="Write compelling subject line...">
+                </div>
+
+                <div class="form-group">
+                    <label>Email Body <span class="required">*</span></label>
+                    <div id="emailEditor" style="min-height: 350px; border: 1px solid #e2e8f0; border-radius: 8px;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Audience <span class="required">*</span></label>
+                    <select id="email_audience_segment" onchange="loadAudienceRecipients('email')" required>
+                        <option value="">Choose audience segment...</option>
+                    </select>
+                    <small class="form-hint" id="email_recipient_count">0 recipients selected</small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Schedule Type <span class="required">*</span></label>
+                        <select id="email_schedule_type" onchange="toggleScheduleTime('email')">
+                            <option value="immediate">Send Immediately</option>
+                            <option value="scheduled">Schedule for Later</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="email_schedule_time_group" style="display: none;">
+                        <label>Schedule Date & Time</label>
+                        <input type="datetime-local" id="email_scheduled_at">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="email_ab_test">
+                        <span>Enable A/B Testing</span>
+                    </label>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('emailModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="ti ti-send"></i>
+                        Create Campaign
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Automation Flow Modal -->
+<div class="modal" id="flowModal">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h2><i class="ti ti-git-branch"></i> Create Automation Flow</h2>
+            <button class="modal-close" onclick="closeModal('flowModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="flowForm">
+                <div class="form-group">
+                    <label>Flow Name <span class="required">*</span></label>
+                    <input type="text" id="flow_name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Client <span class="required">*</span></label>
+                    <select id="flow_client_id" required>
+                        <option value="">Choose client...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Trigger Type <span class="required">*</span></label>
+                    <select id="flow_trigger_type" required>
+                        <option value="">Select trigger...</option>
+                        <option value="lead_signup">Lead Signup</option>
+                        <option value="form_submission">Form Submission</option>
+                        <option value="email_opened">Email Opened</option>
+                        <option value="link_clicked">Link Clicked</option>
+                        <option value="cart_abandonment">Cart Abandonment</option>
+                        <option value="purchase_complete">Purchase Complete</option>
+                        <option value="subscription_renewal">Subscription Renewal</option>
+                        <option value="inactive_user">Inactive User (30 days)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Communication Channel <span class="required">*</span></label>
+                    <select id="flow_channel" required>
+                        <option value="email">Email</option>
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="both">Both Channels</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Flow Actions (JSON) <span class="required">*</span></label>
+                    <textarea id="flow_actions" rows="10" required placeholder='[
+  {
+    "action": "send_email",
+    "delay": "0",
+    "template": "welcome_email"
+  },
+  {
+    "action": "send_whatsapp",
+    "delay": "1_day",
+    "template": "followup_message"
+  }
+]'></textarea>
+                    <small class="form-hint">Define sequential actions in JSON format</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="flow_active" checked>
+                        <span>Activate flow immediately</span>
+                    </label>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('flowModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="ti ti-check"></i>
+                        Create Flow
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Audience Upload Modal (CSV) -->
+<div class="modal" id="segmentModal">
+    <div class="modal-content modal-comfortable">
+        <div class="modal-header">
+            <h2><i class="ti ti-upload"></i> Upload Audience Segment</h2>
+            <button class="modal-close" onclick="closeModal('segmentModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="segmentForm">
+                <div class="form-group">
+                    <label>Segment Name <span class="required">*</span></label>
+                    <input type="text" id="segment_name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Client <span class="required">*</span></label>
+                    <select id="segment_client_id" required>
+                        <option value="">Choose client...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Platform <span class="required">*</span></label>
+                    <select id="segment_platform" required>
+                        <option value="all">All Platforms</option>
+                        <option value="email">Email Only</option>
+                        <option value="whatsapp">WhatsApp Only</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Upload CSV File <span class="required">*</span></label>
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <input type="file" id="csv_file" accept=".csv" required onchange="handleFileSelect(event)">
+                        <label for="csv_file" class="file-upload-label">
+                            <i class="ti ti-upload"></i>
+                            <div>
+                                <span class="upload-text">Click to upload CSV file</span>
+                                <small>CSV with columns: name, email, phone (optional)</small>
+                            </div>
+                        </label>
+                    </div>
+                    <div id="fileName" class="file-name"></div>
+                </div>
+
+                <div class="csv-preview" id="csvPreview" style="display: none;">
+                    <h4>Preview (First 5 rows)</h4>
+                    <div class="preview-table" id="previewTable"></div>
+                    <div class="preview-stats" id="previewStats"></div>
+                </div>
+
+                <div class="template-download">
+                    <button type="button" class="btn-link" onclick="downloadCSVTemplate()">
+                        <i class="ti ti-download"></i>
+                        Download CSV Template
+                    </button>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('segmentModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="ti ti-check"></i>
+                        Create Segment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- AI Email Generator Modal -->
+<div class="modal" id="aiEmailModal">
+    <div class="modal-content modal-comfortable">
+        <div class="modal-header">
+            <h2><i class="ti ti-sparkles"></i> AI Email Generator</h2>
+            <button class="modal-close" onclick="closeModal('aiEmailModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="aiEmailForm">
+                <div class="form-group">
+                    <label>Campaign Goal <span class="required">*</span></label>
+                    <input type="text" id="ai_campaign_goal" required placeholder="e.g., Increase product sales, Drive event registrations">
+                </div>
+
+                <div class="form-group">
+                    <label>Target Audience <span class="required">*</span></label>
+                    <input type="text" id="ai_target_audience" required placeholder="e.g., Small business owners, Tech enthusiasts">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tone <span class="required">*</span></label>
+                        <select id="ai_tone" required>
+                            <option value="professional">Professional</option>
+                            <option value="friendly">Friendly</option>
+                            <option value="urgent">Urgent</option>
+                            <option value="casual">Casual</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Industry</label>
+                        <input type="text" id="ai_industry" placeholder="e.g., E-commerce, SaaS, Healthcare">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="ai_include_cta" checked>
+                        <span>Include Call-to-Action</span>
+                    </label>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('aiEmailModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="ti ti-sparkles"></i>
+                        Generate Email
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="{{ url_for('static', path='/js/communication.js') }}"></script>
+{% endblock %}

@@ -92,3 +92,9 @@ python-slugify==8.0.1
 shortuuid==1.0.11
 reportlab
 xhtml2pdf
+
+# Mailchimp
+mailchimp-marketing==3.0.80
+
+# For WhatsApp Business API (using direct requests)
+requests==2.31.0

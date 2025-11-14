@@ -666,3 +666,96 @@ async def get_client_statistics(
             cursor.close()
         if connection:
             connection.close()
+
+
+
+@router.get("/list")
+async def list_clients(
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """
+    Get list of clients accessible to current user
+    Admin: All clients
+    Employee: Assigned clients only
+    """
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        if current_user['role'] == 'admin':
+            # Admin: Get all active clients
+            cursor.execute("""
+                SELECT 
+                    u.user_id,
+                    u.full_name,
+                    u.email,
+                    u.phone,
+                    u.status,
+                    u.created_at,
+                    cp.business_name,
+                    cp.business_type,
+                    cp.website_url,
+                    p.package_name,
+                    p.package_tier,
+                    cs.status as subscription_status
+                FROM users u
+                LEFT JOIN client_profiles cp ON u.user_id = cp.client_id
+                LEFT JOIN client_subscriptions cs ON u.user_id = cs.client_id 
+                    AND cs.status = 'active'
+                LEFT JOIN packages p ON cs.package_id = p.package_id
+                WHERE u.role = 'client'
+                ORDER BY u.created_at DESC
+            """)
+        else:
+            # Employee: Only assigned clients
+            cursor.execute("""
+                SELECT 
+                    u.user_id,
+                    u.full_name,
+                    u.email,
+                    u.phone,
+                    u.status,
+                    u.created_at,
+                    cp.business_name,
+                    cp.business_type,
+                    cp.website_url,
+                    p.package_name,
+                    p.package_tier,
+                    cs.status as subscription_status
+                FROM employee_assignments ea
+                JOIN users u ON ea.client_id = u.user_id
+                LEFT JOIN client_profiles cp ON u.user_id = cp.client_id
+                LEFT JOIN client_subscriptions cs ON u.user_id = cs.client_id 
+                    AND cs.status = 'active'
+                LEFT JOIN packages p ON cs.package_id = p.package_id
+                WHERE ea.employee_id = %s
+                ORDER BY u.created_at DESC
+            """, (current_user['user_id'],))
+        
+        clients = cursor.fetchall()
+        
+        # Convert datetime to ISO format
+        for client in clients:
+            if client.get('created_at'):
+                client['created_at'] = client['created_at'].isoformat()
+        
+        return {
+            "success": True,
+            "clients": clients,
+            "total": len(clients)
+        }
+        
+    except Exception as e:
+        print(f"Error fetching clients: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch clients: {str(e)}"
+        )
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
