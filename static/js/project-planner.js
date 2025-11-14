@@ -581,7 +581,7 @@ function populateProposalSummary() {
         { label: 'Company', value: proposalData.company_name || 'N/A', icon: 'building' },
         { label: 'Business Type', value: proposalData.business_type || 'N/A', icon: 'briefcase' },
         { label: 'Budget', value: `$${(proposalData.budget || 0).toLocaleString()}`, icon: 'currency-dollar' },
-        { label: 'Contact', value: proposalData.lead_name || 'N/A', icon: 'user' },
+        { label: 'Contact', value: proposalData.full_name || 'N/A', icon: 'user' },
         { label: 'Email', value: proposalData.lead_email || 'N/A', icon: 'mail' },
         { label: 'Status', value: 'Draft', icon: 'file' }
     ];
@@ -648,7 +648,7 @@ async function generateShareLink() {
     
     try {
        const token = localStorage.getItem('access_token');
-        const response = await fetch(`${API_BASE}/project-planner/proposals/${proposalId}/generate-link`, {
+        const response = await fetch(`${API_BASE}/project-planner/proposals/${currentProposalId}/generate-link`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -748,8 +748,23 @@ async function sendToDashboard() {
     showLoading();
     
     try {
+     
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            return;
+        }
+        
+        const content = quillEditor.root.innerHTML;
+        
         const response = await fetch(`${API_BASE}/project-planner/proposals/${currentProposalId}/send-to-dashboard`, {
-            method: 'POST'
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                content: content
+            })
         });
         
         const result = await response.json();
@@ -879,6 +894,7 @@ function createProposalCard(proposal) {
                 </button>
                 <button class="btn btn-sm btn-outline" onclick="deleteProposal(${proposal.proposal_id})" style="color: #EF4444; border-color: #EF4444;">
                     <i class="ti ti-trash"></i>
+                    Delete
                 </button>
             </div>
         </div>

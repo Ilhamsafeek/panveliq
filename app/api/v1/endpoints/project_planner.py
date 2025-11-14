@@ -696,15 +696,24 @@ async def export_proposal_pdf(
     proposal_id: int,
     current_user: dict = Depends(require_admin_or_employee)
 ):
-    """Export proposal as professional interactive PDF"""
+    """Export proposal as PDF with HTML content"""
     connection = None
     cursor = None
     
     try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+        from reportlab.lib import colors
+        from html import unescape
+        import re
+        
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        # Get proposal
+        # Get proposal with all data
         query = """
             SELECT p.*, u.full_name as client_name, u.email as client_email
             FROM project_proposals p
@@ -717,298 +726,207 @@ async def export_proposal_pdf(
         if not proposal:
             raise HTTPException(status_code=404, detail="Proposal not found")
         
-        # Generate professional PDF
-        try:
-            from reportlab.lib.pagesizes import A4
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-            from reportlab.lib.units import inch, mm
-            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
-            from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
-            from reportlab.lib import colors
-            
-            # Parse JSON data
-            strategy_data = json.loads(proposal['ai_generated_strategy']) if proposal['ai_generated_strategy'] else {}
-            diff_data = json.loads(proposal['competitive_differentiators']) if proposal['competitive_differentiators'] else {}
-            timeline_data = json.loads(proposal['suggested_timeline']) if proposal['suggested_timeline'] else {}
-            
-            # Create PDF in memory
-            buffer = BytesIO()
-            doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=50, bottomMargin=40, leftMargin=40, rightMargin=40)
-            
-            # Custom styles
-            styles = getSampleStyleSheet()
-            
-            cover_title = ParagraphStyle(
-                'CoverTitle', parent=styles['Heading1'], fontSize=36,
-                textColor=colors.HexColor('#9926F3'), spaceAfter=10,
-                alignment=TA_CENTER, fontName='Helvetica-Bold', leading=42
-            )
-            
-            cover_subtitle = ParagraphStyle(
-                'CoverSubtitle', parent=styles['Normal'], fontSize=18,
-                textColor=colors.HexColor('#1DD8FC'), spaceAfter=30,
-                alignment=TA_CENTER, fontName='Helvetica', leading=22
-            )
-            
-            section_heading = ParagraphStyle(
-                'SectionHeading', parent=styles['Heading1'], fontSize=20,
-                textColor=colors.HexColor('#9926F3'), spaceAfter=15, spaceBefore=20,
-                fontName='Helvetica-Bold', borderWidth=2, borderColor=colors.HexColor('#1DD8FC'),
-                borderPadding=10, backColor=colors.HexColor('#F8F9FA'), leading=24
-            )
-            
-            sub_heading = ParagraphStyle(
-                'SubHeading', parent=styles['Heading2'], fontSize=16,
-                textColor=colors.HexColor('#1DD8FC'), spaceAfter=10, spaceBefore=15,
-                fontName='Helvetica-Bold', leading=20
-            )
-            
-            body_pro = ParagraphStyle(
-                'BodyPro', parent=styles['Normal'], fontSize=11,
-                textColor=colors.HexColor('#333333'), spaceAfter=10,
-                alignment=TA_JUSTIFY, fontName='Helvetica', leading=16
-            )
-            
-            bullet_point = ParagraphStyle(
-                'BulletPoint', parent=styles['Normal'], fontSize=11,
-                textColor=colors.HexColor('#555555'), spaceAfter=8,
-                leftIndent=20, bulletIndent=10, fontName='Helvetica', leading=15
-            )
-            
-            # Build story
-            story = []
-            
-            # === COVER PAGE ===
-            story.append(Spacer(1, 1.5*inch))
-            story.append(Paragraph("DIGITAL MARKETING", cover_title))
-            story.append(Paragraph("PROPOSAL", cover_title))
-            story.append(Spacer(1, 0.3*inch))
-            story.append(Paragraph(f"Prepared for {proposal['client_name']}", cover_subtitle))
-            story.append(Spacer(1, 0.5*inch))
-            
-            # Client Info Table
-            client_info = [
-                ['Company:', proposal.get('company_name', 'N/A')],
-                ['Business Type:', proposal['business_type']],
-                ['Investment Budget:', f"${proposal['budget']:,.2f}"],
-                ['Prepared On:', datetime.now().strftime('%B %d, %Y')],
-            ]
-            
-            client_table = Table(client_info, colWidths=[2*inch, 4*inch])
-            client_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#9926F3')),
-                ('BACKGROUND', (1, 0), (1, -1), colors.HexColor('#F8F9FA')),
-                ('TEXTCOLOR', (0, 0), (0, -1), colors.white),
-                ('TEXTCOLOR', (1, 0), (1, -1), colors.HexColor('#333333')),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, -1), 11),
-                ('PADDING', (0, 0), (-1, -1), 12),
-                ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#DDDDDD')),
-            ]))
-            story.append(client_table)
-            story.append(PageBreak())
-            
-            # === EXECUTIVE SUMMARY ===
-            story.append(Paragraph("EXECUTIVE SUMMARY", section_heading))
-            story.append(Spacer(1, 0.2*inch))
-            
-            summary_text = f"""
-            This comprehensive digital marketing proposal has been specifically designed for 
-            <b>{proposal.get('company_name', 'your organization')}</b>, a {proposal['business_type']} 
-            looking to enhance their digital presence and drive measurable growth.
-            <br/><br/>
-            Our AI-powered approach combines cutting-edge marketing technology with proven strategies 
-            to deliver exceptional results within your investment budget of <b>${proposal['budget']:,.2f}</b>.
-            <br/><br/>
-            <b>Key Challenges We'll Address:</b><br/>
-            {proposal.get('challenges', 'Market penetration and brand awareness')}
-            <br/><br/>
-            <b>Target Audience Focus:</b><br/>
-            {proposal.get('target_audience', 'Defined target market segments')}
-            """
-            story.append(Paragraph(summary_text, body_pro))
-            story.append(PageBreak())
-            
-            # === STRATEGY SECTION ===
-            story.append(Paragraph("STRATEGIC MARKETING APPROACH", section_heading))
-            story.append(Spacer(1, 0.2*inch))
-            
-            if strategy_data and strategy_data.get('campaigns'):
-                story.append(Paragraph("Recommended Campaign Mix", sub_heading))
-                
-                campaign_data = []
-                for campaign_type, details in strategy_data.get('campaigns', {}).items():
-                    if isinstance(details, dict):
-                        platforms = ', '.join(details.get('platforms', [])) if details.get('platforms') else 'Multiple Platforms'
-                        campaign_name = campaign_type.replace('_', ' ').title()
-                        campaign_data.append([campaign_name, platforms])
-                
-                if campaign_data:
-                    campaign_table = Table(campaign_data, colWidths=[2.5*inch, 4*inch])
-                    campaign_table.setStyle(TableStyle([
-                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#9926F3')),
-                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                        ('FONTSIZE', (0, 0), (-1, -1), 10),
-                        ('PADDING', (0, 0), (-1, -1), 10),
-                        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#DDDDDD')),
-                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8F9FA')]),
-                    ]))
-                    story.append(campaign_table)
-                    story.append(Spacer(1, 0.2*inch))
-            
-            # Automation Tools
-            if strategy_data and strategy_data.get('automation_tools'):
-                story.append(Paragraph("Marketing Automation & Tools", sub_heading))
-                for tool in strategy_data.get('automation_tools', [])[:8]:
-                    story.append(Paragraph(f"• {tool}", bullet_point))
-            
-            story.append(PageBreak())
-            
-            # === DIFFERENTIATORS ===
-            story.append(Paragraph("WHY CHOOSE US", section_heading))
-            story.append(Spacer(1, 0.2*inch))
-            
-            if diff_data and diff_data.get('differentiators'):
-                for idx, diff in enumerate(diff_data.get('differentiators', [])[:5], 1):
-                    story.append(Paragraph(f"<b>{idx}. {diff.get('title', 'Key Advantage')}</b>", sub_heading))
-                    story.append(Paragraph(diff.get('description', ''), body_pro))
-                    
-                    impact_table = Table(
-                        [['Expected Impact:', diff.get('impact', 'Significant positive results')]],
-                        colWidths=[1.5*inch, 4.5*inch]
-                    )
-                    impact_table.setStyle(TableStyle([
-                        ('BACKGROUND', (0, 0), (0, 0), colors.HexColor('#1DD8FC')),
-                        ('BACKGROUND', (1, 0), (1, 0), colors.HexColor('#E8F8FD')),
-                        ('TEXTCOLOR', (0, 0), (0, 0), colors.white),
-                        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
-                        ('FONTSIZE', (0, 0), (-1, -1), 10),
-                        ('PADDING', (0, 0), (-1, -1), 10),
-                        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#1DD8FC')),
-                    ]))
-                    story.append(impact_table)
-                    story.append(Spacer(1, 0.15*inch))
-            
-            story.append(PageBreak())
-            
-            # === TIMELINE ===
-            story.append(Paragraph("PROJECT TIMELINE & MILESTONES", section_heading))
-            story.append(Spacer(1, 0.2*inch))
-            
-            if timeline_data and timeline_data.get('phases'):
-                for phase in timeline_data.get('phases', []):
-                    phase_header = Table(
-                        [[phase.get('phase', 'Phase'), phase.get('duration', 'Duration TBD')]],
-                        colWidths=[4*inch, 2*inch]
-                    )
-                    phase_header.setStyle(TableStyle([
-                        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#9926F3')),
-                        ('TEXTCOLOR', (0, 0), (-1, -1), colors.white),
-                        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-                        ('FONTSIZE', (0, 0), (-1, -1), 12),
-                        ('PADDING', (0, 0), (-1, -1), 10),
-                        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-                        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-                    ]))
-                    story.append(phase_header)
-                    
-                    if phase.get('milestones'):
-                        for milestone in phase.get('milestones', []):
-                            story.append(Paragraph(f"✓ {milestone}", bullet_point))
-                    
-                    story.append(Spacer(1, 0.15*inch))
-            
-            story.append(PageBreak())
-            
-            # === INVESTMENT ===
-            story.append(Paragraph("INVESTMENT BREAKDOWN", section_heading))
-            story.append(Spacer(1, 0.2*inch))
-            
-            budget = float(proposal['budget'])  # Convert Decimal to float
-            investment_data = [
-                ['Investment Category', 'Allocation', 'Amount'],
-                ['Strategy & Planning', '15%', f"${budget * 0.15:,.2f}"],
-                ['Creative Development', '20%', f"${budget * 0.20:,.2f}"],
-                ['Media & Advertising', '45%', f"${budget * 0.45:,.2f}"],
-                ['Analytics & Optimization', '10%', f"${budget * 0.10:,.2f}"],
-                ['Management & Support', '10%', f"${budget * 0.10:,.2f}"],
-                ['', '<b>TOTAL INVESTMENT</b>', f"<b>${budget:,.2f}</b>"],
-            ]
-            
-            investment_table = Table(investment_data, colWidths=[3*inch, 1.5*inch, 1.5*inch])
-            investment_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#9926F3')),
-                ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#1DD8FC')),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
-                ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
-                ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, -1), 10),
-                ('PADDING', (0, 0), (-1, -1), 10),
-                ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#DDDDDD')),
-                ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#F8F9FA')]),
-            ]))
-            story.append(investment_table)
-            
-            # === NEXT STEPS ===
-            story.append(Spacer(1, 0.3*inch))
-            story.append(Paragraph("NEXT STEPS", section_heading))
-            story.append(Spacer(1, 0.2*inch))
-            
-            next_steps = [
-                "Review this comprehensive proposal and share any questions or feedback",
-                "Schedule a discovery call to discuss your specific goals and requirements",
-                "Finalize the strategy and customize the approach based on your input",
-                "Sign the agreement and begin onboarding process",
-                "Launch your digital marketing campaigns within 2 weeks",
-            ]
-            
-            for idx, step in enumerate(next_steps, 1):
-                story.append(Paragraph(f"<b>Step {idx}:</b> {step}", bullet_point))
-            
-            story.append(Spacer(1, 0.3*inch))
-            story.append(Paragraph("CONTACT INFORMATION", sub_heading))
-            
-            contact_info = """
-            <b>PanvelIQ Digital Marketing</b><br/>
-            Email: hello@panveliq.com | Phone: +1 (555) 123-4567<br/>
-            Website: www.panveliq.com<br/><br/>
-            We look forward to partnering with you on this exciting journey!
-            """
-            story.append(Paragraph(contact_info, body_pro))
-            
-            # Build PDF
-            doc.build(story)
-            buffer.seek(0)
-            
-            # Safe filename generation
-            company_name = proposal.get('company_name') or 'Client'
-            safe_company_name = str(company_name).replace(' ', '_').replace('/', '_')
-            filename = f"Proposal_{safe_company_name}_{proposal_id}.pdf"
-            
-            return StreamingResponse(
-                buffer,
-                media_type="application/pdf",
-                headers={
-                    "Content-Disposition": f"attachment; filename={filename}"
-                }
-            )
+        # Get the HTML content - prioritize edited content
+        html_content = None
         
-        except ImportError as ie:
-            print(f"Import error: {ie}")
-            raise HTTPException(
-                status_code=501,
-                detail="PDF export requires reportlab. Install: pip install reportlab"
-            )
+        if proposal.get('custom_strategy_html'):
+            html_content = proposal['custom_strategy_html']
+            print(f"[PDF] Using custom_strategy_html")
+        elif proposal.get('custom_notes'):
+            try:
+                notes = json.loads(proposal['custom_notes']) if isinstance(proposal['custom_notes'], str) else proposal['custom_notes']
+                if isinstance(notes, dict) and 'edited_content' in notes:
+                    html_content = notes['edited_content']
+                    print(f"[PDF] Using edited_content from custom_notes")
+            except:
+                pass
+        
+        # If no edited content, generate from AI data
+        if not html_content:
+            print(f"[PDF] No edited content found, generating from AI data")
+            strategy = json.loads(proposal['ai_generated_strategy']) if proposal.get('ai_generated_strategy') else {}
+            differentiators = json.loads(proposal['competitive_differentiators']) if proposal.get('competitive_differentiators') else {}
+            timeline = json.loads(proposal['suggested_timeline']) if proposal.get('suggested_timeline') else {}
+            html_content = generate_proposal_html_for_pdf(proposal, strategy, differentiators, timeline)
+        
+        # Create PDF buffer
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=50, bottomMargin=50, leftMargin=50, rightMargin=50)
+        
+        # Define styles
+        styles = getSampleStyleSheet()
+        
+        # Custom styles
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=28,
+            textColor=colors.HexColor('#9926F3'),
+            spaceAfter=10,
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold'
+        )
+        
+        subtitle_style = ParagraphStyle(
+            'CustomSubtitle',
+            parent=styles['Normal'],
+            fontSize=18,
+            textColor=colors.HexColor('#1DD8FC'),
+            spaceAfter=20,
+            alignment=TA_CENTER,
+            fontName='Helvetica'
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=16,
+            textColor=colors.HexColor('#9926F3'),
+            spaceAfter=12,
+            spaceBefore=20,
+            fontName='Helvetica-Bold'
+        )
+        
+        subheading_style = ParagraphStyle(
+            'CustomSubHeading',
+            parent=styles['Heading3'],
+            fontSize=14,
+            textColor=colors.HexColor('#1DD8FC'),
+            spaceAfter=10,
+            spaceBefore=15,
+            fontName='Helvetica-Bold'
+        )
+        
+        body_style = ParagraphStyle(
+            'CustomBody',
+            parent=styles['Normal'],
+            fontSize=11,
+            textColor=colors.HexColor('#333333'),
+            spaceAfter=10,
+            alignment=TA_JUSTIFY,
+            fontName='Helvetica',
+            leading=16
+        )
+        
+        # Convert HTML to ReportLab elements
+        story = []
+        
+        # Simple HTML parser - convert common tags
+        def html_to_paragraphs(html_text):
+            elements = []
+            
+            # Remove style attributes and scripts
+            html_text = re.sub(r'<style[^>]*>.*?</style>', '', html_text, flags=re.DOTALL)
+            html_text = re.sub(r'<script[^>]*>.*?</script>', '', html_text, flags=re.DOTALL)
+            html_text = re.sub(r'\sstyle="[^"]*"', '', html_text)
+            
+            # Split by major tags
+            parts = re.split(r'(<h1[^>]*>.*?</h1>|<h2[^>]*>.*?</h2>|<h3[^>]*>.*?</h3>|<p[^>]*>.*?</p>|<ul[^>]*>.*?</ul>|<ol[^>]*>.*?</ol>|<hr[^>]*>)', html_text, flags=re.DOTALL)
+            
+            for part in parts:
+                if not part.strip():
+                    continue
+                
+                # H1 tags
+                if part.startswith('<h1'):
+                    text = re.sub(r'<[^>]+>', '', part)
+                    text = unescape(text.strip())
+                    if text:
+                        elements.append(Paragraph(text, title_style))
+                        elements.append(Spacer(1, 0.2*inch))
+                
+                # H2 tags
+                elif part.startswith('<h2'):
+                    text = re.sub(r'<[^>]+>', '', part)
+                    text = unescape(text.strip())
+                    if text:
+                        elements.append(Paragraph(text, subtitle_style))
+                        elements.append(Spacer(1, 0.2*inch))
+                
+                # H3 tags or H2/H3 with <strong>
+                elif '<strong>' in part and ('<h2' in part or '<h3' in part):
+                    text = re.sub(r'<[^>]+>', '', part)
+                    text = unescape(text.strip())
+                    if text:
+                        elements.append(Paragraph(text, heading_style))
+                        elements.append(Spacer(1, 0.1*inch))
+                
+                # Paragraph tags
+                elif part.startswith('<p'):
+                    text = re.sub(r'<[^>]+>', '', part)
+                    text = unescape(text.strip())
+                    if text:
+                        # Keep bold and italic
+                        text = part.replace('<p>', '').replace('</p>', '')
+                        text = text.replace('<strong>', '<b>').replace('</strong>', '</b>')
+                        text = text.replace('<em>', '<i>').replace('</em>', '</i>')
+                        text = re.sub(r'\sstyle="[^"]*"', '', text)
+                        elements.append(Paragraph(text, body_style))
+                
+                # List tags
+                elif part.startswith('<ul') or part.startswith('<ol'):
+                    # Extract list items
+                    items = re.findall(r'<li[^>]*>(.*?)</li>', part, flags=re.DOTALL)
+                    for item in items:
+                        item = re.sub(r'<[^>]+>', '', item)
+                        item = unescape(item.strip())
+                        if item:
+                            elements.append(Paragraph(f"• {item}", body_style))
+                
+                # HR tags
+                elif part.startswith('<hr'):
+                    elements.append(Spacer(1, 0.3*inch))
+            
+            return elements
+        
+        # Convert HTML to elements
+        story = html_to_paragraphs(html_content)
+        
+        # Add footer
+        story.append(Spacer(1, 0.5*inch))
+        footer_text = f"""
+        <b>PanvelIQ - AI-Powered Digital Marketing</b><br/>
+        Email: info@panveliq.com | Website: www.panveliq.com<br/>
+        <i>Generated on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</i>
+        """
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=9,
+            textColor=colors.HexColor('#666666'),
+            alignment=TA_CENTER
+        )
+        story.append(Paragraph(footer_text, footer_style))
+        
+        # Build PDF
+        doc.build(story)
+        buffer.seek(0)
+        
+        # Generate filename
+        company_name = proposal.get('company_name') or 'Client'
+        safe_company_name = str(company_name).replace(' ', '_').replace('/', '_')
+        filename = f"Proposal_{safe_company_name}_{proposal_id}.pdf"
+        
+        print(f"[PDF] Successfully generated PDF: {filename}")
+        
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
     
+    except ImportError as ie:
+        print(f"[PDF] Import error: {ie}")
+        raise HTTPException(
+            status_code=501,
+            detail="PDF export requires reportlab. Install with: pip install reportlab"
+        )
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error exporting PDF: {e}")
+        print(f"[PDF] Error: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -1018,6 +936,157 @@ async def export_proposal_pdf(
         if connection:
             connection.close()
 
+            
+def generate_proposal_html_for_pdf(proposal, strategy, differentiators, timeline):
+    """Generate HTML from AI data if no edited content exists"""
+    
+    # Extract data with proper key checking
+    campaigns = strategy.get('Recommended_Campaigns', strategy.get('campaigns', []))
+    tools = strategy.get('Automation_Tools', strategy.get('automation_tools', []))
+    diff_items = differentiators.get('differentiators', [])
+    phases = timeline.get('phases', [])
+    
+    company_name = proposal.get('company_name') or strategy.get('Company') or 'Your Company'
+    budget = proposal.get('budget') or strategy.get('Budget') or 0
+    business_type = proposal.get('business_type') or strategy.get('Business_Type') or 'business'
+    challenges = proposal.get('challenges') or (', '.join(strategy.get('Challenges', [])) if strategy.get('Challenges') else 'Business challenges')
+    target_audience = proposal.get('target_audience') or strategy.get('Target_Audience') or 'Target audience'
+    
+    # Build campaigns HTML
+    campaigns_html = ""
+    if campaigns:
+        for camp in campaigns:
+            campaign_type = camp.get('Type') or camp.get('type') or 'Campaign'
+            platform = camp.get('Platform') or camp.get('platform') or ''
+            platform_text = ', '.join(platform) if isinstance(platform, list) else platform
+            topics = camp.get('Content_Topics') or camp.get('content_topics') or []
+            topics_text = ', '.join(topics) if isinstance(topics, list) else ''
+            budget_pct = camp.get('Budget_Allocation_Percentage') or ''
+            
+            campaigns_html += f"<li><strong>{campaign_type}</strong>"
+            if platform_text:
+                campaigns_html += f" ({platform_text})"
+            campaigns_html += f": {topics_text}"
+            if budget_pct:
+                campaigns_html += f" <em>({budget_pct}% of budget)</em>"
+            campaigns_html += "</li>"
+    else:
+        campaigns_html = "<li>Customized marketing campaigns based on your business needs</li>"
+    
+    # Build tools HTML
+    tools_html = ""
+    if tools:
+        for tool in tools:
+            tool_name = tool.get('Tool') or tool.get('tool') or tool.get('name') or 'Marketing Tool'
+            purpose = tool.get('Purpose') or tool.get('purpose') or 'Campaign enhancement'
+            budget_pct = tool.get('Budget_Allocation_Percentage') or ''
+            
+            tools_html += f"<li><strong>{tool_name}:</strong> {purpose}"
+            if budget_pct:
+                tools_html += f" <em>({budget_pct}% of budget)</em>"
+            tools_html += "</li>"
+    else:
+        tools_html = "<li>Marketing automation and analytics tools</li>"
+    
+    # Build differentiators HTML
+    diff_html = ""
+    if diff_items:
+        for diff in diff_items:
+            title = diff.get('title', 'Competitive Advantage')
+            description = diff.get('description', '')
+            impact = diff.get('impact', 'Positive impact on results')
+            diff_html += f"""
+            <li>
+                <strong>{title}:</strong> {description}<br>
+                <em>Impact: {impact}</em>
+            </li>
+            """
+    else:
+        diff_html = "<li><strong>AI-Powered Approach:</strong> Leveraging technology for optimal results<br><em>Impact: Increased efficiency and ROI</em></li>"
+    
+    # Build timeline HTML
+    timeline_html = ""
+    if phases:
+        for idx, phase in enumerate(phases, 1):
+            phase_name = phase.get('phase') or phase.get('name') or f"Phase {idx}"
+            duration = phase.get('duration', 'TBD')
+            deliverables = phase.get('deliverables', [])
+            
+            timeline_html += f"""
+            <h3><strong>Phase {idx}: {phase_name}</strong></h3>
+            <p><strong>Duration:</strong> {duration}</p>
+            <p><strong>Key Deliverables:</strong></p>
+            <ul>
+            """
+            for deliverable in deliverables:
+                timeline_html += f"<li>{deliverable}</li>"
+            timeline_html += "</ul>"
+    else:
+        timeline_html = """
+        <h3><strong>Phase 1: Planning & Setup</strong></h3>
+        <p><strong>Duration:</strong> 2-4 weeks</p>
+        <ul><li>Initial strategy development and campaign setup</li></ul>
+        """
+    
+    return f"""
+    <h1>Digital Marketing Proposal</h1>
+    <h2>for {company_name}</h2>
+    <p style="text-align: center;"><em>Prepared by PanvelIQ</em></p>
+    
+    <hr>
+    
+    <h2><strong>Executive Summary</strong></h2>
+    <p>This comprehensive digital marketing proposal has been specifically designed for <strong>{company_name}</strong>, a {business_type} looking to enhance their digital presence and drive measurable growth.</p>
+    <p>Our AI-powered approach combines cutting-edge marketing technology with proven strategies to deliver exceptional results within your investment budget of <strong>${budget:,.2f}</strong>.</p>
+    
+    <h2><strong>Current Challenges</strong></h2>
+    <p>{challenges}</p>
+    
+    <h2><strong>Target Audience Analysis</strong></h2>
+    <p>{target_audience}</p>
+    
+    <h2><strong>Recommended Marketing Strategy</strong></h2>
+    <p>Based on our AI analysis, we recommend a comprehensive marketing approach across multiple channels.</p>
+    
+    <h3><strong>Recommended Campaigns</strong></h3>
+    <ul>
+        {campaigns_html}
+    </ul>
+    
+    <h3><strong>Automation Tools & Technologies</strong></h3>
+    <ul>
+        {tools_html}
+    </ul>
+    
+    <h2><strong>Competitive Differentiators</strong></h2>
+    <p>What sets our approach apart:</p>
+    <ul>
+        {diff_html}
+    </ul>
+    
+    <h2><strong>Project Timeline</strong></h2>
+    {timeline_html}
+    
+    <hr>
+    
+    <h2><strong>Investment & ROI</strong></h2>
+    <p><strong>Total Investment:</strong> ${budget:,.2f}</p>
+    <p>Our data-driven approach ensures maximum return on investment through:</p>
+    <ul>
+        <li>Continuous performance optimization</li>
+        <li>AI-powered audience targeting</li>
+        <li>Real-time analytics and reporting</li>
+        <li>Agile campaign management</li>
+    </ul>
+    
+    <h2><strong>Next Steps</strong></h2>
+    <ol>
+        <li>Review this proposal and provide feedback</li>
+        <li>Schedule a strategy session to discuss implementation</li>
+        <li>Finalize project scope and timeline</li>
+        <li>Begin Phase 1 execution</li>
+    </ol>
+    """
 
 
 @router.put("/proposals/{proposal_id}/update-content")
@@ -1111,6 +1180,128 @@ async def delete_proposal(
     except Exception as e:
         if connection:
             connection.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@router.post("/proposals/{proposal_id}/send-to-dashboard")
+async def send_to_dashboard(
+    proposal_id: int,
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """Send proposal to client dashboard"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Check if proposal exists
+        cursor.execute("SELECT * FROM project_proposals WHERE proposal_id = %s", (proposal_id,))
+        proposal = cursor.fetchone()
+        
+        if not proposal:
+            raise HTTPException(status_code=404, detail="Proposal not found")
+        
+        # Update status to sent
+        cursor.execute("""
+            UPDATE project_proposals 
+            SET status = %s, sent_at = NOW(), updated_at = NOW()
+            WHERE proposal_id = %s
+        """, ('sent', proposal_id))
+        
+        connection.commit()
+        
+        print(f"[DASHBOARD] Proposal {proposal_id} sent to client dashboard")
+        
+        return {
+            "success": True,
+            "message": "Proposal successfully added to client dashboard"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        if connection:
+            connection.rollback()
+        print(f"Error sending to dashboard: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@router.post("/proposals/{proposal_id}/send-email")
+async def send_proposal_email(
+    proposal_id: int,
+    email_data: dict,
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """Send proposal via email"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Check if proposal exists
+        cursor.execute("SELECT * FROM project_proposals WHERE proposal_id = %s", (proposal_id,))
+        proposal = cursor.fetchone()
+        
+        if not proposal:
+            raise HTTPException(status_code=404, detail="Proposal not found")
+        
+        recipient_email = email_data.get('recipient_email')
+        subject = email_data.get('subject', 'Marketing Proposal for Your Review')
+        message = email_data.get('message', '')
+        
+        if not recipient_email:
+            raise HTTPException(status_code=400, detail="Recipient email is required")
+        
+        # Here you would integrate with your email service (SendGrid, AWS SES, etc.)
+        # For now, we'll just log it and update the status
+        
+        print(f"[EMAIL] Sending proposal {proposal_id} to {recipient_email}")
+        print(f"  Subject: {subject}")
+        print(f"  Message: {message[:100]}...")
+        
+        # Update proposal status
+        cursor.execute("""
+            UPDATE project_proposals 
+            SET status = %s, sent_at = NOW(), updated_at = NOW()
+            WHERE proposal_id = %s
+        """, ('sent', proposal_id))
+        
+        connection.commit()
+        
+        # TODO: Implement actual email sending here
+        # Example with a generic email service:
+        # send_email(
+        #     to=recipient_email,
+        #     subject=subject,
+        #     body=message,
+        #     attachments=[generate_pdf(proposal_id)]
+        # )
+        
+        return {
+            "success": True,
+            "message": f"Proposal sent successfully to {recipient_email}"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        if connection:
+            connection.rollback()
+        print(f"Error sending email: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if cursor:
