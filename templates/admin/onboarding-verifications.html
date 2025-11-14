@@ -1,0 +1,722 @@
+{% extends "base.html" %}
+
+{% block title %}Onboarding Verifications - PanvelIQ Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-purple: #9926F3;
+        --primary-cyan: #1DD8FC;
+        --gradient: linear-gradient(135deg, #9926F3 0%, #1DD8FC 100%);
+        --color-gray-50: #F9FAFB;
+        --color-gray-100: #F3F4F6;
+        --color-gray-200: #E5E7EB;
+        --color-gray-300: #D1D5DB;
+        --color-gray-600: #4B5563;
+        --color-gray-700: #374151;
+        --color-gray-900: #111827;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+        font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: var(--color-gray-50);
+    }
+
+    .admin-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+    }
+
+    /* Header */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0;
+    }
+
+    .stats-badge {
+        background: var(--gradient);
+        color: white;
+        padding: 0.625rem 1.25rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9375rem;
+    }
+
+    /* Verification Cards Grid */
+    .verifications-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .verification-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .verification-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary-purple);
+    }
+
+    /* Card Header */
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--color-gray-200);
+    }
+
+    .client-info h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0 0 0.25rem 0;
+    }
+
+    .client-email {
+        font-size: 0.875rem;
+        color: var(--color-gray-600);
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+
+    .package-badge {
+        padding: 0.375rem 0.875rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .package-badge.basic {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .package-badge.professional {
+        background: #DDD6FE;
+        color: #6B21A8;
+    }
+
+    .package-badge.enterprise {
+        background: #FCE7F3;
+        color: #9F1239;
+    }
+
+    /* Info Grid */
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .info-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--color-gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-value {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--color-gray-900);
+    }
+
+    /* Details Section */
+    .details-section {
+        margin-bottom: 1rem;
+    }
+
+    .details-section h4 {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--color-gray-700);
+        margin: 0 0 0.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+
+    .details-content {
+        font-size: 0.875rem;
+        color: var(--color-gray-600);
+        line-height: 1.6;
+        background: var(--color-gray-50);
+        padding: 0.75rem;
+        border-radius: 8px;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+
+    .btn {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .btn-approve {
+        background: #10B981;
+        color: white;
+    }
+
+    .btn-approve:hover {
+        background: #059669;
+        transform: scale(1.02);
+    }
+
+    .btn-reject {
+        background: #EF4444;
+        color: white;
+    }
+
+    .btn-reject:hover {
+        background: #DC2626;
+        transform: scale(1.02);
+    }
+
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow-md);
+    }
+
+    .empty-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1.5rem;
+        background: var(--color-gray-100);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .empty-icon i {
+        font-size: 2.5rem;
+        color: var(--color-gray-400);
+    }
+
+    .empty-state h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .empty-state p {
+        font-size: 1rem;
+        color: var(--color-gray-600);
+        margin: 0;
+    }
+
+    /* Loading State */
+    .loading-container {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .loader {
+        width: 60px;
+        height: 60px;
+        border: 5px solid var(--color-gray-200);
+        border-top-color: var(--primary-purple);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1.5rem;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 500px;
+        width: 100%;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .modal-body {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.9375rem;
+        color: var(--color-gray-700);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--color-gray-300);
+        border-radius: 8px;
+        font-size: 0.9375rem;
+        font-family: 'Gilroy', sans-serif;
+        resize: vertical;
+        min-height: 100px;
+        box-sizing: border-box;
+    }
+
+    .form-textarea:focus {
+        outline: none;
+        border-color: var(--primary-purple);
+        box-shadow: 0 0 0 3px rgba(153, 38, 243, 0.1);
+    }
+
+    .modal-footer {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .btn-cancel {
+        flex: 1;
+        background: var(--color-gray-200);
+        color: var(--color-gray-700);
+    }
+
+    .btn-cancel:hover {
+        background: var(--color-gray-300);
+    }
+
+    .btn-confirm {
+        flex: 2;
+        background: var(--gradient);
+        color: white;
+    }
+
+    .btn-confirm:hover {
+        transform: scale(1.02);
+        box-shadow: 0 8px 20px rgba(153, 38, 243, 0.3);
+    }
+
+    /* Alert */
+    .alert {
+        padding: 1rem 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.9375rem;
+    }
+
+    .alert-success {
+        background: #D1FAE5;
+        color: #065F46;
+        border: 1px solid #6EE7B7;
+    }
+
+    .alert-error {
+        background: #FEE2E2;
+        color: #991B1B;
+        border: 1px solid #FCA5A5;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .verifications-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="page-header">
+        <h1>Onboarding Verifications</h1>
+        <div class="stats-badge">
+            <i class="ti ti-clock"></i>
+            <span id="pendingCount">0 Pending</span>
+        </div>
+    </div>
+
+    <div id="alertContainer"></div>
+
+    <div id="loadingState" class="loading-container">
+        <div class="loader"></div>
+        <p style="color: var(--color-gray-600); font-weight: 600;">Loading verifications...</p>
+    </div>
+
+    <div id="verificationsGrid" class="verifications-grid" style="display: none;">
+        <!-- Verification cards will be loaded here -->
+    </div>
+
+    <div id="emptyState" class="empty-state" style="display: none;">
+        <div class="empty-icon">
+            <i class="ti ti-check-circle"></i>
+        </div>
+        <h2>All Caught Up!</h2>
+        <p>No pending verifications at the moment.</p>
+    </div>
+</div>
+
+<!-- Verification Modal -->
+<div class="modal" id="verificationModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Verify Onboarding</h2>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label" for="discussionNotes">
+                    Discussion Notes (Optional)
+                </label>
+                <textarea 
+                    id="discussionNotes" 
+                    class="form-textarea" 
+                    placeholder="Add any notes or reasons for your decision..."
+                ></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-cancel" onclick="closeModal()">
+                <i class="ti ti-x"></i>
+                Cancel
+            </button>
+            <button class="btn btn-confirm" id="confirmBtn" onclick="confirmAction()">
+                <i class="ti ti-check"></i>
+                <span id="confirmText">Confirm</span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentAction = null;
+let currentOnboardingId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadPendingVerifications();
+});
+
+async function loadPendingVerifications() {
+    const loadingState = document.getElementById('loadingState');
+    const verificationsGrid = document.getElementById('verificationsGrid');
+    const emptyState = document.getElementById('emptyState');
+    
+    loadingState.style.display = 'block';
+    verificationsGrid.style.display = 'none';
+    emptyState.style.display = 'none';
+    
+    try {
+        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/onboarding/pending-verifications`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load verifications');
+        }
+        
+        const data = await response.json();
+        
+        loadingState.style.display = 'none';
+        
+        if (data.status === 'success' && data.pending_verifications && data.pending_verifications.length > 0) {
+            renderVerifications(data.pending_verifications);
+            verificationsGrid.style.display = 'grid';
+            document.getElementById('pendingCount').textContent = `${data.count} Pending`;
+        } else {
+            emptyState.style.display = 'block';
+            document.getElementById('pendingCount').textContent = '0 Pending';
+        }
+        
+    } catch (error) {
+        console.error('Error loading verifications:', error);
+        showAlert('Failed to load verifications. Please try again.', 'error');
+        loadingState.style.display = 'none';
+    }
+}
+
+function renderVerifications(verifications) {
+    const grid = document.getElementById('verificationsGrid');
+    grid.innerHTML = '';
+    
+    verifications.forEach(verification => {
+        const card = document.createElement('div');
+        card.className = 'verification-card';
+        
+        const vData = verification.verification_data || {};
+        
+        card.innerHTML = `
+            <div class="card-header">
+                <div class="client-info">
+                    <h3>${verification.full_name}</h3>
+                    <div class="client-email">
+                        <i class="ti ti-mail"></i>
+                        ${verification.email}
+                    </div>
+                </div>
+                <div class="package-badge ${verification.package_tier || 'basic'}">
+                    ${verification.package_tier || 'Basic'}
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Business Name</span>
+                    <span class="info-value">${vData.business_name || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Business Type</span>
+                    <span class="info-value">${vData.business_type || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Company Size</span>
+                    <span class="info-value">${vData.company_size || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Monthly Budget</span>
+                    <span class="info-value">$${vData.monthly_budget || 0}</span>
+                </div>
+            </div>
+
+            ${vData.website_url ? `
+            <div class="details-section">
+                <h4><i class="ti ti-world"></i>Website</h4>
+                <div class="details-content">
+                    <a href="${vData.website_url}" target="_blank" style="color: var(--primary-purple);">
+                        ${vData.website_url}
+                    </a>
+                </div>
+            </div>
+            ` : ''}
+
+            ${vData.marketing_goals ? `
+            <div class="details-section">
+                <h4><i class="ti ti-target"></i>Marketing Goals</h4>
+                <div class="details-content">${vData.marketing_goals}</div>
+            </div>
+            ` : ''}
+
+            ${vData.current_challenges ? `
+            <div class="details-section">
+                <h4><i class="ti ti-alert-circle"></i>Current Challenges</h4>
+                <div class="details-content">${vData.current_challenges}</div>
+            </div>
+            ` : ''}
+
+            <div class="action-buttons">
+                <button class="btn btn-reject" onclick="openModal('reject', ${verification.onboarding_id})">
+                    <i class="ti ti-x"></i>
+                    Reject
+                </button>
+                <button class="btn btn-approve" onclick="openModal('approve', ${verification.onboarding_id})">
+                    <i class="ti ti-check"></i>
+                    Approve
+                </button>
+            </div>
+        `;
+        
+        grid.appendChild(card);
+    });
+}
+
+function openModal(action, onboardingId) {
+    currentAction = action;
+    currentOnboardingId = onboardingId;
+    
+    const modal = document.getElementById('verificationModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const confirmText = document.getElementById('confirmText');
+    
+    if (action === 'approve') {
+        modalTitle.textContent = 'Approve Onboarding';
+        confirmText.textContent = 'Approve';
+        confirmBtn.className = 'btn btn-confirm';
+        confirmBtn.style.background = '#10B981';
+    } else {
+        modalTitle.textContent = 'Reject Onboarding';
+        confirmText.textContent = 'Reject';
+        confirmBtn.className = 'btn btn-confirm';
+        confirmBtn.style.background = '#EF4444';
+    }
+    
+    document.getElementById('discussionNotes').value = '';
+    modal.classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('verificationModal').classList.remove('active');
+    currentAction = null;
+    currentOnboardingId = null;
+}
+
+async function confirmAction() {
+    if (!currentAction || !currentOnboardingId) return;
+    
+    const discussionNotes = document.getElementById('discussionNotes').value.trim();
+    const confirmBtn = document.getElementById('confirmBtn');
+    
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<div style="width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>';
+    
+    try {
+        const status = currentAction === 'approve' ? 'verified' : 'rejected';
+        
+        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/onboarding/verify/${currentOnboardingId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            },
+            body: JSON.stringify({
+                verification_status: status,
+                discussion_notes: discussionNotes || null
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.status === 'success') {
+            showAlert(`Onboarding ${status} successfully!`, 'success');
+            closeModal();
+            
+            // Reload the list after 1 second
+            setTimeout(() => {
+                loadPendingVerifications();
+            }, 1000);
+        } else {
+            throw new Error(data.detail || 'Action failed');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert(error.message || 'Failed to process verification', 'error');
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = `<i class="ti ti-check"></i><span>${currentAction === 'approve' ? 'Approve' : 'Reject'}</span>`;
+    }
+}
+
+function showAlert(message, type) {
+    const alertContainer = document.getElementById('alertContainer');
+    const icon = type === 'success' ? 'ti-check-circle' : 'ti-alert-circle';
+    
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.innerHTML = `
+        <i class="ti ${icon}"></i>
+        <span>${message}</span>
+    `;
+    
+    alertContainer.innerHTML = '';
+    alertContainer.appendChild(alert);
+    
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+
+// Close modal when clicking outside
+document.getElementById('verificationModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+</script>
+{% endblock %}

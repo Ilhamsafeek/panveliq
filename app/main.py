@@ -1,5 +1,6 @@
 """
-REPLACE CONTENT IN: app/main.py (existing file)
+UPDATED VERSION OF: app/main.py
+ADD THE ONBOARDING ROUTES TO YOUR EXISTING main.py
 
 PanvelIQ - AI-powered Digital Marketing Intelligence Platform
 Main FastAPI Application Entry Point
@@ -11,7 +12,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Optional
-
+from jose import JWTError, jwt
 
 from app.core.config import settings
 from app.api.v1.router import api_router
@@ -97,6 +98,40 @@ async def forgot_password_page(request: Request):
     )
 
 
+# ========== ONBOARDING PAGES (NEW) ==========
+
+@app.get("/onboarding/select-package", response_class=HTMLResponse)
+async def select_package_page(request: Request):
+    """
+    Package selection page - Entry Point 1
+    User lands here after successful registration
+    """
+    return templates.TemplateResponse(
+        "onboarding/select-package.html",
+        {
+            "request": request,
+            "hide_navbar": True,
+            "hide_footer": True
+        }
+    )
+
+
+@app.get("/onboarding/verification", response_class=HTMLResponse)
+async def verification_page(request: Request):
+    """
+    Verification page - Entry Point 2
+    User lands here after selecting a package
+    """
+    return templates.TemplateResponse(
+        "onboarding/verification.html",
+        {
+            "request": request,
+            "hide_navbar": True,
+            "hide_footer": True
+        }
+    )
+
+
 # ========== DASHBOARD PAGES ==========
 
 @app.get("/dashboard/client", response_class=HTMLResponse)
@@ -126,47 +161,55 @@ async def employee_dashboard(request: Request):
     )
 
 
+# ========== ADMIN PAGES (NEW) ==========
+
+@app.get("/admin/onboarding-verifications", response_class=HTMLResponse)
+async def onboarding_verifications_page(request: Request):
+    """
+    Admin verification panel - Entry Point 3
+    Admin uses this to review and approve onboarding requests
+    """
+    return templates.TemplateResponse(
+        "admin/onboarding-verifications.html",
+        {
+            "request": request,
+            "show_sidebar": True
+        }
+    )
+
+
+# ========== MODULE PAGES ==========
+
 @app.get("/modules/project-planner", response_class=HTMLResponse)
 async def project_planner_page(request: Request):
     """
-    AI Project Planner page
-    
-    **Access**: Admin and Employee only
+    Project Planner module page
     """
-    # Get token from cookie or Authorization header
-    access_token = request.cookies.get('access_token')
+    # Get token from cookie if available
+    access_token: Optional[str] = request.cookies.get("access_token")
+    role = None
     
-    # If no cookie, check Authorization header
     if not access_token:
-        auth_header = request.headers.get('Authorization')
-        if auth_header and auth_header.startswith('Bearer '):
-            access_token = auth_header.replace('Bearer ', '')
+        # Check for token in Authorization header (for testing)
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.split(" ")[1]
     
-    # If still no token, serve the page but let JavaScript handle auth
-    if not access_token:
-        # Return the page - JavaScript will check localStorage and redirect if needed
-        return templates.TemplateResponse(
-            "modules/project-planner.html",
-            {
-                "request": request,
-                "show_sidebar": True,
-                "user_role": None
-            }
-        )
-    
+    # Try to decode token and get user role
     try:
-        # Verify token and get user
-        from jose import jwt, JWTError
-        from app.core.config import settings
+        if access_token:
+            payload = jwt.decode(
+                access_token,
+                settings.SECRET_KEY,
+                algorithms=[settings.ALGORITHM]
+            )
+            role = payload.get("role")
         
-        payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        role = payload.get("role")
-        
-        # Check if user is admin or employee
-        if role not in ['admin', 'employee']:
+        # Verify role is admin or employee
+        if role and role not in ["admin", "employee"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied. Admin or Employee role required."
+                detail="Admin or Employee role required."
             )
         
         return templates.TemplateResponse(
@@ -199,6 +242,7 @@ async def project_planner_page(request: Request):
             }
         )
 
+
 # ========== HEALTH CHECK ==========
 
 @app.get("/health")
@@ -211,7 +255,8 @@ async def health_check():
         "environment": settings.ENVIRONMENT,
         "features": {
             "authentication": "enabled",
-            "database": "mysql"
+            "database": "mysql",
+            "onboarding": "enabled"  # NEW
         }
     }
 
@@ -227,6 +272,9 @@ async def startup_event():
     print(f"📊 API Documentation: http://{settings.HOST}:{settings.PORT}/api/{settings.API_VERSION}/docs")
     print(f"🔐 Login page: http://{settings.HOST}:{settings.PORT}/auth/login")
     print(f"📝 Register page: http://{settings.HOST}:{settings.PORT}/auth/register")
+    print(f"📦 Package selection: http://{settings.HOST}:{settings.PORT}/onboarding/select-package")  # NEW
+    print(f"✅ Verification: http://{settings.HOST}:{settings.PORT}/onboarding/verification")  # NEW
+    print(f"👨‍💼 Admin verifications: http://{settings.HOST}:{settings.PORT}/admin/onboarding-verifications")  # NEW
 
 
 @app.on_event("shutdown")

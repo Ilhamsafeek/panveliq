@@ -16,6 +16,7 @@ from io import BytesIO
 from app.core.config import settings
 from app.services.ai_service import AIService
 from app.core.security import require_admin_or_employee
+from app.core.security import get_db_connection
 
 router = APIRouter()
 
@@ -54,26 +55,6 @@ class SendProposalRequest(BaseModel):
 
 
 # ========== DATABASE CONNECTION ==========
-
-def get_db_connection():
-    """Get MySQL database connection"""
-    try:
-        connection = pymysql.connect(
-            host=settings.DB_HOST,
-            port=settings.DB_PORT,
-            user=settings.DB_USER,
-            password=settings.DB_PASSWORD,
-            database=settings.DB_NAME,
-            cursorclass=pymysql.cursors.DictCursor
-        )
-        return connection
-    except Exception as e:
-        print(f"Database connection error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database connection failed: {str(e)}"
-        )
-
 
 def column_exists(cursor, table_name, column_name):
     """Check if a column exists in a table"""
@@ -936,7 +917,7 @@ async def export_proposal_pdf(
         if connection:
             connection.close()
 
-            
+
 def generate_proposal_html_for_pdf(proposal, strategy, differentiators, timeline):
     """Generate HTML from AI data if no edited content exists"""
     

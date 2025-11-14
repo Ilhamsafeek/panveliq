@@ -11,29 +11,10 @@ import pymysql
 from passlib.context import CryptContext
 
 from app.core.config import settings
+from app.core.security import get_db_connection
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def get_db_connection():
-    """Get MySQL database connection"""
-    try:
-        connection = pymysql.connect(
-            host=settings.DB_HOST,
-            port=settings.DB_PORT,
-            user=settings.DB_USER,
-            password=settings.DB_PASSWORD,
-            database=settings.DB_NAME,
-            cursorclass=pymysql.cursors.DictCursor
-        )
-        return connection
-    except Exception as e:
-        print(f"Database connection error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database connection failed: {str(e)}"
-        )
 
 
 class UserCreate(BaseModel):

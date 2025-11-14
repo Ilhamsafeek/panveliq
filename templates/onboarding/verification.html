@@ -1,0 +1,840 @@
+{% extends "base.html" %}
+
+{% block title %}Verification & Onboarding - PanvelIQ{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-purple: #9926F3;
+        --primary-cyan: #1DD8FC;
+        --gradient: linear-gradient(135deg, #9926F3 0%, #1DD8FC 100%);
+        --color-gray-50: #F9FAFB;
+        --color-gray-100: #F3F4F6;
+        --color-gray-200: #E5E7EB;
+        --color-gray-300: #D1D5DB;
+        --color-gray-600: #4B5563;
+        --color-gray-700: #374151;
+        --color-gray-900: #111827;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+        font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: var(--color-gray-50);
+    }
+
+    /* =====================================================
+       HEADER
+       ===================================================== */
+    .verification-header {
+        background: white;
+        border-bottom: 1px solid var(--color-gray-200);
+        padding: 1.5rem 0;
+    }
+
+    .header-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .header-logo img {
+        height: 40px;
+    }
+
+    .header-status {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .status-badge.pending {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .status-badge.verified {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .status-badge.rejected {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    /* =====================================================
+       CONTAINER
+       ===================================================== */
+    .verification-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1.5rem 3rem;
+    }
+
+    .page-title {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .page-subtitle {
+        font-size: 1rem;
+        color: var(--color-gray-600);
+        margin: 0 0 2rem 0;
+    }
+
+    /* =====================================================
+       GRID LAYOUT
+       ===================================================== */
+    .verification-grid {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: 2rem;
+    }
+
+    /* =====================================================
+       MAIN CONTENT SECTION
+       ===================================================== */
+    .verification-form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: var(--shadow-md);
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--color-gray-200);
+    }
+
+    .section-header i {
+        font-size: 1.5rem;
+        background: var(--gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .section-header h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0;
+    }
+
+    /* =====================================================
+       FORM ELEMENTS
+       ===================================================== */
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.9375rem;
+        color: var(--color-gray-700);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-label .required {
+        color: #DC2626;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--color-gray-300);
+        border-radius: 8px;
+        font-size: 0.9375rem;
+        font-family: 'Gilroy', sans-serif;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+        outline: none;
+        border-color: var(--primary-purple);
+        box-shadow: 0 0 0 3px rgba(153, 38, 243, 0.1);
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .form-hint {
+        font-size: 0.8125rem;
+        color: var(--color-gray-600);
+        margin-top: 0.375rem;
+    }
+
+    .error-message {
+        color: #DC2626;
+        font-size: 0.8125rem;
+        margin-top: 0.375rem;
+        display: none;
+    }
+
+    /* =====================================================
+       SIDEBAR (PACKAGE INFO & STATUS)
+       ===================================================== */
+    .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .sidebar-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+    }
+
+    .sidebar-card h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0 0 1rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .package-info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--color-gray-200);
+    }
+
+    .package-info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-size: 0.875rem;
+        color: var(--color-gray-600);
+        font-weight: 500;
+    }
+
+    .info-value {
+        font-size: 0.9375rem;
+        color: var(--color-gray-900);
+        font-weight: 600;
+    }
+
+    .info-value.price {
+        background: var(--gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 1.125rem;
+    }
+
+    /* =====================================================
+       TIMELINE STEPS
+       ===================================================== */
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -2rem;
+        top: 0;
+        width: 2px;
+        height: 100%;
+        background: var(--color-gray-200);
+    }
+
+    .timeline-item:last-child::before {
+        display: none;
+    }
+
+    .timeline-icon {
+        position: absolute;
+        left: -2.5rem;
+        top: 0;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        background: var(--color-gray-200);
+        color: var(--color-gray-600);
+    }
+
+    .timeline-item.completed .timeline-icon {
+        background: var(--gradient);
+        color: white;
+    }
+
+    .timeline-item.active .timeline-icon {
+        background: var(--primary-purple);
+        color: white;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(153, 38, 243, 0.4); }
+        50% { box-shadow: 0 0 0 10px rgba(153, 38, 243, 0); }
+    }
+
+    .timeline-content h4 {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--color-gray-900);
+        margin: 0 0 0.25rem 0;
+    }
+
+    .timeline-content p {
+        font-size: 0.8125rem;
+        color: var(--color-gray-600);
+        margin: 0;
+    }
+
+    /* =====================================================
+       BUTTONS
+       ===================================================== */
+    .btn-submit {
+        width: 100%;
+        background: var(--gradient);
+        color: white;
+        border: none;
+        padding: 1rem;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .btn-submit:hover {
+        transform: scale(1.02);
+        box-shadow: 0 8px 20px rgba(153, 38, 243, 0.3);
+    }
+
+    .btn-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-submit.loading {
+        opacity: 0.7;
+        cursor: wait;
+    }
+
+    .btn-spinner {
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        display: none;
+    }
+
+    .btn-submit.loading .btn-spinner {
+        display: block;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* =====================================================
+       ALERT
+       ===================================================== */
+    .alert {
+        padding: 1rem 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.9375rem;
+    }
+
+    .alert-success {
+        background: #D1FAE5;
+        color: #065F46;
+        border: 1px solid #6EE7B7;
+    }
+
+    .alert-error {
+        background: #FEE2E2;
+        color: #991B1B;
+        border: 1px solid #FCA5A5;
+    }
+
+    .alert-info {
+        background: #DBEAFE;
+        color: #1E40AF;
+        border: 1px solid #93C5FD;
+    }
+
+    .alert i {
+        font-size: 1.25rem;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+    @media (max-width: 1024px) {
+        .verification-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .sidebar {
+            order: -1;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .header-content {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="verification-header">
+    <div class="header-content">
+        <div class="header-logo">
+            <img src="{{ url_for('static', path='images/logo.png') }}" alt="PanvelIQ">
+        </div>
+        <div class="header-status">
+            <div id="statusBadge" class="status-badge pending">
+                <i class="ti ti-clock"></i>
+                <span>Pending Verification</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="verification-container">
+    <h1 class="page-title">Complete Your Onboarding</h1>
+    <p class="page-subtitle">Please provide your business details for verification</p>
+
+    <div id="alertContainer"></div>
+
+    <div class="verification-grid">
+        <!-- Main Form Section -->
+        <div class="verification-form-section">
+            <div class="section-header">
+                <i class="ti ti-clipboard-check"></i>
+                <h2>Business Verification</h2>
+            </div>
+
+            <form id="verificationForm">
+                <!-- Business Name -->
+                <div class="form-group">
+                    <label class="form-label" for="businessName">
+                        Business Name <span class="required">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="businessName" 
+                        name="businessName" 
+                        class="form-input" 
+                        placeholder="Enter your business name"
+                        required
+                    >
+                    <div class="error-message" id="businessName-error"></div>
+                </div>
+
+                <!-- Business Type -->
+                <div class="form-group">
+                    <label class="form-label" for="businessType">
+                        Business Type <span class="required">*</span>
+                    </label>
+                    <select id="businessType" name="businessType" class="form-select" required>
+                        <option value="">Select business type</option>
+                        <option value="e-commerce">E-Commerce</option>
+                        <option value="saas">SaaS</option>
+                        <option value="retail">Retail</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="education">Education</option>
+                        <option value="real-estate">Real Estate</option>
+                        <option value="hospitality">Hospitality</option>
+                        <option value="consulting">Consulting</option>
+                        <option value="manufacturing">Manufacturing</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <div class="error-message" id="businessType-error"></div>
+                </div>
+
+                <!-- Website URL -->
+                <div class="form-group">
+                    <label class="form-label" for="websiteUrl">
+                        Website URL
+                    </label>
+                    <input 
+                        type="url" 
+                        id="websiteUrl" 
+                        name="websiteUrl" 
+                        class="form-input" 
+                        placeholder="https://www.example.com"
+                    >
+                    <p class="form-hint">Leave blank if you don't have a website yet</p>
+                </div>
+
+                <!-- Company Size -->
+                <div class="form-group">
+                    <label class="form-label" for="companySize">
+                        Company Size <span class="required">*</span>
+                    </label>
+                    <select id="companySize" name="companySize" class="form-select" required>
+                        <option value="">Select company size</option>
+                        <option value="1-10">1-10 employees</option>
+                        <option value="11-50">11-50 employees</option>
+                        <option value="51-200">51-200 employees</option>
+                        <option value="201-500">201-500 employees</option>
+                        <option value="500+">500+ employees</option>
+                    </select>
+                </div>
+
+                <!-- Monthly Marketing Budget -->
+                <div class="form-group">
+                    <label class="form-label" for="monthlyBudget">
+                        Monthly Marketing Budget (USD) <span class="required">*</span>
+                    </label>
+                    <input 
+                        type="number" 
+                        id="monthlyBudget" 
+                        name="monthlyBudget" 
+                        class="form-input" 
+                        placeholder="5000"
+                        min="0"
+                        step="100"
+                        required
+                    >
+                    <div class="error-message" id="monthlyBudget-error"></div>
+                </div>
+
+                <!-- Marketing Goals -->
+                <div class="form-group">
+                    <label class="form-label" for="marketingGoals">
+                        Primary Marketing Goals <span class="required">*</span>
+                    </label>
+                    <textarea 
+                        id="marketingGoals" 
+                        name="marketingGoals" 
+                        class="form-textarea"
+                        placeholder="Describe your main marketing objectives..."
+                        required
+                    ></textarea>
+                    <p class="form-hint">What do you want to achieve with digital marketing?</p>
+                </div>
+
+                <!-- Current Challenges -->
+                <div class="form-group">
+                    <label class="form-label" for="currentChallenges">
+                        Current Marketing Challenges
+                    </label>
+                    <textarea 
+                        id="currentChallenges" 
+                        name="currentChallenges" 
+                        class="form-textarea"
+                        placeholder="What challenges are you facing in your marketing efforts?"
+                    ></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn-submit" id="submitBtn">
+                    <span class="btn-spinner"></span>
+                    <i class="ti ti-send"></i>
+                    <span class="btn-text">Submit for Verification</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Selected Package Info -->
+            <div class="sidebar-card">
+                <h3>
+                    <i class="ti ti-package"></i>
+                    Selected Package
+                </h3>
+                <div id="packageInfo">
+                    <div class="package-info-item">
+                        <span class="info-label">Package</span>
+                        <span class="info-value" id="packageName">Loading...</span>
+                    </div>
+                    <div class="package-info-item">
+                        <span class="info-label">Tier</span>
+                        <span class="info-value" id="packageTier">-</span>
+                    </div>
+                    <div class="package-info-item">
+                        <span class="info-label">Billing Cycle</span>
+                        <span class="info-value" id="billingCycle">-</span>
+                    </div>
+                    <div class="package-info-item">
+                        <span class="info-label">Price</span>
+                        <span class="info-value price" id="packagePrice">$0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onboarding Timeline -->
+            <div class="sidebar-card">
+                <h3>
+                    <i class="ti ti-timeline"></i>
+                    Onboarding Progress
+                </h3>
+                <div class="timeline">
+                    <div class="timeline-item completed">
+                        <div class="timeline-icon">
+                            <i class="ti ti-check"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h4>Package Selected</h4>
+                            <p>You've chosen your plan</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item active">
+                        <div class="timeline-icon">
+                            <i class="ti ti-file-check"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h4>Verification</h4>
+                            <p>Submit your business details</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            <i class="ti ti-user-check"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h4>Admin Review</h4>
+                            <p>We'll review your information</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            <i class="ti ti-rocket"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h4>Get Started</h4>
+                            <p>Access your dashboard</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadOnboardingStatus();
+    setupFormSubmit();
+});
+
+async function loadOnboardingStatus() {
+    try {
+        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/onboarding/my-onboarding`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'success' && data.onboarding_session) {
+            const session = data.onboarding_session;
+            
+            // Update package info
+            if (session.package_name) {
+                document.getElementById('packageName').textContent = session.package_name;
+                document.getElementById('packageTier').textContent = session.package_tier || '-';
+                document.getElementById('billingCycle').textContent = session.billing_cycle || '-';
+                document.getElementById('packagePrice').textContent = `$${parseFloat(session.price || 0).toFixed(0)}`;
+            }
+            
+            // Update status badge
+            updateStatusBadge(session.verification_status);
+            
+            // If already submitted, show message
+            if (session.verification_status !== 'pending' || session.verification_data) {
+                showExistingSubmission(session);
+            }
+        } else {
+            showAlert('No package selected. Please select a package first.', 'error');
+            setTimeout(() => {
+                window.location.href = '/onboarding/select-package';
+            }, 2000);
+        }
+    } catch (error) {
+        console.error('Error loading onboarding status:', error);
+        showAlert('Failed to load onboarding status', 'error');
+    }
+}
+
+function updateStatusBadge(status) {
+    const badge = document.getElementById('statusBadge');
+    badge.className = `status-badge ${status}`;
+    
+    const statusConfig = {
+        'pending': { icon: 'ti-clock', text: 'Pending Verification' },
+        'verified': { icon: 'ti-check-circle', text: 'Verified' },
+        'rejected': { icon: 'ti-x-circle', text: 'Rejected' }
+    };
+    
+    const config = statusConfig[status] || statusConfig['pending'];
+    badge.innerHTML = `<i class="ti ${config.icon}"></i><span>${config.text}</span>`;
+}
+
+function showExistingSubmission(session) {
+    if (session.verification_status === 'verified') {
+        showAlert('Your account has been verified! Redirecting to dashboard...', 'success');
+        setTimeout(() => {
+            window.location.href = '/dashboard/client';
+        }, 2000);
+    } else if (session.verification_status === 'rejected') {
+        showAlert('Your verification was rejected. Please update your information and resubmit.', 'error');
+        if (session.discussion_notes) {
+            showAlert(`Admin notes: ${session.discussion_notes}`, 'info');
+        }
+    } else if (session.verification_data) {
+        showAlert('Your verification is under review. We\'ll notify you once it\'s approved.', 'info');
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('submitBtn').innerHTML = '<i class="ti ti-clock"></i><span>Under Review</span>';
+    }
+}
+
+function setupFormSubmit() {
+    const form = document.getElementById('verificationForm');
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.classList.add('loading');
+        submitBtn.disabled = true;
+        
+        // Gather form data
+        const verificationData = {
+            business_name: document.getElementById('businessName').value.trim(),
+            business_type: document.getElementById('businessType').value,
+            website_url: document.getElementById('websiteUrl').value.trim() || null,
+            company_size: document.getElementById('companySize').value,
+            monthly_budget: parseFloat(document.getElementById('monthlyBudget').value),
+            marketing_goals: document.getElementById('marketingGoals').value.trim(),
+            current_challenges: document.getElementById('currentChallenges').value.trim() || null
+        };
+        
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/onboarding/submit-verification`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                },
+                body: JSON.stringify(verificationData)
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.status === 'success') {
+                showAlert('Verification submitted successfully! Our team will review it shortly.', 'success');
+                
+                // Disable form
+                form.querySelectorAll('input, select, textarea, button').forEach(el => {
+                    el.disabled = true;
+                });
+                
+                submitBtn.innerHTML = '<i class="ti ti-check"></i><span>Submitted</span>';
+            } else {
+                throw new Error(data.detail || 'Submission failed');
+            }
+        } catch (error) {
+            console.error('Error submitting verification:', error);
+            showAlert(error.message || 'Failed to submit verification. Please try again.', 'error');
+            submitBtn.classList.remove('loading');
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+function showAlert(message, type) {
+    const alertContainer = document.getElementById('alertContainer');
+    const iconMap = {
+        'success': 'ti-check-circle',
+        'error': 'ti-alert-circle',
+        'info': 'ti-info-circle'
+    };
+    
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.innerHTML = `
+        <i class="ti ${iconMap[type]}"></i>
+        <span>${message}</span>
+    `;
+    
+    alertContainer.appendChild(alert);
+    
+    // Auto-remove after 6 seconds
+    setTimeout(() => {
+        alert.remove();
+    }, 6000);
+}
+</script>
+{% endblock %}
