@@ -705,7 +705,8 @@
 
 {% block extra_js %}
 <script>
-const APP_CONFIG = {
+// Initialize or extend APP_CONFIG
+window.APP_CONFIG = window.APP_CONFIG || {
     apiBaseUrl: '/api/v1'
 };
 
@@ -724,8 +725,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
         // Get current user
-        const userResponse = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const userResponse = await fetch(window.APP_CONFIG.apiBaseUrl + '/auth/me', {
+            headers: { 'Authorization': 'Bearer ' + token }
         });
 
         if (userResponse.ok) {
@@ -757,8 +758,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Load statistics (Admin only)
 async function loadStatistics(token) {
     try {
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/clients/stats/overview`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/clients/stats/overview', {
+            headers: { 'Authorization': 'Bearer ' + token }
         });
 
         if (response.ok) {
@@ -781,8 +782,8 @@ async function loadStatistics(token) {
 // Load all clients (Admin)
 async function loadAllClients(token) {
     try {
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/clients/all`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/clients/all', {
+            headers: { 'Authorization': 'Bearer ' + token }
         });
 
         if (response.ok) {
@@ -801,8 +802,8 @@ async function loadAllClients(token) {
 // Load assigned clients (Employee)
 async function loadMyClients(token) {
     try {
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/clients/my-clients`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/clients/my-clients', {
+            headers: { 'Authorization': 'Bearer ' + token }
         });
 
         if (response.ok) {
@@ -950,8 +951,8 @@ async function openAssignEmployeeModal(clientId) {
 
     try {
         // Load employees
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/admin/employees`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/admin/employees', {
+            headers: { 'Authorization': 'Bearer ' + token }
         });
 
         if (response.ok) {
@@ -988,10 +989,10 @@ async function confirmAssignEmployee() {
     const token = localStorage.getItem('access_token') || getCookie('access_token');
 
     try {
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/clients/assign-employee`, {
+        const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/clients/assign-employee', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
+                'Authorization': 'Bearer ' + token,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({

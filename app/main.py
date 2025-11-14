@@ -244,7 +244,7 @@ async def project_planner_page(request: Request):
 
 
 
-@app.get("/admin/clients", response_class=HTMLResponse)
+@app.get("/clients", response_class=HTMLResponse)
 async def clients_page(request: Request):
     """
     Clients management page

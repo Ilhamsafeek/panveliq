@@ -512,10 +512,11 @@ async def update_client_profile(
 
 @router.get("/my-clients", summary="Get employee's assigned clients")
 async def get_my_clients(
-    current_user: dict = Depends(require_admin_or_employee)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get all clients assigned to the current employee
+    Admin sees all active clients, Employee sees only assigned clients
     """
     connection = None
     cursor = None

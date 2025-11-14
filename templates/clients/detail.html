@@ -284,7 +284,7 @@
 
 {% block content %}
 <div class="main-container">
-    <a href="/admin/clients" class="back-button">
+    <a href="/clients" class="back-button">
         <i class="ti ti-arrow-left"></i>
         Back to Clients
     </a>
@@ -300,10 +300,13 @@
 
 {% block extra_js %}
 <script>
-const APP_CONFIG = {
-    apiBaseUrl: '/api/v1',
-    clientId: {{ client_id }}
+// Initialize or extend APP_CONFIG
+window.APP_CONFIG = window.APP_CONFIG || {
+    apiBaseUrl: '/api/v1'
 };
+
+// Add client-specific config - using Jinja2 template variable
+window.APP_CONFIG.clientId = parseInt('{{ client_id }}', 10);
 
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('access_token') || getCookie('access_token');
@@ -314,8 +317,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/clients/${APP_CONFIG.clientId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/clients/' + window.APP_CONFIG.clientId, {
+            headers: { 'Authorization': 'Bearer ' + token }
         });
 
         if (response.ok) {
@@ -323,7 +326,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderClientDetails(data.client);
         } else if (response.status === 403) {
             showError('You do not have access to this client');
-            setTimeout(() => window.location.href = '/clients', 2000);
+            setTimeout(function() { window.location.href = '/clients'; }, 2000);
         } else {
             showError('Failed to load client details');
         }
@@ -505,6 +508,7 @@ function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
 }
 
 function showError(message) {
