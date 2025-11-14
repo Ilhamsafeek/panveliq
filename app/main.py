@@ -243,6 +243,112 @@ async def project_planner_page(request: Request):
         )
 
 
+
+@app.get("/admin/clients", response_class=HTMLResponse)
+async def clients_page(request: Request):
+    """
+    Clients management page
+    Accessible by admin and employees
+    """
+    # Get token from cookie if available
+    access_token: Optional[str] = request.cookies.get("access_token")
+    role = None
+    
+    if not access_token:
+        # Check for token in Authorization header (for testing)
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.split(" ")[1]
+    
+    # Try to decode token and get user role
+    try:
+        if access_token:
+            payload = jwt.decode(
+                access_token,
+                settings.SECRET_KEY,
+                algorithms=[settings.ALGORITHM]
+            )
+            role = payload.get("role")
+        
+        # Verify role is admin or employee
+        if role and role not in ["admin", "employee"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin or Employee role required."
+            )
+        
+        # Render the page
+        return templates.TemplateResponse(
+            "clients/index.html",
+            {
+                "request": request,
+                "show_sidebar": True
+            }
+        )
+        
+    except JWTError:
+        # Invalid token - redirect to login
+        return RedirectResponse(url="/auth/login")
+    except Exception as e:
+        print(f"Error accessing clients page: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load page"
+        )
+
+
+@app.get("/clients/{client_id}", response_class=HTMLResponse)
+async def client_detail_page(request: Request, client_id: int):
+    """
+    Individual client detail page
+    Accessible by admin and assigned employees
+    """
+    # Get token from cookie if available
+    access_token: Optional[str] = request.cookies.get("access_token")
+    role = None
+    
+    if not access_token:
+        # Check for token in Authorization header
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.split(" ")[1]
+    
+    # Try to decode token and get user role
+    try:
+        if access_token:
+            payload = jwt.decode(
+                access_token,
+                settings.SECRET_KEY,
+                algorithms=[settings.ALGORITHM]
+            )
+            role = payload.get("role")
+        
+        # Verify role is admin or employee
+        if role and role not in ["admin", "employee"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin or Employee role required."
+            )
+        
+        # Render the page (we'll create this template next)
+        return templates.TemplateResponse(
+            "clients/detail.html",
+            {
+                "request": request,
+                "show_sidebar": True,
+                "client_id": client_id
+            }
+        )
+        
+    except JWTError:
+        # Invalid token - redirect to login
+        return RedirectResponse(url="/auth/login")
+    except Exception as e:
+        print(f"Error accessing client detail page: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load page"
+        )
 # ========== HEALTH CHECK ==========
 
 @app.get("/health")

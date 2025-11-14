@@ -1,0 +1,514 @@
+{% extends "base.html" %}
+
+{% block title %}Client Details - PanvelIQ{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --gradient-primary: linear-gradient(135deg, #9926F3 0%, #1DD8FC 100%);
+        --color-primary: #9926F3;
+        --color-secondary: #1DD8FC;
+        --color-gray-50: #F9FAFB;
+        --color-gray-100: #F3F4F6;
+        --color-gray-200: #E5E7EB;
+        --color-gray-300: #D1D5DB;
+        --color-gray-500: #6B7280;
+        --color-gray-600: #4B5563;
+        --color-gray-700: #374151;
+        --color-gray-900: #111827;
+        --color-success: #10B981;
+        --color-warning: #F59E0B;
+        --color-error: #EF4444;
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --radius-xl: 1rem;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+        font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: var(--color-gray-50);
+        color: var(--color-gray-900);
+    }
+
+    .main-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--color-gray-600);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        transition: color 0.2s;
+    }
+
+    .back-button:hover {
+        color: var(--color-primary);
+    }
+
+    .client-header {
+        background: white;
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 2rem;
+        border: 1px solid var(--color-gray-100);
+    }
+
+    .client-header-content {
+        display: flex;
+        align-items: start;
+        gap: 2rem;
+    }
+
+    .client-avatar-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 32px;
+        flex-shrink: 0;
+    }
+
+    .client-info {
+        flex: 1;
+    }
+
+    .client-name {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin-bottom: 0.5rem;
+    }
+
+    .client-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 14px;
+        color: var(--color-gray-600);
+    }
+
+    .meta-item i {
+        color: var(--color-gray-400);
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.375rem 0.875rem;
+        border-radius: var(--radius-md);
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .badge.success {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--color-success);
+    }
+
+    .badge.warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--color-warning);
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+    }
+
+    .card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--color-gray-100);
+    }
+
+    .card-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--color-gray-100);
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-size: 14px;
+        color: var(--color-gray-600);
+        font-weight: 600;
+    }
+
+    .info-value {
+        font-size: 14px;
+        color: var(--color-gray-900);
+        font-weight: 600;
+    }
+
+    .employee-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .employee-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--color-gray-50);
+        border-radius: var(--radius-md);
+    }
+
+    .employee-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 14px;
+    }
+
+    .employee-info {
+        flex: 1;
+    }
+
+    .employee-info h4 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-gray-900);
+        margin-bottom: 0.125rem;
+    }
+
+    .employee-info p {
+        font-size: 12px;
+        color: var(--color-gray-500);
+    }
+
+    .stat-card {
+        background: var(--color-gray-50);
+        padding: 1.5rem;
+        border-radius: var(--radius-md);
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: var(--color-gray-600);
+    }
+
+    .loading-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid var(--color-gray-200);
+        border-top-color: var(--color-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--color-gray-400);
+    }
+
+    @media (max-width: 768px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .client-header-content {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <a href="/admin/clients" class="back-button">
+        <i class="ti ti-arrow-left"></i>
+        Back to Clients
+    </a>
+
+    <div id="clientContent">
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading client details...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const APP_CONFIG = {
+    apiBaseUrl: '/api/v1',
+    clientId: {{ client_id }}
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('access_token') || getCookie('access_token');
+    
+    if (!token) {
+        window.location.href = '/auth/login';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/clients/${APP_CONFIG.clientId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            renderClientDetails(data.client);
+        } else if (response.status === 403) {
+            showError('You do not have access to this client');
+            setTimeout(() => window.location.href = '/clients', 2000);
+        } else {
+            showError('Failed to load client details');
+        }
+    } catch (error) {
+        console.error('Error loading client:', error);
+        showError('Failed to load client details');
+    }
+});
+
+function renderClientDetails(client) {
+    const content = document.getElementById('clientContent');
+    
+    content.innerHTML = `
+        <div class="client-header">
+            <div class="client-header-content">
+                <div class="client-avatar-large">
+                    ${getInitials(client.full_name)}
+                </div>
+                <div class="client-info">
+                    <h1 class="client-name">${client.full_name}</h1>
+                    <div class="client-meta">
+                        <div class="meta-item">
+                            <i class="ti ti-mail"></i>
+                            ${client.email}
+                        </div>
+                        ${client.phone ? `
+                            <div class="meta-item">
+                                <i class="ti ti-phone"></i>
+                                ${client.phone}
+                            </div>
+                        ` : ''}
+                        <div class="meta-item">
+                            <i class="ti ti-calendar"></i>
+                            Joined ${formatDate(client.created_at)}
+                        </div>
+                    </div>
+                    <span class="badge ${getStatusClass(client.status)}">
+                        ${client.status}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div>
+                <div class="card" style="margin-bottom: 2rem;">
+                    <h2 class="card-title">
+                        <i class="ti ti-building"></i>
+                        Business Information
+                    </h2>
+                    <div class="info-row">
+                        <span class="info-label">Business Name</span>
+                        <span class="info-value">${client.business_name || 'Not provided'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Business Type</span>
+                        <span class="info-value">${client.business_type || 'Not provided'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Website</span>
+                        <span class="info-value">
+                            ${client.website_url ? `<a href="${client.website_url}" target="_blank">${client.website_url}</a>` : 'Not provided'}
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Current Budget</span>
+                        <span class="info-value">${client.current_budget ? '$' + client.current_budget.toFixed(2) : 'Not provided'}</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-title">
+                        <i class="ti ti-package"></i>
+                        Subscription Details
+                    </h2>
+                    <div class="info-row">
+                        <span class="info-label">Package</span>
+                        <span class="info-value">${client.package_name || 'No active package'}</span>
+                    </div>
+                    ${client.package_tier ? `
+                        <div class="info-row">
+                            <span class="info-label">Tier</span>
+                            <span class="info-value">${client.package_tier}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Price</span>
+                            <span class="info-value">$${client.package_price} / ${client.billing_cycle}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Start Date</span>
+                            <span class="info-value">${formatDate(client.subscription_start_date)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">End Date</span>
+                            <span class="info-value">${formatDate(client.subscription_end_date)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Status</span>
+                            <span class="info-value">
+                                <span class="badge ${getStatusClass(client.subscription_status)}">
+                                    ${client.subscription_status}
+                                </span>
+                            </span>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+
+            <div>
+                <div class="card" style="margin-bottom: 2rem;">
+                    <h2 class="card-title">
+                        <i class="ti ti-chart-bar"></i>
+                        Task Statistics
+                    </h2>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="stat-card">
+                            <div class="stat-value">${client.active_tasks_count}</div>
+                            <div class="stat-label">Active Tasks</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${client.completed_tasks_count}</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-title">
+                        <i class="ti ti-users"></i>
+                        Assigned Employees
+                    </h2>
+                    <div class="employee-list">
+                        ${client.assigned_employees.length > 0 ? 
+                            client.assigned_employees.map(emp => `
+                                <div class="employee-item">
+                                    <div class="employee-avatar">
+                                        ${getInitials(emp.full_name)}
+                                    </div>
+                                    <div class="employee-info">
+                                        <h4>${emp.full_name}</h4>
+                                        <p>${emp.email}</p>
+                                    </div>
+                                </div>
+                            `).join('') :
+                            '<div class="empty-state">No employees assigned</div>'
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function getInitials(name) {
+    if (!name) return 'C';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+}
+
+function getStatusClass(status) {
+    const classes = {
+        'active': 'success',
+        'pending': 'warning',
+        'suspended': 'error'
+    };
+    return classes[status] || 'success';
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+function showError(message) {
+    alert(message);
+}
+</script>
+{% endblock %}

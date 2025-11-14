@@ -1,0 +1,1085 @@
+{% extends "base.html" %}
+
+{% block title %}Clients - PanvelIQ{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --gradient-primary: linear-gradient(135deg, #9926F3 0%, #1DD8FC 100%);
+        --color-primary: #9926F3;
+        --color-secondary: #1DD8FC;
+        --color-gray-50: #F9FAFB;
+        --color-gray-100: #F3F4F6;
+        --color-gray-200: #E5E7EB;
+        --color-gray-300: #D1D5DB;
+        --color-gray-400: #9CA3AF;
+        --color-gray-500: #6B7280;
+        --color-gray-600: #4B5563;
+        --color-gray-700: #374151;
+        --color-gray-800: #1F2937;
+        --color-gray-900: #111827;
+        --color-success: #10B981;
+        --color-warning: #F59E0B;
+        --color-error: #EF4444;
+        --color-info: #3B82F6;
+        --radius-sm: 0.375rem;
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --radius-xl: 1rem;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: var(--color-gray-50);
+        color: var(--color-gray-900);
+        line-height: 1.6;
+    }
+
+    .main-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* Header Section */
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .page-title {
+        font-size: 28px;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.625rem 1.25rem;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: var(--gradient-primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .btn-secondary {
+        background: white;
+        color: var(--color-gray-700);
+        border: 1px solid var(--color-gray-200);
+    }
+
+    .btn-secondary:hover {
+        background: var(--color-gray-50);
+        border-color: var(--color-gray-300);
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--color-gray-100);
+    }
+
+    .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 1rem;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .stat-icon.primary {
+        background: linear-gradient(135deg, rgba(153, 38, 243, 0.1) 0%, rgba(29, 216, 252, 0.1) 100%);
+        color: var(--color-primary);
+    }
+
+    .stat-icon.success {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--color-success);
+    }
+
+    .stat-icon.warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--color-warning);
+    }
+
+    .stat-icon.info {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--color-info);
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: var(--color-gray-600);
+        margin-top: 0.5rem;
+    }
+
+    /* Filters Section */
+    .filters-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--color-gray-100);
+        margin-bottom: 2rem;
+    }
+
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        align-items: end;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-gray-700);
+    }
+
+    .form-input,
+    .form-select {
+        padding: 0.625rem;
+        border: 1px solid var(--color-gray-300);
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        font-family: 'Gilroy', sans-serif;
+        transition: all 0.2s;
+    }
+
+    .form-input:focus,
+    .form-select:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(153, 38, 243, 0.1);
+    }
+
+    /* Clients Table */
+    .clients-table-container {
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--color-gray-100);
+        overflow: hidden;
+    }
+
+    .table-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--color-gray-200);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+    }
+
+    .clients-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .clients-table thead {
+        background: var(--color-gray-50);
+    }
+
+    .clients-table th {
+        padding: 1rem 1.5rem;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--color-gray-700);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .clients-table td {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--color-gray-100);
+        font-size: 14px;
+        color: var(--color-gray-600);
+    }
+
+    .clients-table tbody tr {
+        transition: background-color 0.2s;
+    }
+
+    .clients-table tbody tr:hover {
+        background: var(--color-gray-50);
+    }
+
+    .client-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .client-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .client-details h4 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-gray-900);
+        margin-bottom: 0.125rem;
+    }
+
+    .client-details p {
+        font-size: 13px;
+        color: var(--color-gray-500);
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-md);
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge.success {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--color-success);
+    }
+
+    .badge.warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--color-warning);
+    }
+
+    .badge.error {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--color-error);
+    }
+
+    .badge.info {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--color-info);
+    }
+
+    .package-badge {
+        padding: 0.375rem 0.875rem;
+        border-radius: var(--radius-md);
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .package-badge.basic {
+        background: linear-gradient(135deg, rgba(156, 163, 175, 0.15) 0%, rgba(107, 114, 128, 0.15) 100%);
+        color: var(--color-gray-700);
+    }
+
+    .package-badge.professional {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.15) 100%);
+        color: #3B82F6;
+    }
+
+    .package-badge.enterprise {
+        background: linear-gradient(135deg, rgba(153, 38, 243, 0.15) 0%, rgba(29, 216, 252, 0.15) 100%);
+        color: var(--color-primary);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-gray-200);
+        background: white;
+        color: var(--color-gray-600);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+        background: var(--color-gray-50);
+        border-color: var(--color-gray-300);
+        color: var(--color-gray-900);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--color-gray-400);
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .empty-state h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--color-gray-600);
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        font-size: 14px;
+        color: var(--color-gray-500);
+    }
+
+    /* Loading State */
+    .loading-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid var(--color-gray-200);
+        border-top-color: var(--color-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: var(--radius-xl);
+        padding: 2rem;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--color-gray-200);
+    }
+
+    .modal-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+    }
+
+    .btn-close {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-md);
+        border: none;
+        background: var(--color-gray-100);
+        color: var(--color-gray-600);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-close:hover {
+        background: var(--color-gray-200);
+        color: var(--color-gray-900);
+    }
+
+    .modal-body {
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--color-gray-200);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .main-container {
+            padding: 1rem;
+        }
+
+        .header-top {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: stretch;
+        }
+
+        .header-actions {
+            flex-direction: column;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .filters-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .clients-table-container {
+            overflow-x: auto;
+        }
+
+        .clients-table {
+            min-width: 800px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="header-top">
+            <h1 class="page-title">Clients</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="exportClients()">
+                    <i class="ti ti-download"></i>
+                    Export
+                </button>
+                <button class="btn btn-primary" onclick="refreshClients()" id="refreshBtn">
+                    <i class="ti ti-refresh"></i>
+                    Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards (Admin Only) -->
+    <div class="stats-grid" id="statsGrid" style="display: none;">
+        <div class="stat-card">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-value" id="totalClients">0</div>
+                    <div class="stat-label">Total Clients</div>
+                </div>
+                <div class="stat-icon primary">
+                    <i class="ti ti-users"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-value" id="activeClients">0</div>
+                    <div class="stat-label">Active Clients</div>
+                </div>
+                <div class="stat-icon success">
+                    <i class="ti ti-user-check"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-value" id="totalRevenue">$0</div>
+                    <div class="stat-label">Monthly Revenue</div>
+                </div>
+                <div class="stat-icon info">
+                    <i class="ti ti-currency-dollar"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div>
+                    <div class="stat-value" id="enterpriseClients">0</div>
+                    <div class="stat-label">Enterprise Clients</div>
+                </div>
+                <div class="stat-icon warning">
+                    <i class="ti ti-crown"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+        <div class="filters-grid">
+            <div class="form-group">
+                <label class="form-label">Search</label>
+                <input 
+                    type="text" 
+                    class="form-input" 
+                    id="searchInput" 
+                    placeholder="Search by name or email..."
+                    onkeyup="filterClients()"
+                >
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="statusFilter" onchange="filterClients()">
+                    <option value="">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="suspended">Suspended</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Package Tier</label>
+                <select class="form-select" id="packageFilter" onchange="filterClients()">
+                    <option value="">All Packages</option>
+                    <option value="basic">Basic</option>
+                    <option value="professional">Professional</option>
+                    <option value="enterprise">Enterprise</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-secondary" onclick="resetFilters()">
+                    <i class="ti ti-filter-off"></i>
+                    Reset Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clients Table -->
+    <div class="clients-table-container">
+        <div class="table-header">
+            <h2 class="table-title">All Clients</h2>
+            <span id="clientCount" style="color: var(--color-gray-500); font-size: 14px;">0 clients</span>
+        </div>
+
+        <div id="tableContent">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading clients...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Employee Modal (Admin Only) -->
+<div class="modal" id="assignEmployeeModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Assign Employee</h3>
+            <button class="btn-close" onclick="closeModal('assignEmployeeModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Select Employee</label>
+                <select class="form-select" id="employeeSelect">
+                    <option value="">Loading employees...</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('assignEmployeeModal')">
+                Cancel
+            </button>
+            <button class="btn btn-primary" onclick="confirmAssignEmployee()">
+                Assign
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const APP_CONFIG = {
+    apiBaseUrl: '/api/v1'
+};
+
+let currentUser = null;
+let allClients = [];
+let selectedClientId = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('access_token') || getCookie('access_token');
+    
+    if (!token) {
+        window.location.href = '/auth/login';
+        return;
+    }
+
+    try {
+        // Get current user
+        const userResponse = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (userResponse.ok) {
+            currentUser = await userResponse.json();
+            
+            // Show stats for admin
+            if (currentUser.role === 'admin') {
+                document.getElementById('statsGrid').style.display = 'grid';
+                loadStatistics(token);
+            }
+
+            // Load clients based on role
+            if (currentUser.role === 'admin') {
+                loadAllClients(token);
+            } else if (currentUser.role === 'employee') {
+                loadMyClients(token);
+            } else {
+                showError('Access denied. This page is for admin and employees only.');
+            }
+        } else {
+            window.location.href = '/auth/login';
+        }
+    } catch (error) {
+        console.error('Initialization error:', error);
+        showError('Failed to load page');
+    }
+});
+
+// Load statistics (Admin only)
+async function loadStatistics(token) {
+    try {
+        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/clients/stats/overview`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const stats = data.statistics;
+
+            document.getElementById('totalClients').textContent = stats.total_clients;
+            document.getElementById('activeClients').textContent = stats.active_clients;
+            document.getElementById('totalRevenue').textContent = `$${stats.total_revenue.toFixed(2)}`;
+
+            // Calculate enterprise clients
+            const enterpriseCount = stats.clients_by_tier.find(t => t.package_tier === 'enterprise')?.count || 0;
+            document.getElementById('enterpriseClients').textContent = enterpriseCount;
+        }
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+    }
+}
+
+// Load all clients (Admin)
+async function loadAllClients(token) {
+    try {
+        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/clients/all`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            allClients = data.clients;
+            renderClientsTable(allClients);
+        } else {
+            showError('Failed to load clients');
+        }
+    } catch (error) {
+        console.error('Error loading clients:', error);
+        showError('Failed to load clients');
+    }
+}
+
+// Load assigned clients (Employee)
+async function loadMyClients(token) {
+    try {
+        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/clients/my-clients`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            allClients = data.clients;
+            renderClientsTable(allClients);
+        } else {
+            showError('Failed to load assigned clients');
+        }
+    } catch (error) {
+        console.error('Error loading clients:', error);
+        showError('Failed to load assigned clients');
+    }
+}
+
+// Render clients table
+function renderClientsTable(clients) {
+    const tableContent = document.getElementById('tableContent');
+    document.getElementById('clientCount').textContent = `${clients.length} ${clients.length === 1 ? 'client' : 'clients'}`;
+
+    if (clients.length === 0) {
+        tableContent.innerHTML = `
+            <div class="empty-state">
+                <i class="ti ti-users"></i>
+                <h3>No clients found</h3>
+                <p>There are no clients matching your criteria</p>
+            </div>
+        `;
+        return;
+    }
+
+    const actionsColumn = currentUser.role === 'admin' 
+        ? '<th>Actions</th>' 
+        : '';
+
+    tableContent.innerHTML = `
+        <table class="clients-table">
+            <thead>
+                <tr>
+                    <th>Client</th>
+                    <th>Business</th>
+                    <th>Package</th>
+                    <th>Status</th>
+                    <th>Assigned To</th>
+                    <th>Joined</th>
+                    ${actionsColumn}
+                </tr>
+            </thead>
+            <tbody>
+                ${clients.map(client => `
+                    <tr>
+                        <td>
+                            <div class="client-info">
+                                <div class="client-avatar">
+                                    ${getInitials(client.full_name)}
+                                </div>
+                                <div class="client-details">
+                                    <h4>${client.full_name}</h4>
+                                    <p>${client.email}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            ${client.business_name ? `
+                                <div>
+                                    <div style="font-weight: 600; color: var(--color-gray-900);">${client.business_name}</div>
+                                    <div style="font-size: 12px; color: var(--color-gray-500);">${client.business_type || 'N/A'}</div>
+                                </div>
+                            ` : '<span style="color: var(--color-gray-400);">Not provided</span>'}
+                        </td>
+                        <td>
+                            ${client.package_name ? `
+                                <span class="package-badge ${(client.package_tier || 'basic').toLowerCase()}">
+                                    ${client.package_name}
+                                </span>
+                            ` : '<span class="badge info">No Package</span>'}
+                        </td>
+                        <td>
+                            <span class="badge ${getStatusClass(client.status)}">
+                                ${client.status}
+                            </span>
+                        </td>
+                        <td>
+                            ${client.assigned_employee_name || '<span style="color: var(--color-gray-400);">Unassigned</span>'}
+                        </td>
+                        <td>${formatDate(client.created_at)}</td>
+                        ${currentUser.role === 'admin' ? `
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" onclick="viewClient(${client.client_id})" title="View Details">
+                                        <i class="ti ti-eye"></i>
+                                    </button>
+                                    <button class="btn-icon" onclick="openAssignEmployeeModal(${client.client_id})" title="Assign Employee">
+                                        <i class="ti ti-user-plus"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        ` : ''}
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+// Filter clients
+function filterClients() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const packageFilter = document.getElementById('packageFilter').value;
+
+    const filtered = allClients.filter(client => {
+        const matchesSearch = 
+            client.full_name.toLowerCase().includes(searchTerm) ||
+            client.email.toLowerCase().includes(searchTerm) ||
+            (client.business_name && client.business_name.toLowerCase().includes(searchTerm));
+
+        const matchesStatus = !statusFilter || client.status === statusFilter;
+        const matchesPackage = !packageFilter || (client.package_tier && client.package_tier.toLowerCase() === packageFilter);
+
+        return matchesSearch && matchesStatus && matchesPackage;
+    });
+
+    renderClientsTable(filtered);
+}
+
+// Reset filters
+function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('packageFilter').value = '';
+    renderClientsTable(allClients);
+}
+
+// View client details
+function viewClient(clientId) {
+    window.location.href = `/clients/${clientId}`;
+}
+
+// Open assign employee modal
+async function openAssignEmployeeModal(clientId) {
+    selectedClientId = clientId;
+    const modal = document.getElementById('assignEmployeeModal');
+    const token = localStorage.getItem('access_token') || getCookie('access_token');
+
+    try {
+        // Load employees
+        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/admin/employees`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const select = document.getElementById('employeeSelect');
+            
+            select.innerHTML = '<option value="">Select an employee</option>' +
+                data.employees.map(emp => 
+                    `<option value="${emp.user_id}">${emp.full_name} (${emp.email})</option>`
+                ).join('');
+        }
+    } catch (error) {
+        console.error('Error loading employees:', error);
+        showError('Failed to load employees');
+    }
+
+    modal.classList.add('active');
+}
+
+// Close modal
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+}
+
+// Confirm assign employee
+async function confirmAssignEmployee() {
+    const employeeId = document.getElementById('employeeSelect').value;
+    
+    if (!employeeId) {
+        showError('Please select an employee');
+        return;
+    }
+
+    const token = localStorage.getItem('access_token') || getCookie('access_token');
+
+    try {
+        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/clients/assign-employee`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                client_id: selectedClientId,
+                employee_id: parseInt(employeeId)
+            })
+        });
+
+        if (response.ok) {
+            showSuccess('Employee assigned successfully');
+            closeModal('assignEmployeeModal');
+            refreshClients();
+        } else {
+            const error = await response.json();
+            showError(error.detail || 'Failed to assign employee');
+        }
+    } catch (error) {
+        console.error('Error assigning employee:', error);
+        showError('Failed to assign employee');
+    }
+}
+
+// Refresh clients
+async function refreshClients() {
+    const token = localStorage.getItem('access_token') || getCookie('access_token');
+    const btn = document.getElementById('refreshBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader"></i> Refreshing...';
+
+    if (currentUser.role === 'admin') {
+        await loadAllClients(token);
+        await loadStatistics(token);
+    } else {
+        await loadMyClients(token);
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-refresh"></i> Refresh';
+}
+
+// Export clients
+function exportClients() {
+    // Implementation for CSV export
+    showInfo('Export feature coming soon');
+}
+
+// Utility functions
+function getInitials(name) {
+    if (!name) return 'C';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+}
+
+function getStatusClass(status) {
+    const classes = {
+        'active': 'success',
+        'pending': 'warning',
+        'suspended': 'error'
+    };
+    return classes[status] || 'info';
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+    });
+}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+// Notification functions
+function showSuccess(message) {
+    alert(message);
+}
+
+function showError(message) {
+    alert(message);
+}
+
+function showInfo(message) {
+    alert(message);
+}
+</script>
+{% endblock %}
