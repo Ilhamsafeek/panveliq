@@ -13,13 +13,15 @@ class WhatsAppService:
     """WhatsApp Business API integration for sending messages"""
     
     def __init__(self):
-        """Initialize WhatsApp service"""
-        self.api_key = settings.WHATSAPP_API_KEY
+        """Initialize WhatsApp service with credentials from .env"""
+        self.api_key = settings.WHATSAPP_ACCESS_TOKEN
         self.phone_number_id = settings.WHATSAPP_PHONE_NUMBER_ID
         self.base_url = "https://graph.facebook.com/v18.0"
         
-        if not self.api_key or not self.phone_number_id:
-            raise ValueError("WhatsApp API credentials not configured")
+        if not self.api_key:
+            print("WARNING: WHATSAPP_API_KEY not configured in .env file")
+        if not self.phone_number_id:
+            print("WARNING: WHATSAPP_PHONE_NUMBER_ID not configured in .env file")
     
     async def send_message(
         self,
@@ -31,13 +33,21 @@ class WhatsAppService:
         Send a WhatsApp message to a recipient
         
         Args:
-            recipient: Phone number with country code (e.g., +1234567890)
+            recipient: Phone number with country code (e.g., +94777140803)
             message: Message content
             template_name: Optional template name for approved templates
             
         Returns:
             Response from WhatsApp API
         """
+        # Check if credentials are configured
+        if not self.api_key or not self.phone_number_id:
+            return {
+                "success": False,
+                "error": "WhatsApp API credentials not configured in .env file",
+                "recipient": recipient
+            }
+        
         try:
             url = f"{self.base_url}/{self.phone_number_id}/messages"
             
@@ -46,11 +56,19 @@ class WhatsAppService:
                 "Content-Type": "application/json"
             }
             
+            # Clean phone number - remove spaces and ensure it has country code
+            clean_recipient = recipient.strip().replace(" ", "").replace("-", "")
+            if not clean_recipient.startswith("+"):
+                clean_recipient = "+" + clean_recipient
+            
+            # Remove + for API (WhatsApp API expects number without +)
+            api_recipient = clean_recipient.replace("+", "")
+            
             # If template is provided, use template messaging
             if template_name:
                 payload = {
                     "messaging_product": "whatsapp",
-                    "to": recipient,
+                    "to": api_recipient,
                     "type": "template",
                     "template": {
                         "name": template_name,
@@ -63,27 +81,62 @@ class WhatsAppService:
                 # Use text messaging
                 payload = {
                     "messaging_product": "whatsapp",
-                    "to": recipient,
+                    "to": api_recipient,
                     "type": "text",
                     "text": {
                         "body": message
                     }
                 }
             
+            # Log the request for debugging
+            print(f"WhatsApp API Request URL: {url}")
+            print(f"WhatsApp API Payload: {json.dumps(payload, indent=2)}")
+            
             response = requests.post(url, headers=headers, json=payload)
+            
+            # Get detailed error information
+            if response.status_code != 200:
+                error_data = response.json() if response.text else {}
+                error_message = error_data.get('error', {}).get('message', 'Unknown error')
+                error_code = error_data.get('error', {}).get('code', 'Unknown')
+                
+                print(f"WhatsApp API Error Response: {response.status_code}")
+                print(f"Error Details: {json.dumps(error_data, indent=2)}")
+                
+                return {
+                    "success": False,
+                    "error": f"WhatsApp API Error ({error_code}): {error_message}",
+                    "error_code": error_code,
+                    "status_code": response.status_code,
+                    "recipient": recipient,
+                    "details": error_data
+                }
+            
             response.raise_for_status()
+            response_data = response.json()
             
             return {
                 "success": True,
-                "message_id": response.json().get("messages", [{}])[0].get("id"),
+                "message_id": response_data.get("messages", [{}])[0].get("id"),
                 "recipient": recipient
             }
         
         except requests.exceptions.RequestException as e:
-            print(f"WhatsApp API Error for {recipient}: {e}")
+            error_msg = str(e)
+            print(f"WhatsApp API Request Exception for {recipient}: {error_msg}")
+            
+            # Try to extract more details from response
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_data = e.response.json()
+                    error_msg = f"{error_data.get('error', {}).get('message', error_msg)}"
+                    print(f"Error Details: {json.dumps(error_data, indent=2)}")
+                except:
+                    pass
+            
             return {
                 "success": False,
-                "error": str(e),
+                "error": error_msg,
                 "recipient": recipient
             }
     
@@ -123,94 +176,6 @@ class WhatsAppService:
         
         return results
     
-    async def send_media_message(
-        self,
-        recipient: str,
-        media_type: str,
-        media_url: str,
-        caption: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Send media message (image, video, document)
-        
-        Args:
-            recipient: Phone number with country code
-            media_type: Type of media (image, video, document)
-            media_url: URL of the media file
-            caption: Optional caption for the media
-            
-        Returns:
-            Response from WhatsApp API
-        """
-        try:
-            url = f"{self.base_url}/{self.phone_number_id}/messages"
-            
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
-            
-            payload = {
-                "messaging_product": "whatsapp",
-                "to": recipient,
-                "type": media_type,
-                media_type: {
-                    "link": media_url
-                }
-            }
-            
-            if caption and media_type in ["image", "video"]:
-                payload[media_type]["caption"] = caption
-            
-            response = requests.post(url, headers=headers, json=payload)
-            response.raise_for_status()
-            
-            return {
-                "success": True,
-                "message_id": response.json().get("messages", [{}])[0].get("id"),
-                "recipient": recipient
-            }
-        
-        except requests.exceptions.RequestException as e:
-            print(f"WhatsApp Media API Error for {recipient}: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "recipient": recipient
-            }
-    
-    async def get_message_status(self, message_id: str) -> Dict[str, Any]:
-        """
-        Get delivery status of a message
-        
-        Args:
-            message_id: WhatsApp message ID
-            
-        Returns:
-            Message status information
-        """
-        try:
-            url = f"{self.base_url}/{message_id}"
-            
-            headers = {
-                "Authorization": f"Bearer {self.api_key}"
-            }
-            
-            response = requests.get(url, headers=headers)
-            response.raise_for_status()
-            
-            return {
-                "success": True,
-                "status": response.json()
-            }
-        
-        except requests.exceptions.RequestException as e:
-            print(f"WhatsApp Status API Error: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
-    
     def validate_phone_number(self, phone: str) -> bool:
         """
         Validate phone number format
@@ -228,99 +193,8 @@ class WhatsAppService:
         if cleaned.startswith("+") and 10 <= len(cleaned[1:]) <= 15:
             return cleaned[1:].isdigit()
         
+        # Also accept without + if it's 10-15 digits
+        if 10 <= len(cleaned) <= 15 and cleaned.isdigit():
+            return True
+        
         return False
-    
-    async def create_template(
-        self,
-        template_name: str,
-        category: str,
-        language: str,
-        components: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """
-        Create a WhatsApp message template (requires approval)
-        
-        Args:
-            template_name: Name for the template
-            category: Template category (MARKETING, UTILITY, AUTHENTICATION)
-            language: Language code (e.g., en, es)
-            components: Template components (header, body, footer, buttons)
-            
-        Returns:
-            Template creation response
-        """
-        try:
-            # Note: This requires WhatsApp Business Account ID
-            url = f"{self.base_url}/YOUR_WABA_ID/message_templates"
-            
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
-            
-            payload = {
-                "name": template_name,
-                "category": category,
-                "language": language,
-                "components": components
-            }
-            
-            response = requests.post(url, headers=headers, json=payload)
-            response.raise_for_status()
-            
-            return {
-                "success": True,
-                "template_id": response.json().get("id"),
-                "status": "pending_approval"
-            }
-        
-        except requests.exceptions.RequestException as e:
-            print(f"WhatsApp Template Creation Error: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
-    
-    async def get_template_status(self, template_name: str) -> Dict[str, Any]:
-        """
-        Check approval status of a template
-        
-        Args:
-            template_name: Name of the template
-            
-        Returns:
-            Template status
-        """
-        try:
-            url = f"{self.base_url}/YOUR_WABA_ID/message_templates"
-            
-            headers = {
-                "Authorization": f"Bearer {self.api_key}"
-            }
-            
-            params = {
-                "name": template_name
-            }
-            
-            response = requests.get(url, headers=headers, params=params)
-            response.raise_for_status()
-            
-            templates = response.json().get("data", [])
-            
-            if templates:
-                return {
-                    "success": True,
-                    "template": templates[0]
-                }
-            else:
-                return {
-                    "success": False,
-                    "error": "Template not found"
-                }
-        
-        except requests.exceptions.RequestException as e:
-            print(f"WhatsApp Template Status Error: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }

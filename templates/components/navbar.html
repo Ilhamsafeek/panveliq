@@ -1,588 +1,334 @@
-<!-- SAVE AS: templates/components/navbar.html -->
-<nav class="navbar">
-    <div class="navbar-container">
-        <!-- Logo -->
-        <!-- <div class="navbar-brand">
+<!-- templates/components/sidebar.html -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-content">
+        <!-- Logo (only shown when navbar is NOT present) -->
+        <div class="sidebar-logo">
             <a href="/" class="logo">
-                <div class="logo-icon">P</div>
+                <img src="{{ url_for('static', path='images/panvel-logo.webp') }}" alt="PanvelIQ" width="40px">
                 <span class="logo-text">PanvelIQ</span>
             </a>
-        </div> -->
-        
-        <!-- Navigation Links -->
-        <div class="navbar-menu" id="navbarMenu">
-            <a href="/dashboard" class="nav-link">
-                <i class="ti ti-dashboard"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="/modules" class="nav-link">
-                <i class="ti ti-apps"></i>
-                <span>Modules</span>
-            </a>
-            <a href="/analytics" class="nav-link">
-                <i class="ti ti-chart-bar"></i>
-                <span>Analytics</span>
-            </a>
-            <a href="/reports" class="nav-link">
-                <i class="ti ti-file-text"></i>
-                <span>Reports</span>
-            </a>
         </div>
-        
-        <!-- Right Side Actions -->
-        <div class="navbar-actions">
-            <!-- Notifications -->
-            <div class="navbar-item notification-dropdown">
-                <button class="navbar-icon-btn" id="notificationBtn">
-                    <i class="ti ti-bell"></i>
-                    <span class="notification-badge" id="notificationCount" style="display: none;">0</span>
-                </button>
-                <div class="dropdown-menu" id="notificationDropdown">
-                    <div class="dropdown-header">
-                        <h4>Notifications</h4>
-                        <button class="btn-text" id="markAllReadBtn">Mark all as read</button>
-                    </div>
-                    <div class="notification-list" id="notificationList">
-                        <div class="empty-state">
-                            <i class="ti ti-bell-off"></i>
-                            <p>No notifications</p>
-                        </div>
-                    </div>
-                    <div class="dropdown-footer">
-                        <a href="/notifications" class="btn-text">View All Notifications</a>
-                    </div>
-                </div>
+
+        <!-- User Info Section -->
+        <div class="sidebar-user">
+            <img src="/static/images/default-avatar.png" alt="User" class="sidebar-user-avatar" id="sidebarUserAvatar">
+            <div class="sidebar-user-info">
+                <h4 id="sidebarUserName">Loading...</h4>
+                <p id="sidebarUserRole">-</p>
             </div>
-            
-            <!-- User Profile -->
-            <div class="navbar-item user-dropdown">
-                <button class="user-menu-btn" id="userMenuBtn">
-                    <img src="/static/images/default-avatar.png" alt="User" class="user-avatar" id="userAvatar">
-                    <div class="user-info">
-                        <span class="user-name" id="userName">Loading...</span>
-                        <span class="user-role" id="userRole">-</span>
-                    </div>
-                    <i class="ti ti-chevron-down"></i>
-                </button>
-                <div class="dropdown-menu" id="userDropdown">
-                    <div class="dropdown-user-header">
-                        <img src="/static/images/default-avatar.png" alt="User" class="user-avatar-large" id="userAvatarLarge">
-                        <div>
-                            <h4 id="userFullName">Loading...</h4>
-                            <p id="userEmail">-</p>
-                        </div>
-                    </div>
-                    <div class="dropdown-divider"></div>
-                    <a href="/settings/profile" class="dropdown-item">
-                        <i class="ti ti-user"></i>
-                        <span>Profile Settings</span>
-                    </a>
-                    <a href="/settings/account" class="dropdown-item">
-                        <i class="ti ti-settings"></i>
-                        <span>Account Settings</span>
-                    </a>
-                    <a href="/help" class="dropdown-item">
-                        <i class="ti ti-help"></i>
-                        <span>Help & Support</span>
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <a href="#" class="dropdown-item logout" id="logoutBtn">
-                        <i class="ti ti-logout"></i>
-                        <span>Logout</span>
-                    </a>
-                </div>
-            </div>
-            
-            <!-- Mobile Menu Toggle -->
-            <button class="mobile-menu-toggle" id="mobileMenuToggle">
-                <i class="ti ti-menu-2"></i>
-            </button>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="sidebar-nav" id="sidebarNav">
+            <!-- Will be populated dynamically based on user role -->
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="sidebar-footer">
+            <a href="/help" class="sidebar-footer-link">
+                <i class="ti ti-help-circle"></i>
+                <span>Help & Support</span>
+            </a>
+            <a href="#" class="sidebar-footer-link" id="sidebarLogout">
+                <i class="ti ti-logout"></i>
+                <span>Logout</span>
+            </a>
         </div>
     </div>
-</nav>
+
+    <!-- Sidebar Toggle -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="ti ti-chevron-left"></i>
+    </button>
+</aside>
 
 <style>
-    .navbar {
+    .sidebar {
         position: fixed;
-        top: 0;
         left: 0;
-        right: 0;
-        height: 70px;
+        top: 0;
+        width: 280px;
+        height: 100vh;
         background: white;
-        border-bottom: 1px solid var(--color-gray-200);
-        z-index: 1000;
-    }
-    
-    .navbar-container {
-        height: 100%;
+        border-right: 1px solid var(--color-gray-200);
+        z-index: 1001;
+        transition: transform 0.3s ease;
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 2rem;
-        max-width: 1920px;
-        margin: 0 auto;
+        flex-direction: column;
     }
-    
+
+    /* When both sidebar and navbar are present, adjust sidebar */
+    body.has-navbar .sidebar {
+        top: 70px;
+        height: calc(100vh - 70px);
+    }
+
+    /* Hide logo when navbar is present */
+    body.has-navbar .sidebar-logo {
+        display: none;
+    }
+
+    .sidebar.collapsed {
+        transform: translateX(-280px);
+    }
+
+    .sidebar-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        padding-bottom: 1rem;
+    }
+
     /* Logo */
-    .navbar-brand .logo {
+    .sidebar-logo {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--color-gray-200);
+    }
+
+    .sidebar-logo .logo {
         display: flex;
         align-items: center;
         gap: 0.75rem;
         text-decoration: none;
     }
-    
-    .logo-icon {
-        width: 45px;
-        height: 45px;
-        background: var(--gradient-primary);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 700;
-        font-size: 22px;
-    }
-    
+
     .logo-text {
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 700;
         background: var(--gradient-primary);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
-    
-    /* Navigation Menu */
-    .navbar-menu {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-left: 3rem;
-    }
-    
-    .nav-link {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1rem;
-        color: var(--color-gray-600);
-        text-decoration: none;
-        border-radius: var(--radius-md);
-        font-weight: 500;
-        transition: all 0.2s;
-    }
-    
-    .nav-link:hover {
-        background: var(--color-gray-50);
-        color: var(--primary-purple);
-    }
-    
-    .nav-link.active {
-        background: rgba(153, 38, 243, 0.1);
-        color: var(--primary-purple);
-    }
-    
-    .nav-link i {
-        font-size: 20px;
-    }
-    
-    /* Actions */
-    .navbar-actions {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-left: auto;
-    }
-    
-    .navbar-item {
-        position: relative;
-    }
-    
-    .navbar-icon-btn {
-        position: relative;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        border: none;
-        background: var(--color-gray-100);
-        color: var(--color-gray-700);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-        font-size: 20px;
-    }
-    
-    .navbar-icon-btn:hover {
-        background: var(--color-gray-200);
-    }
-    
-    .notification-badge {
-        position: absolute;
-        top: -4px;
-        right: -4px;
-        width: 18px;
-        height: 18px;
-        background: var(--color-error);
-        color: white;
-        border-radius: 50%;
-        font-size: 11px;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    /* User Menu */
-    .user-menu-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.5rem;
-        border: none;
-        background: transparent;
-        border-radius: var(--radius-md);
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .user-menu-btn:hover {
-        background: var(--color-gray-50);
-    }
-    
-    .user-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        border: 2px solid var(--color-gray-200);
-    }
-    
-    .user-info {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .user-name {
-        font-weight: 600;
-        font-size: 14px;
-        color: var(--color-gray-900);
-    }
-    
-    .user-role {
-        font-size: 12px;
-        color: var(--color-gray-500);
-    }
-    
-    /* Dropdown Menus */
-    .dropdown-menu {
-        position: absolute;
-        top: calc(100% + 0.5rem);
-        right: 0;
-        width: 320px;
-        background: white;
-        border: 1px solid var(--color-gray-200);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-xl);
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(-10px);
-        transition: all 0.2s;
-        z-index: 1001;
-    }
-    
-    .dropdown-menu.active {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-    }
-    
-    .dropdown-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem;
+
+    /* User Info */
+    .sidebar-user {
+        padding: 1.25rem;
         border-bottom: 1px solid var(--color-gray-200);
-    }
-    
-    .dropdown-header h4 {
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--color-gray-900);
-    }
-    
-    .btn-text {
-        background: none;
-        border: none;
-        color: var(--primary-purple);
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        text-decoration: none;
-    }
-    
-    .btn-text:hover {
-        color: var(--primary-cyan);
-    }
-    
-    /* Notification Items */
-    .notification-list {
-        max-height: 400px;
-        overflow-y: auto;
-    }
-    
-    .notification-item {
         display: flex;
+        align-items: center;
         gap: 0.75rem;
-        padding: 1rem;
-        border-bottom: 1px solid var(--color-gray-100);
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-    
-    .notification-item:hover {
         background: var(--color-gray-50);
     }
-    
-    .notification-item.unread {
-        background: rgba(153, 38, 243, 0.02);
-    }
-    
-    .notification-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        font-size: 18px;
-    }
-    
-    .notification-icon.success {
-        background: rgba(16, 185, 129, 0.1);
-        color: var(--color-success);
-    }
-    
-    .notification-icon.warning {
-        background: rgba(245, 158, 11, 0.1);
-        color: var(--color-warning);
-    }
-    
-    .notification-icon.error {
-        background: rgba(239, 68, 68, 0.1);
-        color: var(--color-error);
-    }
-    
-    .notification-icon.info {
-        background: rgba(59, 130, 246, 0.1);
-        color: var(--color-info);
-    }
-    
-    .notification-content {
-        flex: 1;
-    }
-    
-    .notification-title {
-        font-weight: 600;
-        font-size: 14px;
-        color: var(--color-gray-900);
-        margin-bottom: 0.25rem;
-    }
-    
-    .notification-text {
-        font-size: 13px;
-        color: var(--color-gray-600);
-        margin-bottom: 0.25rem;
-    }
-    
-    .notification-time {
-        font-size: 12px;
-        color: var(--color-gray-400);
-    }
-    
-    /* Empty State */
-    .empty-state {
-        padding: 3rem 1rem;
-        text-align: center;
-        color: var(--color-gray-400);
-    }
-    
-    .empty-state i {
-        font-size: 48px;
-        margin-bottom: 0.5rem;
-    }
-    
-    .empty-state p {
-        font-size: 14px;
-    }
-    
-    /* User Dropdown */
-    .dropdown-user-header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 1rem;
-    }
-    
-    .user-avatar-large {
-        width: 50px;
-        height: 50px;
+
+    .sidebar-user-avatar {
+        width: 48px;
+        height: 48px;
         border-radius: 50%;
         border: 2px solid var(--color-gray-200);
     }
-    
-    .dropdown-user-header h4 {
+
+    .sidebar-user-info h4 {
         font-size: 15px;
         font-weight: 600;
         color: var(--color-gray-900);
         margin-bottom: 0.25rem;
     }
-    
-    .dropdown-user-header p {
+
+    .sidebar-user-info p {
         font-size: 13px;
         color: var(--color-gray-600);
+        text-transform: capitalize;
     }
-    
-    .dropdown-item {
+
+    /* Navigation */
+    .sidebar-nav {
+        flex: 1;
+        padding: 1rem 0;
+    }
+
+    .nav-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .nav-section-title {
+        padding: 0 1.5rem;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--color-gray-400);
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+
+    .nav-item {
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        padding: 0.75rem 1rem;
-        color: var(--color-gray-700);
+        padding: 0.75rem 1.5rem;
+        color: var(--color-gray-600);
         text-decoration: none;
         transition: all 0.2s;
-        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        position: relative;
     }
-    
-    .dropdown-item:hover {
+
+    .nav-item:hover {
         background: var(--color-gray-50);
         color: var(--primary-purple);
     }
-    
-    .dropdown-item.logout {
-        color: var(--color-error);
+
+    .nav-item.active {
+        background: linear-gradient(90deg, rgba(153, 38, 243, 0.1) 0%, transparent 100%);
+        color: var(--primary-purple);
+        border-right: 3px solid var(--primary-purple);
     }
-    
-    .dropdown-item.logout:hover {
-        background: rgba(239, 68, 68, 0.05);
+
+    .nav-item i {
+        font-size: 20px;
+        width: 20px;
     }
-    
-    .dropdown-item i {
-        font-size: 18px;
+
+    .nav-item-badge {
+        margin-left: auto;
+        padding: 0.125rem 0.5rem;
+        background: var(--gradient-primary);
+        color: white;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        animation: pulse 2s infinite;
     }
-    
-    .dropdown-divider {
-        height: 1px;
-        background: var(--color-gray-200);
-        margin: 0.5rem 0;
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.7;
+        }
     }
-    
-    .dropdown-footer {
-        padding: 0.75rem 1rem;
+
+    /* Sidebar Footer */
+    .sidebar-footer {
+        padding: 1rem;
         border-top: 1px solid var(--color-gray-200);
-        text-align: center;
+        margin-top: auto;
     }
-    
-    /* Mobile Menu Toggle */
-    .mobile-menu-toggle {
-        display: none;
-        width: 40px;
-        height: 40px;
+
+    .sidebar-footer-link {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 0.5rem;
+        color: var(--color-gray-600);
+        text-decoration: none;
+        transition: all 0.2s;
+        font-weight: 500;
         border-radius: var(--radius-md);
-        border: none;
-        background: var(--color-gray-100);
-        color: var(--color-gray-700);
+    }
+
+    .sidebar-footer-link:hover {
+        background: var(--color-gray-50);
+        color: var(--primary-purple);
+    }
+
+    .sidebar-footer-link i {
+        font-size: 20px;
+    }
+
+    /* Sidebar Toggle */
+    .sidebar-toggle {
+        position: absolute;
+        top: 50%;
+        right: -12px;
+        transform: translateY(-50%);
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 1px solid var(--color-gray-200);
+        background: white;
+        color: var(--color-gray-600);
         cursor: pointer;
+        display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 24px;
+        font-size: 14px;
+        transition: all 0.2s;
+        z-index: 1;
     }
-    
+
+    .sidebar-toggle:hover {
+        background: var(--primary-purple);
+        color: white;
+        border-color: var(--primary-purple);
+    }
+
+    .sidebar.collapsed .sidebar-toggle i {
+        transform: rotate(180deg);
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
-        .navbar-menu {
-            display: none;
+        .sidebar {
+            transform: translateX(-280px);
         }
-        
-        .user-info {
-            display: none;
+
+        .sidebar.mobile-open {
+            transform: translateX(0);
         }
-        
-        .mobile-menu-toggle {
-            display: flex;
+
+        .sidebar-toggle {
+            display: none;
         }
     }
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Load user data
-    loadUserData();
-    
-    // Load notifications
-    loadNotifications();
-    
-    // Toggle notification dropdown
-    const notificationBtn = document.getElementById('notificationBtn');
-    const notificationDropdown = document.getElementById('notificationDropdown');
-    
-    if (notificationBtn) {
-        notificationBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            notificationDropdown.classList.toggle('active');
-            document.getElementById('userDropdown').classList.remove('active');
-        });
-    }
-    
-    // Toggle user dropdown
-    const userMenuBtn = document.getElementById('userMenuBtn');
-    const userDropdown = document.getElementById('userDropdown');
-    
-    if (userMenuBtn) {
-        userMenuBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            userDropdown.classList.toggle('active');
-            notificationDropdown.classList.remove('active');
-        });
-    }
-    
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function() {
-        notificationDropdown.classList.remove('active');
-        userDropdown.classList.remove('active');
-    });
-    
-    // Prevent dropdown from closing when clicking inside
-    notificationDropdown.addEventListener('click', function(e) {
-        e.stopPropagation();
-    });
-    
-    userDropdown.addEventListener('click', function(e) {
-        e.stopPropagation();
-    });
-    
-    // Mark all as read
-    const markAllReadBtn = document.getElementById('markAllReadBtn');
-    if (markAllReadBtn) {
-        markAllReadBtn.addEventListener('click', markAllNotificationsAsRead);
-    }
-    
-    // Logout
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            handleLogout();
-        });
-    }
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        // Load user data
+        loadSidebarUser();
 
-async function loadUserData() {
-    try {
-        const token = localStorage.getItem('access_token');
+        // Load navigation based on user role
+        loadNavigation();
+
+        // Sidebar toggle
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', function () {
+                sidebar.classList.toggle('collapsed');
+                document.body.classList.toggle('sidebar-collapsed');
+                localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
+            });
+
+            // Restore sidebar state
+            const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+            if (isCollapsed) {
+                sidebar.classList.add('collapsed');
+                document.body.classList.add('sidebar-collapsed');
+            }
+        }
+
+        // Mobile menu toggle (if exists)
+        if (mobileMenuToggle) {
+            mobileMenuToggle.addEventListener('click', function () {
+                sidebar.classList.toggle('mobile-open');
+            });
+        }
+
+        // Logout handler
+        const logoutBtn = document.getElementById('sidebarLogout');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                handleLogout();
+            });
+        }
+    });
+
+    async function loadSidebarUser() {
+        try {
+           const token = localStorage.getItem('access_token');
         if (!token) return;
         
         const response = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/me`, {
@@ -590,137 +336,212 @@ async function loadUserData() {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
-        if (response.ok) {
-            const data = await response.json();
-            updateUserUI(data);
-        }
-    } catch (error) {
-        console.error('Error loading user data:', error);
-    }
-}
 
-function updateUserUI(user) {
-    document.getElementById('userName').textContent = user.full_name || user.email;
-    document.getElementById('userRole').textContent = user.role || 'User';
-    document.getElementById('userFullName').textContent = user.full_name || user.email;
-    document.getElementById('userEmail').textContent = user.email || '';
-    
-    if (user.profile_image) {
-        document.getElementById('userAvatar').src = user.profile_image;
-        document.getElementById('userAvatarLarge').src = user.profile_image;
-    }
-}
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('sidebarUserName').textContent = data.full_name || data.email;
+                document.getElementById('sidebarUserRole').textContent = data.role;
 
-async function loadNotifications() {
-    try {
-        const token = localStorage.getItem('access_token');
-        if (!token) return;
-        
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/notifications`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
+                if (data.avatar_url) {
+                    document.getElementById('sidebarUserAvatar').src = data.avatar_url;
+                }
             }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            updateNotificationsUI(data.notifications || []);
+        } catch (error) {
+            console.error('Error loading user:', error);
         }
-    } catch (error) {
-        console.error('Error loading notifications:', error);
     }
-}
 
-function updateNotificationsUI(notifications) {
-    const notificationList = document.getElementById('notificationList');
-    const notificationCount = document.getElementById('notificationCount');
-    
-    if (notifications.length === 0) {
-        notificationList.innerHTML = `
-            <div class="empty-state">
-                <i class="ti ti-bell-off"></i>
-                <p>No notifications</p>
+    function loadNavigation() {
+        fetch('/api/v1/auth/me', { credentials: 'include' })
+            .then(response => response.json())
+            .then(data => {
+                const navContainer = document.getElementById('sidebarNav');
+                const role = data.role;
+
+                navContainer.innerHTML = getNavigationByRole(role);
+
+                // Set active nav item
+                setActiveNavItem();
+
+                // Load pending verifications count for admin
+                if (role === 'admin') {
+                    loadPendingVerificationsCount();
+                }
+            })
+            .catch(error => console.error('Error loading navigation:', error));
+    }
+
+    function getNavigationByRole(role) {
+        const commonModules = `
+            <div class="nav-section">
+                <div class="nav-section-title">Modules</div>
+                <a href="/modules/project-planner" class="nav-item" data-path="/modules/project-planner">
+                    <i class="ti ti-wand"></i>
+                    <span>AI Project Planner</span>
+                </a>
             </div>
         `;
-        notificationCount.style.display = 'none';
-        return;
-    }
-    
-    const unreadCount = notifications.filter(n => !n.is_read).length;
-    if (unreadCount > 0) {
-        notificationCount.textContent = unreadCount;
-        notificationCount.style.display = 'flex';
-    } else {
-        notificationCount.style.display = 'none';
-    }
-    
-    notificationList.innerHTML = notifications.map(notification => `
-        <div class="notification-item ${!notification.is_read ? 'unread' : ''}" data-id="${notification.notification_id}">
-            <div class="notification-icon ${getNotificationType(notification.notification_type)}">
-                <i class="ti ti-${getNotificationIcon(notification.notification_type)}"></i>
+
+        if (role === 'admin') {
+            return `
+            <div class="nav-section">
+                <div class="nav-section-title">Dashboard</div>
+                <a href="/dashboard/admin" class="nav-item" data-path="/dashboard/admin">
+                    <i class="ti ti-dashboard"></i>
+                    <span>Overview</span>
+                </a>
+                <a href="/admin/onboarding-verifications" class="nav-item" data-path="/admin/onboarding-verifications">
+                <i class="ti ti-user-check"></i>
+                    <span>Verify New Users</span>
+                    <span class="nav-item-badge" id="pendingBadge" style="display: none;">0</span>
+                 </a>
+                <a href="/clients" class="nav-item" data-path="/clients">
+                    <i class="ti ti-briefcase"></i>
+                    <span>Clients</span>
+                </a>
+                <a href="/admin/packages" class="nav-item" data-path="/admin/packages">
+                    <i class="ti ti-package"></i>
+                    <span>Packages</span>
+                </a>
             </div>
-            <div class="notification-content">
-                <p class="notification-title">${notification.title}</p>
-                <p class="notification-text">${notification.message}</p>
-                <span class="notification-time">${formatTime(notification.created_at)}</span>
+            <div class="nav-section">
+                <div class="nav-section-title">Management</div>
+                <a href="/admin/users" class="nav-item" data-path="/admin/users">
+                    <i class="ti ti-users"></i>
+                    <span>User Management</span>
+                </a>
+                <a href="/admin/tasks" class="nav-item" data-path="/admin/tasks">
+                    <i class="ti ti-checklist"></i>
+                    <span>Task Assignment</span>
+                </a>
+                <a href="/admin/finance" class="nav-item" data-path="/admin/finance">
+                    <i class="ti ti-coin"></i>
+                    <span>Finance & P&L</span>
+                </a>
+                <a href="/admin/access-control" class="nav-item" data-path="/admin/access-control">
+                    <i class="ti ti-shield-lock"></i>
+                    <span>Access Control</span>
+                </a>
             </div>
-        </div>
-    `).join('');
-}
+            ${commonModules}
+            <div class="nav-section">
+                <div class="nav-section-title">Settings</div>
+                <a href="/settings" class="nav-item" data-path="/settings">
+                    <i class="ti ti-settings"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        `;
+        } else if (role === 'employee') {
+            return `
+            <div class="nav-section">
+                <div class="nav-section-title">Dashboard</div>
+                <a href="/dashboard/employee" class="nav-item" data-path="/dashboard/employee">
+                    <i class="ti ti-dashboard"></i>
+                    <span>Overview</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Client Management</div>
+                <a href="/clients" class="nav-item" data-path="/clients">
+                    <i class="ti ti-briefcase"></i>
+                    <span>My Clients</span>
+                </a>
+                <a href="/employee/tasks" class="nav-item" data-path="/employee/tasks">
+                    <i class="ti ti-checklist"></i>
+                    <span>My Tasks</span>
+                </a>
+            </div>
+            ${commonModules}
+            <div class="nav-section">
+                <div class="nav-section-title">Settings</div>
+                <a href="/settings" class="nav-item" data-path="/settings">
+                    <i class="ti ti-settings"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        `;
+        } else if (role === 'client') {
+            return `
+            <div class="nav-section">
+                <div class="nav-section-title">Dashboard</div>
+                <a href="/dashboard/client" class="nav-item" data-path="/dashboard/client">
+                    <i class="ti ti-dashboard"></i>
+                    <span>Overview</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">My Account</div>
+                <a href="/client/package" class="nav-item" data-path="/client/package">
+                    <i class="ti ti-package"></i>
+                    <span>My Package</span>
+                </a>
+                <a href="/client/campaigns" class="nav-item" data-path="/client/campaigns">
+                    <i class="ti ti-chart-bar"></i>
+                    <span>Campaign Reports</span>
+                </a>
+                <a href="/client/support" class="nav-item" data-path="/client/support">
+                    <i class="ti ti-help-circle"></i>
+                    <span>Support Tickets</span>
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Settings</div>
+                <a href="/settings" class="nav-item" data-path="/settings">
+                    <i class="ti ti-settings"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        `;
+        }
 
-function getNotificationType(type) {
-    const types = {
-        'success': 'success',
-        'warning': 'warning',
-        'error': 'error',
-        'info': 'info'
-    };
-    return types[type] || 'info';
-}
+        return '';
+    }
 
-function getNotificationIcon(type) {
-    const icons = {
-        'success': 'check-circle',
-        'warning': 'alert-triangle',
-        'error': 'alert-circle',
-        'info': 'info-circle'
-    };
-    return icons[type] || 'bell';
-}
+    function setActiveNavItem() {
+        const currentPath = window.location.pathname;
+        const navItems = document.querySelectorAll('.nav-item');
 
-function formatTime(timestamp) {
-    const now = new Date();
-    const time = new Date(timestamp);
-    const diff = Math.floor((now - time) / 1000);
-    
-    if (diff < 60) return 'Just now';
-    if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)} hour${Math.floor(diff / 3600) > 1 ? 's' : ''} ago`;
-    return `${Math.floor(diff / 86400)} day${Math.floor(diff / 86400) > 1 ? 's' : ''} ago`;
-}
-
-async function markAllNotificationsAsRead() {
-    try {
-        const token = localStorage.getItem('access_token');
-        if (!token) return;
-        
-        await fetch(`${APP_CONFIG.apiBaseUrl}/notifications/mark-all-read`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
+        navItems.forEach(item => {
+            const itemPath = item.getAttribute('data-path');
+            if (itemPath && currentPath.startsWith(itemPath)) {
+                item.classList.add('active');
             }
         });
-        
-        loadNotifications();
-    } catch (error) {
-        console.error('Error marking notifications as read:', error);
     }
-}
 
-function handleLogout() {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
-    window.location.href = '/auth/login';
-}
+    async function loadPendingVerificationsCount() {
+        try {
+            const response = await fetch('/api/v1/admin/verifications/pending-count', {
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const badge = document.getElementById('pendingBadge');
+                if (badge && data.count > 0) {
+                    badge.textContent = data.count;
+                    badge.style.display = 'block';
+                }
+            }
+        } catch (error) {
+            console.error('Error loading pending count:', error);
+        }
+    }
+
+    async function handleLogout() {
+        try {
+            const response = await fetch('/api/v1/auth/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                window.location.href = '/auth/login';
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+            window.location.href = '/auth/login';
+        }
+    }
 </script>

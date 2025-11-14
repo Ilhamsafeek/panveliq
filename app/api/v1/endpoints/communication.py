@@ -93,6 +93,12 @@ async def create_whatsapp_campaign(
         connection = get_db_connection()
         cursor = connection.cursor()
         
+        # Determine correct status based on schedule_type
+        if campaign.schedule_type == 'scheduled':
+            campaign_status = 'scheduled'
+        else:  # immediate
+            campaign_status = 'draft'  # Will be updated to 'sent' after API call
+        
         # Insert campaign
         query = """
             INSERT INTO whatsapp_campaigns 
@@ -109,7 +115,7 @@ async def create_whatsapp_campaign(
             campaign.message_content,
             campaign.schedule_type,
             campaign.scheduled_at,
-            'draft' if campaign.schedule_type == 'scheduled' else 'sending',
+            campaign_status,
             len(campaign.recipient_list)
         ))
         
@@ -166,10 +172,10 @@ async def create_whatsapp_campaign(
                 }
                 
             except Exception as api_error:
-                # Update status to failed
+                # Update status to draft on failure (since 'failed' is not in ENUM)
                 cursor.execute("""
                     UPDATE whatsapp_campaigns 
-                    SET status = 'failed'
+                    SET status = 'draft'
                     WHERE campaign_id = %s
                 """, (campaign_id,))
                 connection.commit()
@@ -337,7 +343,7 @@ async def create_email_campaign(
             json.dumps(campaign.segment_criteria),
             campaign.schedule_type,
             campaign.scheduled_at,
-            'draft' if campaign.schedule_type == 'scheduled' else 'sending',
+            'draft' if campaign.schedule_type == 'scheduled' else 'sent',
             len(campaign.recipient_list),
             campaign.is_ab_test,
             json.dumps(campaign.ab_test_config) if campaign.ab_test_config else None

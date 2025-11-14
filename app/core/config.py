@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     MAILCHIMP_LIST_ID: Optional[str] = None
     
     # WhatsApp
-    WHATSAPP_API_KEY: Optional[str] = None
+    WHATSAPP_ACCESS_TOKEN: Optional[str] = None
     WHATSAPP_PHONE_NUMBER_ID: Optional[str] = None
     
     # Meta (Facebook & Instagram)

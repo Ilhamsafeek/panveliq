@@ -391,11 +391,12 @@ async def communication_page(request: Request):
         "modules/communication.html",
         {
             "request": request,
-            "show_sidebar": True
+            "show_sidebar": True,
+            "show_navbar": True
         }
     )
 
-    
+
 # ========== HEALTH CHECK ==========
 
 @app.get("/health")

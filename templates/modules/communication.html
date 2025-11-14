@@ -30,7 +30,7 @@
     </div>
 
     <!-- Analytics Overview Cards -->
-    <div class="analytics-cards" id="analyticsCards">
+    <!-- <div class="analytics-cards" id="analyticsCards">
         <div class="stat-card whatsapp-card">
             <div class="stat-icon">
                 <i class="ti ti-brand-whatsapp"></i>
@@ -74,7 +74,7 @@
                 <div class="stat-meta">Multi-channel targeting</div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Tab Navigation -->
     <div class="tabs-container">
@@ -246,8 +246,9 @@
 </div>
 
 <!-- Email Campaign Modal -->
+<!-- Email Campaign Modal -->
 <div class="modal" id="emailModal">
-    <div class="modal-content modal-xlarge">
+    <div class="modal-content modal-large">
         <div class="modal-header">
             <h2><i class="ti ti-mail"></i> Create Email Campaign</h2>
             <button class="modal-close" onclick="closeModal('emailModal')">
@@ -256,54 +257,45 @@
         </div>
         <div class="modal-body">
             <form id="emailForm">
-                <!-- Row 1: Campaign Name & Client -->
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Campaign Name <span class="required">*</span></label>
-                        <input type="text" id="email_campaign_name" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Select Client <span class="required">*</span></label>
-                        <select id="email_client_id" required>
-                            <option value="">Choose client...</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Row 2: Email Subject -->
                 <div class="form-group">
-                    <label>Email Subject <span class="required">*</span></label>
-                    <input type="text" id="email_subject" required>
+                    <label>Campaign Name <span class="required">*</span></label>
+                    <input type="text" id="email_campaign_name" required>
                 </div>
 
-                <!-- Row 3: From Name & Email -->
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>From Name <span class="required">*</span></label>
-                        <input type="text" id="email_from_name" required placeholder="Your Company">
-                    </div>
-                    <div class="form-group">
-                        <label>From Email <span class="required">*</span></label>
-                        <input type="email" id="email_from_email" required placeholder="hello@company.com">
-                    </div>
-                </div>
-
-                <!-- Row 4: Email Body -->
                 <div class="form-group">
-                    <label>Email Body (HTML or Plain Text) <span class="required">*</span></label>
-                    <div id="emailBodyEditor" style="height: 200px; background: white;"></div>
-                    <input type="hidden" id="email_body_html">
+                    <label>Select Client <span class="required">*</span></label>
+                    <select id="email_client_id" required>
+                        <option value="">Choose client...</option>
+                    </select>
                 </div>
 
-                <!-- Row 5: Audience & Schedule -->
+                <div class="ai-section">
+                    <button type="button" class="btn-ai" onclick="generateEmailCopy()">
+                        <i class="ti ti-sparkles"></i>
+                        Generate Email with AI
+                    </button>
+                    <small>Let AI create compelling email copy for you</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Subject Line <span class="required">*</span></label>
+                    <input type="text" id="email_subject" required placeholder="Write compelling subject line...">
+                </div>
+
+                <div class="form-group">
+                    <label>Email Body <span class="required">*</span></label>
+                    <div id="emailEditor" style="min-height: 300px; border: 1px solid #e2e8f0; border-radius: 8px;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Audience <span class="required">*</span></label>
+                    <select id="email_audience_segment" onchange="loadAudienceRecipients('email')" required>
+                        <option value="">Choose audience segment...</option>
+                    </select>
+                    <small class="form-hint" id="email_recipient_count">0 recipients selected</small>
+                </div>
+
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>Select Audience <span class="required">*</span></label>
-                        <select id="email_audience_segment" onchange="loadAudienceRecipients('email')" required>
-                            <option value="">Choose audience segment...</option>
-                        </select>
-                        <small class="form-hint" id="email_recipient_count">0 recipients selected</small>
-                    </div>
                     <div class="form-group">
                         <label>Schedule Type <span class="required">*</span></label>
                         <select id="email_schedule_type" onchange="toggleScheduleTime('email')">
@@ -311,20 +303,18 @@
                             <option value="scheduled">Schedule for Later</option>
                         </select>
                     </div>
-                </div>
 
-                <!-- Row 6: Schedule Time & A/B Testing -->
-                <div class="form-row">
                     <div class="form-group" id="email_schedule_time_group" style="display: none;">
                         <label>Schedule Date & Time</label>
                         <input type="datetime-local" id="email_scheduled_at">
                     </div>
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="email_ab_test">
-                            <span>Enable A/B Testing</span>
-                        </label>
-                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="email_ab_test">
+                        <span>Enable A/B Testing</span>
+                    </label>
                 </div>
 
                 <div class="modal-actions">
@@ -338,7 +328,6 @@
         </div>
     </div>
 </div>
-
 
 <!-- Automation Flow Modal -->
 <div class="modal" id="flowModal">
@@ -583,6 +572,63 @@
                     <button type="submit" class="btn-primary">
                         <i class="ti ti-send"></i>
                         Create Campaign
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- AI Email Generator Modal -->
+<div class="modal" id="aiEmailModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="ti ti-sparkles"></i> AI Email Generator</h2>
+            <button class="modal-close" onclick="closeModal('aiEmailModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="aiEmailForm">
+                <div class="form-group">
+                    <label>Campaign Goal <span class="required">*</span></label>
+                    <input type="text" id="ai_campaign_goal" required placeholder="e.g., Increase product sales, Drive event registrations">
+                </div>
+
+                <div class="form-group">
+                    <label>Target Audience <span class="required">*</span></label>
+                    <input type="text" id="ai_target_audience" required placeholder="e.g., Small business owners, Tech enthusiasts">
+                </div>
+
+                <div class="form-group">
+                    <label>Tone <span class="required">*</span></label>
+                    <select id="ai_tone" required>
+                        <option value="professional">Professional</option>
+                        <option value="friendly">Friendly</option>
+                        <option value="urgent">Urgent</option>
+                        <option value="casual">Casual</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Industry</label>
+                    <input type="text" id="ai_industry" placeholder="e.g., E-commerce, SaaS, Healthcare">
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="ai_include_cta" checked>
+                        <span>Include Call-to-Action</span>
+                    </label>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('aiEmailModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="ti ti-sparkles"></i>
+                        Generate Email
                     </button>
                 </div>
             </form>

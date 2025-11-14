@@ -914,8 +914,16 @@ async function submitWhatsAppCampaign() {
     }
 }
 
+
 async function submitEmailCampaign() {
     try {
+        // Validate audience selection
+        const audienceSelect = document.getElementById('email_audience_segment');
+        if (!audienceSelect || !audienceSelect.value) {
+            showNotification('Please select an audience segment', 'error');
+            return;
+        }
+        
         const recipients = window.emailRecipients || [];
         
         if (recipients.length === 0) {
@@ -961,6 +969,7 @@ async function submitEmailCampaign() {
         showNotification('An error occurred', 'error');
     }
 }
+
 
 async function submitAutomationFlow() {
     try {
@@ -1071,8 +1080,24 @@ async function submitAudienceSegment() {
 }
 
 
+
 async function submitAIEmailGeneration() {
+    // Get the submit button
+    const submitButton = document.querySelector('#aiEmailForm button[type="submit"]');
+    const originalContent = submitButton ? submitButton.innerHTML : '';
+    
     try {
+        // Show loading state on button
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.innerHTML = `
+                <div class="spinner-border spinner-border-sm" role="status" style="display: inline-block; width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite;">
+                    <span class="visually-hidden"></span>
+                </div>
+                <span style="margin-left: 8px;">Generating...</span>
+            `;
+        }
+        
         const data = {
             campaign_goal: document.getElementById('ai_campaign_goal').value,
             target_audience: document.getElementById('ai_target_audience').value,
@@ -1113,8 +1138,15 @@ async function submitAIEmailGeneration() {
     } catch (error) {
         console.error('Error generating AI email:', error);
         showNotification('An error occurred', 'error');
+    } finally {
+        // Restore button state
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalContent;
+        }
     }
 }
+
 
 // =====================================================
 // TOGGLE FUNCTIONS
