@@ -72,8 +72,10 @@ class AudienceSegmentCreate(BaseModel):
     client_id: int
     segment_name: str
     description: Optional[str] = None
-    platform: str  # whatsapp, email, all
+    platform: str  # whatsapp, email, both
     segment_criteria: Dict[str, Any]
+    estimated_size: Optional[int] = 0
+    contacts_data: Optional[List[Dict[str, Any]]] = []  # ADD THIS
 
 
 # ========== WHATSAPP CAMPAIGNS ==========
@@ -814,13 +816,12 @@ async def toggle_flow_status(
 
 
 # ========== AUDIENCE SEGMENTATION ==========
-
 @router.post("/segments/create")
 async def create_audience_segment(
     segment: AudienceSegmentCreate,
     current_user: dict = Depends(require_admin_or_employee)
 ):
-    """Create a new audience segment"""
+    """Create a new audience segment with contacts"""
     connection = None
     cursor = None
     
@@ -828,10 +829,11 @@ async def create_audience_segment(
         connection = get_db_connection()
         cursor = connection.cursor()
         
+        # Insert segment
         query = """
             INSERT INTO audience_segments
-            (client_id, segment_name, description, platform, segment_criteria, created_by, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, NOW())
+            (client_id, segment_name, description, platform, segment_criteria, estimated_size, created_by, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
         """
         
         cursor.execute(query, (
@@ -840,28 +842,51 @@ async def create_audience_segment(
             segment.description,
             segment.platform,
             json.dumps(segment.segment_criteria),
+            segment.estimated_size,
             current_user['user_id']
         ))
         
-        connection.commit()
         segment_id = cursor.lastrowid
+        
+        # Insert contacts if provided
+        if segment.contacts_data and len(segment.contacts_data) > 0:
+            contact_query = """
+                INSERT INTO segment_contacts
+                (segment_id, name, email, phone, company, additional_data, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, NOW())
+            """
+            
+            for contact in segment.contacts_data:
+                cursor.execute(contact_query, (
+                    segment_id,
+                    contact.get('name', ''),
+                    contact.get('email', ''),
+                    contact.get('phone', ''),
+                    contact.get('company', ''),
+                    json.dumps({k: v for k, v in contact.items() if k not in ['name', 'email', 'phone', 'company']})
+                ))
+        
+        connection.commit()
+        
+        print(f"✅ Created segment {segment_id} with {segment.estimated_size} contacts")
         
         return {
             "success": True,
-            "message": "Audience segment created successfully",
-            "segment_id": segment_id
+            "message": f"Segment created with {segment.estimated_size} contacts",
+            "segment_id": segment_id,
+            "estimated_size": segment.estimated_size
         }
     
     except Exception as e:
         if connection:
             connection.rollback()
+        print(f"❌ Error creating segment: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
-
 
 @router.get("/segments/list")
 async def list_audience_segments(
@@ -1015,6 +1040,194 @@ async def get_communication_analytics(
         }
     
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+
+
+@router.get("/segments/{segment_id}")
+async def get_segment_details(
+    segment_id: int,
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """Get specific segment details"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        query = """
+            SELECT 
+                s.segment_id, s.segment_name, s.description, s.platform,
+                s.estimated_size, s.segment_criteria, s.created_at,
+                u.full_name as client_name,
+                creator.full_name as created_by_name
+            FROM audience_segments s
+            JOIN users u ON s.client_id = u.user_id
+            JOIN users creator ON s.created_by = creator.user_id
+            WHERE s.segment_id = %s
+        """
+        
+        cursor.execute(query, (segment_id,))
+        segment = cursor.fetchone()
+        
+        if not segment:
+            raise HTTPException(status_code=404, detail="Segment not found")
+        
+        # Convert datetime
+        if segment.get('created_at'):
+            segment['created_at'] = segment['created_at'].isoformat()
+        
+        # Parse segment_criteria if it's a string
+        if segment.get('segment_criteria') and isinstance(segment['segment_criteria'], str):
+            try:
+                segment['segment_criteria'] = json.loads(segment['segment_criteria'])
+            except:
+                pass
+        
+        return {
+            "success": True,
+            "segment": segment
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@router.delete("/segments/{segment_id}")
+async def delete_segment(
+    segment_id: int,
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """Delete an audience segment"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Check if segment exists
+        cursor.execute("""
+            SELECT segment_id, segment_name 
+            FROM audience_segments 
+            WHERE segment_id = %s
+        """, (segment_id,))
+        
+        segment = cursor.fetchone()
+        
+        if not segment:
+            raise HTTPException(status_code=404, detail="Segment not found")
+        
+        # Delete the segment
+        cursor.execute("""
+            DELETE FROM audience_segments 
+            WHERE segment_id = %s
+        """, (segment_id,))
+        
+        connection.commit()
+        
+        return {
+            "success": True,
+            "message": f"Segment '{segment['segment_name']}' deleted successfully"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        if connection:
+            connection.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+
+@router.get("/segments/{segment_id}/recipients")
+async def get_segment_recipients(
+    segment_id: int,
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """Get recipients from a segment"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Get segment details
+        cursor.execute("""
+            SELECT segment_id, segment_name, platform, estimated_size
+            FROM audience_segments
+            WHERE segment_id = %s
+        """, (segment_id,))
+        
+        segment = cursor.fetchone()
+        
+        if not segment:
+            raise HTTPException(status_code=404, detail="Segment not found")
+        
+        # Get contacts from segment_contacts table
+        cursor.execute("""
+            SELECT contact_id, name, email, phone, company
+            FROM segment_contacts
+            WHERE segment_id = %s
+        """, (segment_id,))
+        
+        contacts = cursor.fetchall()
+        
+        # Build recipient list based on platform
+        platform = segment.get('platform', 'email').lower()
+        recipients = []
+        
+        for contact in contacts:
+            if platform == 'email' or platform == 'both':
+                if contact.get('email'):
+                    recipients.append(contact['email'])
+            elif platform == 'whatsapp':
+                if contact.get('phone'):
+                    recipients.append(contact['phone'])
+            
+            # If both platforms, include both email and phone
+            if platform == 'both':
+                if contact.get('phone'):
+                    recipients.append(contact['phone'])
+        
+        estimated_size = segment.get('estimated_size', len(contacts))
+        
+        return {
+            "success": True,
+            "segment_id": segment_id,
+            "segment_name": segment['segment_name'],
+            "platform": platform,
+            "estimated_size": estimated_size,
+            "recipients": recipients,
+            "total_recipients": len(recipients),
+            "contacts": contacts  # Full contact details
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching segment recipients: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if cursor:

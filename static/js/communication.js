@@ -85,11 +85,18 @@ async function initializePage() {
 async function loadClients() {
     try {
         const token = localStorage.getItem('access_token');
-        const response = await fetch('/api/v1/clients/list', {
+        const response = await fetch('/api/v1/clients/list', {  // Use absolute path
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
+        
+        if (!response.ok) {
+            console.error('Response status:', response.status);
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            return;
+        }
         
         const data = await response.json();
         
@@ -149,6 +156,7 @@ async function loadSegmentsForDropdown() {
     }
 }
 
+
 function populateSegmentDropdowns() {
     const dropdowns = [
         { id: 'wa_audience_segment', platform: 'whatsapp' },
@@ -160,15 +168,25 @@ function populateSegmentDropdowns() {
         if (select) {
             select.innerHTML = '<option value="">Choose audience segment...</option>';
             
-            // Filter segments by platform
-            const filteredSegments = segmentsList.filter(seg => 
-                seg.platform === platform || seg.platform === 'all'
-            );
+            // Filter segments by platform - match with 'both' or exact platform
+            const filteredSegments = segmentsList.filter(seg => {
+                const segPlatform = seg.platform ? seg.platform.toLowerCase() : '';
+                const targetPlatform = platform.toLowerCase();
+                
+                return segPlatform === targetPlatform || 
+                       segPlatform === 'both' || 
+                       segPlatform === 'all' ||
+                       segPlatform === 'email' && targetPlatform === 'email' ||
+                       segPlatform === 'whatsapp' && targetPlatform === 'whatsapp';
+            });
+            
+            console.log(`Populating ${id} with ${filteredSegments.length} segments`);
             
             filteredSegments.forEach(segment => {
                 const option = document.createElement('option');
                 option.value = segment.segment_id;
                 option.textContent = `${segment.segment_name} (${segment.estimated_size || 0} contacts)`;
+                option.dataset.recipients = segment.estimated_size || 0;
                 select.appendChild(option);
             });
         }
@@ -203,15 +221,24 @@ async function loadAudienceRecipients(type) {
         const data = await response.json();
         
         if (data.success) {
-            const count = type === 'wa' ? data.phones.length : data.emails.length;
+            // Get count from the correct field
+            const count = data.total_recipients || data.estimated_size || 0;
             countElement.textContent = `${count} recipients selected`;
             
             // Store recipients for form submission
+            const recipients = data.recipients || [];
+            
             if (type === 'wa') {
-                window.waRecipients = data.phones;
+                // For WhatsApp, we need phone numbers
+                window.waRecipients = recipients.filter(r => r && r.trim());
             } else {
-                window.emailRecipients = data.emails;
+                // For Email, we need email addresses
+                window.emailRecipients = recipients.filter(r => r && r.trim());
             }
+            
+            console.log(`Loaded ${recipients.length} recipients for ${type}`);
+        } else {
+            countElement.textContent = 'Error loading recipients';
         }
     } catch (error) {
         console.error('Error loading recipients:', error);
@@ -254,11 +281,11 @@ function initializeFileUpload() {
     });
 }
 
+
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    // Show file name
     document.getElementById('fileName').textContent = `Selected: ${file.name}`;
     
     // Parse CSV
@@ -270,27 +297,29 @@ function handleFileSelect(event) {
             displayCSVPreview(results.data);
         },
         error: function(error) {
-            showNotification('Error parsing CSV file', 'error');
             console.error('CSV Parse Error:', error);
+            showNotification('Error parsing CSV file', 'error');
         }
     });
 }
 
 function displayCSVPreview(data) {
     const previewDiv = document.getElementById('csvPreview');
-    const tableDiv = document.getElementById('previewTable');
-    const statsDiv = document.getElementById('previewStats');
+    const previewTable = document.getElementById('previewTable');
+    const previewStats = document.getElementById('previewStats');
     
-    if (!previewDiv || !tableDiv || !statsDiv) return;
+    if (data.length === 0) {
+        showNotification('CSV file is empty', 'error');
+        return;
+    }
     
-    // Show preview section
+    // Show preview
     previewDiv.style.display = 'block';
     
-    // Get first 5 rows
-    const previewData = data.slice(0, 5);
-    const headers = Object.keys(previewData[0] || {});
-    
     // Create table
+    const headers = Object.keys(data[0]);
+    const previewData = data.slice(0, 5); // First 5 rows
+    
     let tableHTML = '<table><thead><tr>';
     headers.forEach(header => {
         tableHTML += `<th>${header}</th>`;
@@ -306,33 +335,28 @@ function displayCSVPreview(data) {
     });
     tableHTML += '</tbody></table>';
     
-    tableDiv.innerHTML = tableHTML;
+    previewTable.innerHTML = tableHTML;
     
-    // Calculate stats
-    const totalContacts = data.length;
-    const emailCount = data.filter(row => row.email).length;
-    const phoneCount = data.filter(row => row.phone).length;
-    
-    statsDiv.innerHTML = `
-        <div>Total Contacts: <span>${totalContacts}</span></div>
-        <div>With Email: <span>${emailCount}</span></div>
-        <div>With Phone: <span>${phoneCount}</span></div>
+    // Show stats
+    previewStats.innerHTML = `
+        <span><strong>${data.length}</strong> contacts found</span>
+        <span><strong>${headers.length}</strong> columns</span>
     `;
 }
 
+// Download CSV template
 function downloadCSVTemplate() {
-    const csvContent = "name,email,phone\nJohn Doe,john@example.com,+1234567890\nJane Smith,jane@example.com,+0987654321\n";
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'audience_template.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const csvContent = 'name,email,phone,company\nJohn Doe,john@example.com,+1234567890,Example Corp\nJane Smith,jane@example.com,+0987654321,Another Company';
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'audience_template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
 }
+
+
 
 async function loadAnalytics() {
     try {
@@ -734,9 +758,15 @@ function openFlowModal() {
     document.getElementById('flowForm').reset();
 }
 
+
 function openSegmentModal() {
     document.getElementById('segmentModal').classList.add('show');
     document.getElementById('segmentForm').reset();
+    
+    // Reset CSV data and preview
+    csvData = null;
+    document.getElementById('csvPreview').style.display = 'none';
+    document.getElementById('fileName').textContent = '';
 }
 
 function openCreateCampaignModal() {
@@ -794,34 +824,49 @@ async function generateEmailCopy() {
 
 function setupFormHandlers() {
     // WhatsApp Form
-    document.getElementById('whatsappForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        await submitWhatsAppCampaign();
-    });
+    const whatsappForm = document.getElementById('whatsappForm');
+    if (whatsappForm) {
+        whatsappForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await submitWhatsAppCampaign();
+        });
+    }
     
     // Email Form
-    document.getElementById('emailForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        await submitEmailCampaign();
-    });
+    const emailForm = document.getElementById('emailForm');
+    if (emailForm) {
+        emailForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await submitEmailCampaign();
+        });
+    }
     
     // Flow Form
-    document.getElementById('flowForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        await submitAutomationFlow();
-    });
+    const flowForm = document.getElementById('flowForm');
+    if (flowForm) {
+        flowForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await submitAutomationFlow();
+        });
+    }
     
     // Segment Form
-    document.getElementById('segmentForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        await submitAudienceSegment();
-    });
+    const segmentForm = document.getElementById('segmentForm');
+    if (segmentForm) {
+        segmentForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await submitAudienceSegment();
+        });
+    }
     
-    // AI Email Form
-    document.getElementById('aiEmailForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        await submitAIEmailGeneration();
-    });
+    // AI Email Form (optional - only if exists)
+    const aiEmailForm = document.getElementById('aiEmailForm');
+    if (aiEmailForm) {
+        aiEmailForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await submitAIEmailGeneration();
+        });
+    }
 }
 
 async function submitWhatsAppCampaign() {
@@ -955,15 +1000,42 @@ async function submitAutomationFlow() {
     }
 }
 
+
 async function submitAudienceSegment() {
     try {
+        // Validate CSV upload
+        if (!csvData || csvData.length === 0) {
+            showNotification('Please upload a CSV file with contacts', 'error');
+            return;
+        }
+
+        const clientId = parseInt(document.getElementById('segment_client_id').value);
+        const segmentName = document.getElementById('segment_name').value;
+        const platform = document.getElementById('segment_platform').value;
+        const description = document.getElementById('segment_description')?.value || '';
+
+        if (!clientId || !segmentName) {
+            showNotification('Please fill all required fields', 'error');
+            return;
+        }
+
+        // Prepare segment data with full CSV contact data
         const data = {
-            client_id: parseInt(document.getElementById('segment_client_id').value),
-            segment_name: document.getElementById('segment_name').value,
-            description: document.getElementById('segment_description').value,
-            platform: document.getElementById('segment_platform').value,
-            segment_criteria: JSON.parse(document.getElementById('segment_criteria').value)
+            client_id: clientId,
+            segment_name: segmentName,
+            description: description || `Uploaded segment with ${csvData.length} contacts`,
+            platform: platform,
+            segment_criteria: {
+                upload_type: 'csv',
+                total_contacts: csvData.length,
+                columns: Object.keys(csvData[0] || {}),
+                uploaded_at: new Date().toISOString()
+            },
+            estimated_size: csvData.length,
+            contacts_data: csvData  // Send full CSV data to store in database
         };
+        
+        console.log('Submitting segment with', csvData.length, 'contacts');
         
         const token = localStorage.getItem('access_token');
         const response = await fetch(`${API_BASE}/segments/create`, {
@@ -978,17 +1050,26 @@ async function submitAudienceSegment() {
         const result = await response.json();
         
         if (result.success) {
-            showNotification('Audience segment created successfully!', 'success');
+            showNotification(`✅ Segment created with ${csvData.length} contacts!`, 'success');
             closeModal('segmentModal');
             loadAudienceSegments();
+            loadSegmentsForDropdown(); // Reload dropdowns
+            loadAnalytics();
+            
+            // Reset form and CSV data
+            csvData = null;
+            document.getElementById('segmentForm').reset();
+            document.getElementById('csvPreview').style.display = 'none';
+            document.getElementById('fileName').textContent = '';
         } else {
             showNotification(result.detail || 'Failed to create segment', 'error');
         }
     } catch (error) {
         console.error('Error creating segment:', error);
-        showNotification('Invalid JSON or error occurred', 'error');
+        showNotification('An error occurred while creating segment', 'error');
     }
 }
+
 
 async function submitAIEmailGeneration() {
     try {
@@ -1145,4 +1226,280 @@ function showNotification(message, type = 'info') {
         notification.classList.remove('show');
         setTimeout(() => notification.remove(), 300);
     }, 3000);
+}
+
+
+// ADD THESE FUNCTIONS TO communication.js
+
+// =====================================================
+// FLOW BUILDER - USER FRIENDLY
+// =====================================================
+
+let flowActionCounter = 0;
+
+function openFlowModal() {
+    document.getElementById('flowModal').classList.add('show');
+    document.getElementById('flowForm').reset();
+    
+    // Initialize with one action
+    flowActionCounter = 0;
+    document.getElementById('flowActionsBuilder').innerHTML = '';
+    addFlowAction();
+}
+
+function addFlowAction() {
+    flowActionCounter++;
+    const builder = document.getElementById('flowActionsBuilder');
+    
+    const actionDiv = document.createElement('div');
+    actionDiv.className = 'flow-action-item';
+    actionDiv.id = `flow_action_${flowActionCounter}`;
+    actionDiv.innerHTML = `
+        <div class="flow-action-header">
+            <span class="flow-action-number">Action ${flowActionCounter}</span>
+            ${flowActionCounter > 1 ? `<button type="button" class="btn-remove" onclick="removeFlowAction(${flowActionCounter})"><i class="ti ti-trash"></i></button>` : ''}
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Action Type</label>
+                <select class="flow-action-type" required>
+                    <option value="send_email">Send Email</option>
+                    <option value="send_whatsapp">Send WhatsApp</option>
+                    <option value="send_sms">Send SMS</option>
+                    <option value="wait">Wait/Delay</option>
+                    <option value="add_tag">Add Tag</option>
+                    <option value="notify_team">Notify Team</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Delay</label>
+                <select class="flow-action-delay" required>
+                    <option value="0">Immediate</option>
+                    <option value="5_minutes">5 Minutes</option>
+                    <option value="30_minutes">30 Minutes</option>
+                    <option value="1_hour">1 Hour</option>
+                    <option value="6_hours">6 Hours</option>
+                    <option value="1_day">1 Day</option>
+                    <option value="3_days">3 Days</option>
+                    <option value="1_week">1 Week</option>
+                    <option value="2_weeks">2 Weeks</option>
+                    <option value="1_month">1 Month</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Template/Message Name</label>
+            <input type="text" class="flow-action-template" placeholder="e.g., welcome_email, followup_message" required>
+        </div>
+    `;
+    
+    builder.appendChild(actionDiv);
+}
+
+function removeFlowAction(id) {
+    const actionDiv = document.getElementById(`flow_action_${id}`);
+    if (actionDiv) {
+        actionDiv.remove();
+    }
+    
+    // Renumber remaining actions
+    const actions = document.querySelectorAll('.flow-action-item');
+    actions.forEach((action, index) => {
+        action.querySelector('.flow-action-number').textContent = `Action ${index + 1}`;
+    });
+}
+
+function buildFlowActionsJSON() {
+    const actions = [];
+    const actionItems = document.querySelectorAll('.flow-action-item');
+    
+    actionItems.forEach(item => {
+        const actionType = item.querySelector('.flow-action-type').value;
+        const delay = item.querySelector('.flow-action-delay').value;
+        const template = item.querySelector('.flow-action-template').value;
+        
+        actions.push({
+            action: actionType,
+            delay: delay,
+            template: template
+        });
+    });
+    
+    return actions;
+}
+
+// UPDATE the submitAutomationFlow function
+async function submitAutomationFlow() {
+    try {
+        const flowActions = buildFlowActionsJSON();
+        
+        if (flowActions.length === 0) {
+            showNotification('Please add at least one action', 'error');
+            return;
+        }
+        
+        const data = {
+            client_id: parseInt(document.getElementById('flow_client_id').value),
+            flow_name: document.getElementById('flow_name').value,
+            trigger_type: document.getElementById('flow_trigger_type').value,
+            channel: document.getElementById('flow_channel').value,
+            trigger_conditions: {},
+            flow_actions: flowActions,
+            is_active: document.getElementById('flow_active').checked
+        };
+        
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE}/flows/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('Automation flow created successfully!', 'success');
+            closeModal('flowModal');
+            loadAutomationFlows();
+            loadAnalytics();
+        } else {
+            showNotification(result.detail || 'Failed to create flow', 'error');
+        }
+    } catch (error) {
+        console.error('Error creating automation flow:', error);
+        showNotification('An error occurred', 'error');
+    }
+}
+
+// =====================================================
+// SEGMENT MANAGEMENT - DELETE & VIEW
+// =====================================================
+
+async function viewSegment(segmentId) {
+    try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE}/segments/${segmentId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const segment = data.segment;
+            
+            // Show segment details in a modal or alert
+            const details = `
+Segment: ${segment.segment_name}
+Platform: ${segment.platform}
+Estimated Size: ${segment.estimated_size || 0} contacts
+Description: ${segment.description || 'No description'}
+Created: ${new Date(segment.created_at).toLocaleDateString()}
+Client: ${segment.client_name}
+            `;
+            
+            alert(details);
+        }
+    } catch (error) {
+        console.error('Error viewing segment:', error);
+        showNotification('Failed to load segment details', 'error');
+    }
+}
+
+async function deleteSegment(segmentId, segmentName) {
+    if (!confirm(`Are you sure you want to delete "${segmentName}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE}/segments/${segmentId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('Segment deleted successfully', 'success');
+            loadAudienceSegments();
+            loadAnalytics();
+        } else {
+            showNotification(data.detail || 'Failed to delete segment', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting segment:', error);
+        showNotification('An error occurred', 'error');
+    }
+}
+
+// UPDATE the loadAudienceSegments function to remove Edit button and add Delete
+async function loadAudienceSegments() {
+    const container = document.getElementById('segmentsList');
+    container.innerHTML = '<div class="loading-state"><div class="loader-spinner"></div><p>Loading segments...</p></div>';
+    
+    try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE}/segments/list`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.segments.length > 0) {
+            container.innerHTML = data.segments.map(segment => `
+                <div class="segment-card">
+                    <div class="segment-header">
+                        <div class="segment-icon">
+                            <i class="ti ti-users"></i>
+                        </div>
+                        <div class="segment-info">
+                            <h3>${segment.segment_name}</h3>
+                            <p class="segment-description">${segment.description || 'No description'}</p>
+                            <p class="segment-meta">
+                                <span class="platform-badge platform-${segment.platform}">
+                                    <i class="ti ti-device-mobile"></i> ${segment.platform}
+                                </span>
+                                <span class="separator">•</span>
+                                <i class="ti ti-user"></i> ${segment.client_name}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="segment-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${segment.estimated_size || 0}</div>
+                            <div class="stat-label">Contacts</div>
+                        </div>
+                    </div>
+                    <div class="segment-actions">
+                        <button class="btn-action btn-action-view" onclick="viewSegment(${segment.segment_id})">
+                            <i class="ti ti-eye"></i> View
+                        </button>
+                        <button class="btn-action btn-action-delete" onclick="deleteSegment(${segment.segment_id}, '${segment.segment_name}')">
+                            <i class="ti ti-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="ti ti-users"></i>
+                    <h3>No Audience Segments Yet</h3>
+                    <p>Create targeted segments to personalize your campaigns</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading segments:', error);
+        container.innerHTML = '<div class="error-state">Failed to load segments</div>';
+    }
 }

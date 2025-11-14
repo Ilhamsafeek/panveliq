@@ -1158,4 +1158,156 @@
     .tabs {
         overflow-x: scroll;
     }
+
+    
+    /* ADD TO communication.css */
+
+/* =====================================================
+   FLOW BUILDER STYLES
+   ===================================================== */
+
+.flow-actions-builder {
+    background: var(--color-gray-50);
+    border: 2px dashed var(--color-gray-300);
+    border-radius: 12px;
+    padding: 1.5rem;
+    min-height: 150px;
+}
+
+.flow-action-item {
+    background: white;
+    border: 2px solid var(--color-gray-200);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.flow-action-item:last-child {
+    margin-bottom: 0;
+}
+
+.flow-action-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--color-gray-100);
+}
+
+.flow-action-number {
+    font-weight: 700;
+    font-size: 0.9375rem;
+    color: var(--primary-purple);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.flow-action-number::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, var(--primary-purple), var(--primary-cyan));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-remove {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: var(--color-red-light, #fee);
+    color: var(--color-red);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-remove:hover {
+    background: var(--color-red);
+    color: white;
+    transform: scale(1.1);
+}
+
+/* =====================================================
+   SEGMENT CARD ACTIONS
+   ===================================================== */
+
+.btn-action-view {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.btn-action-view:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-action-delete {
+    background: var(--color-red-light, #fee);
+    color: var(--color-red);
+}
+
+.btn-action-delete:hover {
+    background: var(--color-red);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(239, 68, 68, 0.4);
+}
+
+.segment-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.btn-action {
+    padding: 0.625rem 1.25rem;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Gilroy', sans-serif;
+}
+
+/* Platform badges */
+.platform-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.platform-email {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.platform-whatsapp {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.platform-both,
+.platform-all {
+    background: linear-gradient(135deg, rgba(153, 38, 243, 0.1), rgba(29, 216, 252, 0.1));
+    color: var(--primary-purple);
+}
+
 }

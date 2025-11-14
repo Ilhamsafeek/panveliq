@@ -69,11 +69,97 @@ class UpdateClientProfileRequest(BaseModel):
     current_budget: Optional[float] = None
 
 
+# ========== LIST ENDPOINT (FOR COMMUNICATION MODULE) ==========
+
+@router.get("/list", summary="Get accessible clients for dropdowns")
+async def list_clients(
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """
+    Get list of clients for dropdowns in communication module
+    Admin: All active clients
+    Employee: Assigned clients only
+    """
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        if current_user['role'] == 'admin':
+            # Admin: Get all active clients
+            cursor.execute("""
+                SELECT 
+                    u.user_id,
+                    u.full_name,
+                    u.email,
+                    u.phone,
+                    u.status,
+                    cp.business_name,
+                    cp.business_type,
+                    cp.website_url,
+                    u.created_at
+                FROM users u
+                LEFT JOIN client_profiles cp ON u.user_id = cp.client_id
+                WHERE u.role = 'client' AND u.status = 'active'
+                ORDER BY u.created_at DESC
+            """)
+        else:
+            # Employee: only assigned clients
+            cursor.execute("""
+                SELECT 
+                    u.user_id,
+                    u.full_name,
+                    u.email,
+                    u.phone,
+                    u.status,
+                    cp.business_name,
+                    cp.business_type,
+                    cp.website_url,
+                    ea.assigned_at
+                FROM employee_assignments ea
+                JOIN users u ON ea.client_id = u.user_id
+                LEFT JOIN client_profiles cp ON u.user_id = cp.client_id
+                WHERE ea.employee_id = %s AND u.status = 'active'
+                ORDER BY ea.assigned_at DESC
+            """, (current_user['user_id'],))
+        
+        clients = cursor.fetchall()
+        
+        # Convert datetime objects to ISO format strings
+        for client in clients:
+            if client.get('created_at'):
+                client['created_at'] = client['created_at'].isoformat() if hasattr(client['created_at'], 'isoformat') else str(client['created_at'])
+            if client.get('assigned_at'):
+                client['assigned_at'] = client['assigned_at'].isoformat() if hasattr(client['assigned_at'], 'isoformat') else str(client['assigned_at'])
+        
+        return {
+            "success": True,
+            "clients": clients,
+            "total": len(clients)
+        }
+        
+    except Exception as e:
+        print(f"Error fetching clients list: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch clients: {str(e)}"
+        )
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
 # ========== ADMIN ENDPOINTS ==========
 
 @router.get("/all", summary="Get all clients (Admin only)")
 async def get_all_clients(
-    status: Optional[str] = None,
+    status_filter: Optional[str] = None,
     package_tier: Optional[str] = None,
     current_user: dict = Depends(require_admin)
 ):
@@ -115,9 +201,9 @@ async def get_all_clients(
         
         params = []
         
-        if status:
+        if status_filter:
             query += " AND u.status = %s"
-            params.append(status)
+            params.append(status_filter)
         
         if package_tier:
             query += " AND p.package_tier = %s"
@@ -125,8 +211,15 @@ async def get_all_clients(
         
         query += " ORDER BY u.created_at DESC"
         
-        cursor.execute(query, params)
+        cursor.execute(query, params if params else None)
         clients = cursor.fetchall()
+        
+        # Convert datetime
+        for client in clients:
+            if client.get('created_at'):
+                client['created_at'] = client['created_at'].isoformat()
+            if client.get('subscription_end_date'):
+                client['subscription_end_date'] = client['subscription_end_date'].isoformat()
         
         return {
             "success": True,
@@ -230,24 +323,21 @@ async def get_client_details(
         
         assigned_employees = cursor.fetchall()
         
-        # Fetch task statistics
-        cursor.execute("""
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
-            FROM tasks
-            WHERE client_id = %s
-        """, (client_id,))
+        # Convert datetime
+        if client.get('created_at'):
+            client['created_at'] = client['created_at'].isoformat()
+        if client.get('subscription_start_date'):
+            client['subscription_start_date'] = client['subscription_start_date'].isoformat()
+        if client.get('subscription_end_date'):
+            client['subscription_end_date'] = client['subscription_end_date'].isoformat()
         
-        task_stats = cursor.fetchone()
-        
-        # Handle None values from database
-        total_tasks = task_stats['total'] if task_stats and task_stats['total'] is not None else 0
-        completed_tasks = task_stats['completed'] if task_stats and task_stats['completed'] is not None else 0
+        for emp in assigned_employees:
+            if emp.get('assigned_at'):
+                emp['assigned_at'] = emp['assigned_at'].isoformat()
         
         client['assigned_employees'] = assigned_employees
-        client['active_tasks_count'] = total_tasks - completed_tasks
-        client['completed_tasks_count'] = completed_tasks
+        client['active_tasks_count'] = 0
+        client['completed_tasks_count'] = 0
         
         return {
             "success": True,
@@ -261,245 +351,6 @@ async def get_client_details(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch client details: {str(e)}"
-        )
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
-
-@router.post("/assign-employee", summary="Assign employee to client (Admin only)")
-async def assign_employee_to_client(
-    request: AssignEmployeeRequest,
-    current_user: dict = Depends(require_admin)
-):
-    """
-    Assign an employee to a client
-    """
-    connection = None
-    cursor = None
-    
-    try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        
-        # Verify client exists and is a client
-        cursor.execute("""
-            SELECT user_id FROM users 
-            WHERE user_id = %s AND role = 'client'
-        """, (request.client_id,))
-        
-        if not cursor.fetchone():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Client not found"
-            )
-        
-        # Verify employee exists and is an employee
-        cursor.execute("""
-            SELECT user_id FROM users 
-            WHERE user_id = %s AND role = 'employee'
-        """, (request.employee_id,))
-        
-        if not cursor.fetchone():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Employee not found"
-            )
-        
-        # Check if assignment already exists
-        cursor.execute("""
-            SELECT assignment_id FROM employee_assignments
-            WHERE employee_id = %s AND client_id = %s
-        """, (request.employee_id, request.client_id))
-        
-        if cursor.fetchone():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Employee is already assigned to this client"
-            )
-        
-        # Create assignment
-        cursor.execute("""
-            INSERT INTO employee_assignments 
-            (employee_id, client_id, assigned_by)
-            VALUES (%s, %s, %s)
-        """, (request.employee_id, request.client_id, current_user['user_id']))
-        
-        connection.commit()
-        
-        return {
-            "success": True,
-            "message": "Employee assigned successfully"
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        if connection:
-            connection.rollback()
-        print(f"Error assigning employee: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to assign employee: {str(e)}"
-        )
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
-
-@router.delete("/unassign-employee/{client_id}/{employee_id}", summary="Unassign employee from client (Admin only)")
-async def unassign_employee_from_client(
-    client_id: int,
-    employee_id: int,
-    current_user: dict = Depends(require_admin)
-):
-    """
-    Remove employee assignment from a client
-    """
-    connection = None
-    cursor = None
-    
-    try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        
-        cursor.execute("""
-            DELETE FROM employee_assignments
-            WHERE employee_id = %s AND client_id = %s
-        """, (employee_id, client_id))
-        
-        if cursor.rowcount == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Assignment not found"
-            )
-        
-        connection.commit()
-        
-        return {
-            "success": True,
-            "message": "Employee unassigned successfully"
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        if connection:
-            connection.rollback()
-        print(f"Error unassigning employee: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to unassign employee: {str(e)}"
-        )
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
-
-@router.put("/{client_id}/profile", summary="Update client profile")
-async def update_client_profile(
-    client_id: int,
-    request: UpdateClientProfileRequest,
-    current_user: dict = Depends(require_admin_or_employee)
-):
-    """
-    Update client profile information
-    """
-    connection = None
-    cursor = None
-    
-    try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        
-        # If employee, verify they're assigned to this client
-        if current_user['role'] == 'employee':
-            cursor.execute("""
-                SELECT COUNT(*) as count 
-                FROM employee_assignments 
-                WHERE employee_id = %s AND client_id = %s
-            """, (current_user['user_id'], client_id))
-            
-            result = cursor.fetchone()
-            if result['count'] == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You are not assigned to this client"
-                )
-        
-        # Check if profile exists
-        cursor.execute("""
-            SELECT profile_id FROM client_profiles
-            WHERE client_id = %s
-        """, (client_id,))
-        
-        profile_exists = cursor.fetchone()
-        
-        if profile_exists:
-            # Update existing profile
-            update_fields = []
-            params = []
-            
-            if request.business_name is not None:
-                update_fields.append("business_name = %s")
-                params.append(request.business_name)
-            
-            if request.business_type is not None:
-                update_fields.append("business_type = %s")
-                params.append(request.business_type)
-            
-            if request.website_url is not None:
-                update_fields.append("website_url = %s")
-                params.append(request.website_url)
-            
-            if request.current_budget is not None:
-                update_fields.append("current_budget = %s")
-                params.append(request.current_budget)
-            
-            if update_fields:
-                params.append(client_id)
-                query = f"""
-                    UPDATE client_profiles 
-                    SET {', '.join(update_fields)}
-                    WHERE client_id = %s
-                """
-                cursor.execute(query, params)
-        else:
-            # Create new profile
-            cursor.execute("""
-                INSERT INTO client_profiles 
-                (client_id, business_name, business_type, website_url, current_budget)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (
-                client_id,
-                request.business_name,
-                request.business_type,
-                request.website_url,
-                request.current_budget
-            ))
-        
-        connection.commit()
-        
-        return {
-            "success": True,
-            "message": "Client profile updated successfully"
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        if connection:
-            connection.rollback()
-        print(f"Error updating client profile: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update client profile: {str(e)}"
         )
     finally:
         if cursor:
@@ -573,6 +424,13 @@ async def get_my_clients(
             """, (current_user['user_id'],))
         
         clients = cursor.fetchall()
+        
+        # Convert datetime
+        for client in clients:
+            if client.get('assigned_at'):
+                client['assigned_at'] = client['assigned_at'].isoformat()
+            if client.get('subscription_end_date'):
+                client['subscription_end_date'] = client['subscription_end_date'].isoformat()
         
         return {
             "success": True,
@@ -668,15 +526,13 @@ async def get_client_statistics(
             connection.close()
 
 
-
-@router.get("/list")
-async def list_clients(
-    current_user: dict = Depends(require_admin_or_employee)
+@router.post("/assign-employee", summary="Assign employee to client")
+async def assign_employee_to_client(
+    request: AssignEmployeeRequest,
+    current_user: dict = Depends(require_admin)
 ):
     """
-    Get list of clients accessible to current user
-    Admin: All clients
-    Employee: Assigned clients only
+    Assign an employee to a client (Admin only)
     """
     connection = None
     cursor = None
@@ -685,74 +541,130 @@ async def list_clients(
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        if current_user['role'] == 'admin':
-            # Admin: Get all active clients
-            cursor.execute("""
-                SELECT 
-                    u.user_id,
-                    u.full_name,
-                    u.email,
-                    u.phone,
-                    u.status,
-                    u.created_at,
-                    cp.business_name,
-                    cp.business_type,
-                    cp.website_url,
-                    p.package_name,
-                    p.package_tier,
-                    cs.status as subscription_status
-                FROM users u
-                LEFT JOIN client_profiles cp ON u.user_id = cp.client_id
-                LEFT JOIN client_subscriptions cs ON u.user_id = cs.client_id 
-                    AND cs.status = 'active'
-                LEFT JOIN packages p ON cs.package_id = p.package_id
-                WHERE u.role = 'client'
-                ORDER BY u.created_at DESC
-            """)
-        else:
-            # Employee: Only assigned clients
-            cursor.execute("""
-                SELECT 
-                    u.user_id,
-                    u.full_name,
-                    u.email,
-                    u.phone,
-                    u.status,
-                    u.created_at,
-                    cp.business_name,
-                    cp.business_type,
-                    cp.website_url,
-                    p.package_name,
-                    p.package_tier,
-                    cs.status as subscription_status
-                FROM employee_assignments ea
-                JOIN users u ON ea.client_id = u.user_id
-                LEFT JOIN client_profiles cp ON u.user_id = cp.client_id
-                LEFT JOIN client_subscriptions cs ON u.user_id = cs.client_id 
-                    AND cs.status = 'active'
-                LEFT JOIN packages p ON cs.package_id = p.package_id
-                WHERE ea.employee_id = %s
-                ORDER BY u.created_at DESC
-            """, (current_user['user_id'],))
+        # Check if assignment already exists
+        cursor.execute("""
+            SELECT COUNT(*) as count 
+            FROM employee_assignments 
+            WHERE employee_id = %s AND client_id = %s
+        """, (request.employee_id, request.client_id))
         
-        clients = cursor.fetchall()
+        if cursor.fetchone()['count'] > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Employee is already assigned to this client"
+            )
         
-        # Convert datetime to ISO format
-        for client in clients:
-            if client.get('created_at'):
-                client['created_at'] = client['created_at'].isoformat()
+        # Create assignment
+        cursor.execute("""
+            INSERT INTO employee_assignments (employee_id, client_id, assigned_by, assigned_at)
+            VALUES (%s, %s, %s, NOW())
+        """, (request.employee_id, request.client_id, current_user['user_id']))
+        
+        connection.commit()
         
         return {
             "success": True,
-            "clients": clients,
-            "total": len(clients)
+            "message": "Employee assigned successfully"
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Error fetching clients: {str(e)}")
+        if connection:
+            connection.rollback()
+        print(f"Error assigning employee: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch clients: {str(e)}"
+            detail=f"Failed to assign employee: {str(e)}"
+        )
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@router.put("/{client_id}/profile", summary="Update client profile")
+async def update_client_profile(
+    client_id: int,
+    request: UpdateClientProfileRequest,
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """
+    Update client profile information
+    """
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Check if profile exists
+        cursor.execute("""
+            SELECT COUNT(*) as count 
+            FROM client_profiles 
+            WHERE client_id = %s
+        """, (client_id,))
+        
+        profile_exists = cursor.fetchone()['count'] > 0
+        
+        if profile_exists:
+            # Update existing profile
+            update_fields = []
+            params = []
+            
+            if request.business_name is not None:
+                update_fields.append("business_name = %s")
+                params.append(request.business_name)
+            if request.business_type is not None:
+                update_fields.append("business_type = %s")
+                params.append(request.business_type)
+            if request.website_url is not None:
+                update_fields.append("website_url = %s")
+                params.append(request.website_url)
+            if request.current_budget is not None:
+                update_fields.append("current_budget = %s")
+                params.append(request.current_budget)
+            
+            if update_fields:
+                params.append(client_id)
+                query = f"""
+                    UPDATE client_profiles 
+                    SET {', '.join(update_fields)}
+                    WHERE client_id = %s
+                """
+                cursor.execute(query, params)
+        else:
+            # Create new profile
+            cursor.execute("""
+                INSERT INTO client_profiles 
+                (client_id, business_name, business_type, website_url, current_budget)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (
+                client_id,
+                request.business_name,
+                request.business_type,
+                request.website_url,
+                request.current_budget
+            ))
+        
+        connection.commit()
+        
+        return {
+            "success": True,
+            "message": "Client profile updated successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        if connection:
+            connection.rollback()
+        print(f"Error updating client profile: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update client profile: {str(e)}"
         )
     finally:
         if cursor:
