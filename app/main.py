@@ -535,9 +535,15 @@ async def social_media_page(request: Request):
         )
 
 
+# ADD THIS ROUTE TO app/main.py
+# Place it in the # ========== MODULE PAGES ========== section
+# Right after your social_media_page route
+
 @app.get("/modules/seo", response_class=HTMLResponse)
-async def seo_module_page(request: Request):
-    """Smart SEO Toolkit module page"""
+async def seo_page(request: Request):
+    """
+    Smart SEO Toolkit module page
+    """
     access_token: Optional[str] = request.cookies.get("access_token")
     role = None
     
@@ -554,21 +560,22 @@ async def seo_module_page(request: Request):
                 algorithms=[settings.ALGORITHM]
             )
             role = payload.get("role")
-            
-            # Only admin and employee can access
-            if role and role not in ["admin", "employee"]:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Admin or Employee role required."
-                )
-            
-            return templates.TemplateResponse(
-                "modules/social-media.html",
-                {
-                    "request": request,
-                    "show_sidebar": True
-                }
+        
+        # Only admin and employee can access
+        if role and role not in ["admin", "employee"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin or Employee role required."
             )
+        
+        return templates.TemplateResponse(
+            "modules/seo.html",
+            {
+                "request": request,
+                "show_sidebar": True
+            }
+        )
+        
     except JWTError:
         return RedirectResponse(url="/auth/login")
     except Exception as e:
@@ -577,7 +584,7 @@ async def seo_module_page(request: Request):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to load page"
         )
-                
+                      
 # ========== HEALTH CHECK ==========
 
 @app.get("/health")

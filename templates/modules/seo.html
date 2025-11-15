@@ -650,7 +650,7 @@
 <script>
 // API Configuration
 const API_BASE = '/api/v1/seo';
-const token = localStorage.getItem('token');
+const token = localStorage.getItem('access_token');
 
 // Tab Switching
 function switchTab(tabName) {
@@ -1315,6 +1315,26 @@ async function loadAuditHistory() {
         console.error('Error loading audit history:', error);
     }
 }
+
+// Select Project Function
+function selectProject(projectId) {
+    console.log('Selected project:', projectId);
+    
+    // Auto-populate all dropdowns with selected project
+    const auditSelect = document.getElementById('audit-project');
+    const keywordSelect = document.getElementById('keyword-project');
+    const backlinkSelect = document.getElementById('backlink-project');
+    
+    if (auditSelect) auditSelect.value = projectId;
+    if (keywordSelect) keywordSelect.value = projectId;
+    if (backlinkSelect) backlinkSelect.value = projectId;
+    
+    // Optional: Switch to a relevant tab
+    // switchTab('audit'); // Uncomment if you want to auto-switch
+    
+    alert('Project selected! Check the Audit, Keywords, or Backlinks tabs.');
+}
+
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
