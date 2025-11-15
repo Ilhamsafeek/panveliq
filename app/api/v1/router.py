@@ -21,7 +21,7 @@ from app.api.v1.endpoints import (
     social_media,
     seo,
     media_studio,
-#     ads,
+    ads,
 #     analytics,
 #     chatbot,
 #     finance,
@@ -47,7 +47,7 @@ api_router.include_router(content.router, prefix="/content", tags=["Content"])
 api_router.include_router(social_media.router, prefix="/social-media", tags=["Social Media"])
 api_router.include_router(seo.router, prefix="/seo", tags=["SEO"])
 api_router.include_router(media_studio.router, prefix="/media-studio", tags=["Media Studio"])
-# api_router.include_router(ads.router, prefix="/ads", tags=["Ads"])
+api_router.include_router(ads.router, prefix="/ad-strategy", tags=["Ads"])
 # api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 # api_router.include_router(chatbot.router, prefix="/chatbot", tags=["Chatbot"])
 # api_router.include_router(finance.router, prefix="/finance", tags=["Finance"])

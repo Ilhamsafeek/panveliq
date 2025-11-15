@@ -584,7 +584,46 @@ async def seo_page(request: Request):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to load page"
         )
-                      
+
+
+@app.get("/modules/ads", response_class=HTMLResponse)
+async def ad_strategy_page(request: Request):
+    """Ad Strategy Engine module page"""
+    access_token: Optional[str] = request.cookies.get("access_token")
+    role = None
+    
+    if not access_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.split(" ")[1]
+    
+    try:
+        if access_token:
+            payload = jwt.decode(
+                access_token,
+                settings.SECRET_KEY,
+                algorithms=[settings.ALGORITHM]
+            )
+            role = payload.get("role")
+        
+        if role and role not in ["admin", "employee"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin or Employee role required."
+            )
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials."
+        )
+    
+    return templates.TemplateResponse(
+        "modules/ad-strategy.html",
+        {
+            "request": request,
+            "show_sidebar": True,
+        }
+    )
 # ========== HEALTH CHECK ==========
 
 @app.get("/health")

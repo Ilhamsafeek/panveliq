@@ -1,0 +1,939 @@
+{% extends "base.html" %}
+
+{% block title %}Ad Strategy Engine - PanvelIQ{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ad-strategy-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .strategy-header {
+        margin-bottom: 2rem;
+    }
+
+    .strategy-header h1 {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .strategy-header h1 i {
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2rem;
+    }
+
+    .tabs-container {
+        display: flex;
+        gap: 0.5rem;
+        border-bottom: 2px solid #e2e8f0;
+        margin-bottom: 2rem;
+        overflow-x: auto;
+    }
+
+    .tab {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        background: none;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+        position: relative;
+    }
+
+    .tab:hover {
+        color: #9926F3;
+    }
+
+    .tab.active {
+        color: #9926F3;
+    }
+
+    .tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        margin-bottom: 1rem;
+    }
+
+    .stat-icon i {
+        font-size: 1.5rem;
+        color: white;
+    }
+
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+
+    .content-panel {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .panel-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .panel-title h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    .panel-title i {
+        font-size: 1.5rem;
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #475569;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #9926F3;
+        box-shadow: 0 0 0 3px rgba(153, 38, 243, 0.1);
+    }
+
+    textarea.form-control {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(153, 38, 243, 0.3);
+    }
+
+    .btn-secondary {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .btn-secondary:hover {
+        background: #e2e8f0;
+    }
+
+    .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .platform-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .platform-option {
+        padding: 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .platform-option:hover {
+        border-color: #9926F3;
+        background: #faf5ff;
+    }
+
+    .platform-option.active {
+        border-color: #9926F3;
+        background: linear-gradient(135deg, rgba(153, 38, 243, 0.1), rgba(29, 216, 252, 0.1));
+    }
+
+    .platform-option i {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .platform-option .platform-name {
+        font-weight: 500;
+        color: #1e293b;
+    }
+
+    .campaign-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s;
+    }
+
+    .campaign-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-color: #9926F3;
+    }
+
+    .campaign-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 1rem;
+    }
+
+    .campaign-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+    }
+
+    .campaign-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: #64748b;
+        margin-top: 0.5rem;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+
+    .status-badge.active {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-badge.paused {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-badge.draft {
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+
+    .platform-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .recommendation-card {
+        background: #f8fafc;
+        border-left: 4px solid #9926F3;
+        padding: 1.25rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .recommendation-card h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.75rem;
+    }
+
+    .forecast-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .forecast-metric {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .forecast-metric-label {
+        font-size: 0.875rem;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+    }
+
+    .forecast-metric-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .ad-copy-variation {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .ad-copy-variation:hover {
+        border-color: #9926F3;
+        box-shadow: 0 2px 8px rgba(153, 38, 243, 0.1);
+    }
+
+    .ad-copy-variation.selected {
+        border-color: #9926F3;
+        background: linear-gradient(135deg, rgba(153, 38, 243, 0.05), rgba(29, 216, 252, 0.05));
+    }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spin 0.6s linear infinite;
+        margin-left: 0.5rem;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #64748b;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+        .ad-strategy-container {
+            padding: 1rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .platform-selector {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ad-strategy-container">
+    <!-- Header -->
+    <div class="strategy-header">
+        <h1><i class="ti ti-target-arrow"></i> Ad Strategy & Suggestion Engine</h1>
+        <p>AI-powered ad campaign creation, optimization, and performance tracking</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-container">
+        <button class="tab active" onclick="switchTab('dashboard')">
+            <i class="ti ti-dashboard"></i> Dashboard
+        </button>
+        <button class="tab" onclick="switchTab('campaigns')">
+            <i class="ti ti-badge-ad"></i> Campaigns
+        </button>
+        <button class="tab" onclick="switchTab('audience')">
+            <i class="ti ti-users"></i> Audience Segments
+        </button>
+        <button class="tab" onclick="switchTab('ai-tools')">
+            <i class="ti ti-robot"></i> AI Tools
+        </button>
+    </div>
+
+    <!-- Dashboard Tab -->
+    <div id="dashboard-tab" class="tab-content active">
+        <div class="stats-grid" id="dashboardStats"></div>
+        
+        <div class="content-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="ti ti-chart-bar"></i>
+                    <h2>Performance by Platform</h2>
+                </div>
+            </div>
+            <div id="platformPerformance"></div>
+        </div>
+
+        <div class="content-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="ti ti-clock"></i>
+                    <h2>Recent Campaigns</h2>
+                </div>
+            </div>
+            <div id="recentCampaigns"></div>
+        </div>
+    </div>
+
+    <!-- Campaigns Tab -->
+    <div id="campaigns-tab" class="tab-content">
+        <div class="content-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="ti ti-badge-ad"></i>
+                    <h2>Ad Campaigns</h2>
+                </div>
+                <button class="btn btn-primary" onclick="openCreateCampaignModal()">
+                    <i class="ti ti-plus"></i> Create Campaign
+                </button>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                <select class="form-control" id="filterClientCampaign" onchange="loadCampaigns()" style="width: auto;">
+                    <option value="">All Clients</option>
+                </select>
+                <select class="form-control" id="filterPlatformCampaign" onchange="loadCampaigns()" style="width: auto;">
+                    <option value="">All Platforms</option>
+                    <option value="meta">Meta</option>
+                    <option value="google">Google</option>
+                    <option value="linkedin">LinkedIn</option>
+                </select>
+            </div>
+
+            <div id="campaignsList"></div>
+        </div>
+    </div>
+
+    <!-- Audience Segments Tab -->
+    <div id="audience-tab" class="tab-content">
+        <div class="content-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="ti ti-users"></i>
+                    <h2>Audience Segments</h2>
+                </div>
+                <button class="btn btn-primary" onclick="openCreateAudienceModal()">
+                    <i class="ti ti-plus"></i> Create Segment
+                </button>
+            </div>
+            
+            <select class="form-control" id="filterClientAudience" onchange="loadAudienceSegments()" style="width: auto; margin-bottom: 1.5rem;">
+                <option value="">Select a client...</option>
+            </select>
+
+            <div id="audienceSegmentsList"></div>
+        </div>
+    </div>
+
+    <!-- AI Tools Tab -->
+    <div id="ai-tools-tab" class="tab-content">
+        <!-- Platform Recommendations -->
+        <div class="content-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="ti ti-bulb"></i>
+                    <h2>AI Platform Recommendations</h2>
+                </div>
+            </div>
+            <form onsubmit="event.preventDefault(); getPlatformRecommendations();">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Campaign Objective</label>
+                        <select class="form-control" id="recObjective" required>
+                            <option value="">Select objective...</option>
+                            <option value="brand_awareness">Brand Awareness</option>
+                            <option value="lead_generation">Lead Generation</option>
+                            <option value="conversions">Conversions</option>
+                            <option value="traffic">Website Traffic</option>
+                            <option value="engagement">Engagement</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Budget ($)</label>
+                        <input type="number" class="form-control" id="recBudget" required min="100">
+                    </div>
+                    <div class="form-group">
+                        <label>Industry (Optional)</label>
+                        <input type="text" class="form-control" id="recIndustry" placeholder="e.g., E-commerce">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="recommendBtn">
+                    <i class="ti ti-wand"></i> Get Recommendations
+                </button>
+            </form>
+            <div id="platformRecommendations" style="margin-top: 1.5rem;"></div>
+        </div>
+
+        <!-- AI Ad Copy Generator -->
+        <div class="content-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="ti ti-pencil"></i>
+                    <h2>AI Ad Copy Generator</h2>
+                </div>
+            </div>
+            <form onsubmit="event.preventDefault(); generateAdCopy();">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Product/Service</label>
+                        <input type="text" class="form-control" id="copyProduct" required placeholder="e.g., Marketing Automation Software">
+                    </div>
+                    <div class="form-group">
+                        <label>Target Audience</label>
+                        <input type="text" class="form-control" id="copyAudience" required placeholder="e.g., Small business owners">
+                    </div>
+                    <div class="form-group">
+                        <label>Platform</label>
+                        <select class="form-control" id="copyPlatform" required>
+                            <option value="meta">Meta (Facebook/Instagram)</option>
+                            <option value="google">Google Ads</option>
+                            <option value="linkedin">LinkedIn</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Key Benefits (comma-separated)</label>
+                    <input type="text" class="form-control" id="copyBenefits" placeholder="Save time, Increase ROI, Easy to use">
+                </div>
+                <button type="submit" class="btn btn-primary" id="generateCopyBtn">
+                    <i class="ti ti-sparkles"></i> Generate Ad Copy
+                </button>
+            </form>
+            <div id="adCopyResults" style="margin-top: 1.5rem;"></div>
+        </div>
+
+        <!-- Performance Forecaster -->
+        <div class="content-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="ti ti-chart-line"></i>
+                    <h2>Performance Forecaster</h2>
+                </div>
+            </div>
+            <form onsubmit="event.preventDefault(); forecastPerformance();">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Platform</label>
+                        <select class="form-control" id="forecastPlatform" required>
+                            <option value="meta">Meta</option>
+                            <option value="google">Google Ads</option>
+                            <option value="linkedin">LinkedIn</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Budget ($)</label>
+                        <input type="number" class="form-control" id="forecastBudget" required min="100">
+                    </div>
+                    <div class="form-group">
+                        <label>Duration (days)</label>
+                        <input type="number" class="form-control" id="forecastDuration" required min="1" max="90" value="30">
+                    </div>
+                    <div class="form-group">
+                        <label>Estimated Audience Size</label>
+                        <input type="number" class="form-control" id="forecastAudience" required min="1000" placeholder="50000">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="forecastBtn">
+                    <i class="ti ti-calculator"></i> Calculate Forecast
+                </button>
+            </form>
+            <div id="forecastResults" style="margin-top: 1.5rem;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Campaign Creation Modal -->
+<div id="campaignModal" class="modal" style="display: none;">
+    <div class="modal-overlay" onclick="closeCampaignModal()"></div>
+    <div class="modal-container" style="max-width: 800px;">
+        <div class="modal-header">
+            <h2><i class="ti ti-badge-ad"></i> Create Ad Campaign</h2>
+            <button class="modal-close" onclick="closeCampaignModal()">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="campaignForm" onsubmit="event.preventDefault(); submitCampaign();">
+                <div class="form-group">
+                    <label>Client *</label>
+                    <select class="form-control" id="campaignClient" required>
+                        <option value="">Select client...</option>
+                    </select>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Campaign Name *</label>
+                        <input type="text" class="form-control" id="campaignName" required placeholder="e.g., Summer Sale 2025">
+                    </div>
+                    <div class="form-group">
+                        <label>Platform *</label>
+                        <select class="form-control" id="campaignPlatform" required>
+                            <option value="">Select platform...</option>
+                            <option value="meta">Meta (Facebook & Instagram)</option>
+                            <option value="google">Google Ads</option>
+                            <option value="linkedin">LinkedIn</option>
+                            <option value="tiktok">TikTok</option>
+                            <option value="youtube">YouTube</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Campaign Objective *</label>
+                        <select class="form-control" id="campaignObjective" required>
+                            <option value="">Select objective...</option>
+                            <option value="brand_awareness">Brand Awareness</option>
+                            <option value="reach">Reach</option>
+                            <option value="traffic">Traffic</option>
+                            <option value="engagement">Engagement</option>
+                            <option value="lead_generation">Lead Generation</option>
+                            <option value="conversions">Conversions</option>
+                            <option value="sales">Sales</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Budget ($) *</label>
+                        <input type="number" class="form-control" id="campaignBudget" required min="100" step="0.01" placeholder="1000">
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Start Date *</label>
+                        <input type="date" class="form-control" id="campaignStartDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date (Optional)</label>
+                        <input type="date" class="form-control" id="campaignEndDate">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Bidding Strategy</label>
+                    <select class="form-control" id="campaignBidding">
+                        <option value="">Automatic (Recommended)</option>
+                        <option value="lowest_cost">Lowest Cost</option>
+                        <option value="target_cpa">Target CPA</option>
+                        <option value="target_roas">Target ROAS</option>
+                        <option value="maximize_conversions">Maximize Conversions</option>
+                        <option value="manual_cpc">Manual CPC</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="enableABTest" style="margin-right: 0.5rem;">
+                        Enable A/B Testing
+                    </label>
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeCampaignModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitCampaignBtn">
+                        <i class="ti ti-check"></i> Create Campaign
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Audience Segment Creation Modal -->
+<div id="audienceModal" class="modal" style="display: none;">
+    <div class="modal-overlay" onclick="closeAudienceModal()"></div>
+    <div class="modal-container" style="max-width: 900px;">
+        <div class="modal-header">
+            <h2><i class="ti ti-users"></i> Create Audience Segment</h2>
+            <button class="modal-close" onclick="closeAudienceModal()">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="audienceForm" onsubmit="event.preventDefault(); submitAudience();">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Client *</label>
+                        <select class="form-control" id="audienceClient" required>
+                            <option value="">Select client...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Platform *</label>
+                        <select class="form-control" id="audiencePlatform" required>
+                            <option value="">Select platform...</option>
+                            <option value="meta">Meta (Facebook & Instagram)</option>
+                            <option value="google">Google Ads</option>
+                            <option value="linkedin">LinkedIn</option>
+                            <option value="tiktok">TikTok</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Segment Name *</label>
+                    <input type="text" class="form-control" id="audienceName" required placeholder="e.g., Tech-Savvy Professionals 25-45">
+                </div>
+
+                <h4 style="margin-top: 1.5rem; margin-bottom: 1rem;">Demographics</h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Age Range</label>
+                        <input type="text" class="form-control" id="audienceAge" placeholder="e.g., 25-45">
+                    </div>
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select class="form-control" id="audienceGender">
+                            <option value="all">All</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" class="form-control" id="audienceLocation" placeholder="e.g., United States, New York">
+                </div>
+
+                <div class="form-group">
+                    <label>Interests (comma-separated)</label>
+                    <input type="text" class="form-control" id="audienceInterests" placeholder="e.g., technology, business, marketing">
+                </div>
+
+                <div class="form-group">
+                    <label>Behaviors (comma-separated)</label>
+                    <input type="text" class="form-control" id="audienceBehaviors" placeholder="e.g., online shoppers, frequent travelers">
+                </div>
+
+                <h4 style="margin-top: 1.5rem; margin-bottom: 1rem;">Device Targeting</h4>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" value="mobile" style="margin-right: 0.5rem;">Mobile
+                    </label>
+                    <label style="margin-left: 1rem;">
+                        <input type="checkbox" value="desktop" style="margin-right: 0.5rem;">Desktop
+                    </label>
+                    <label style="margin-left: 1rem;">
+                        <input type="checkbox" value="tablet" style="margin-right: 0.5rem;">Tablet
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>Lookalike Source (Optional)</label>
+                    <input type="text" class="form-control" id="audienceLookalike" placeholder="e.g., existing_customers, website_visitors">
+                    <small style="color: #64748b;">Source for creating lookalike audiences</small>
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeAudienceModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitAudienceBtn">
+                        <i class="ti ti-check"></i> Create Audience
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.modal-container {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-height: 90vh;
+    overflow-y: auto;
+    width: 100%;
+    z-index: 1;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+</style>
+
+<script src="/static/js/ad-strategy.js"></script>
+{% endblock %}
