@@ -96,6 +96,13 @@ class Settings(BaseSettings):
     # Canva
     CANVA_API_KEY: Optional[str] = None
     CANVA_TEAM_ID: Optional[str] = None
+
+    # Analytics
+    GA4_PROPERTY_ID: Optional[str] = None
+    GA4_CREDENTIALS_JSON: Optional[str] = None
+    
+
+    GOOGLE_API_KEY: Optional[str] = None
     
     # Synthesia
     SYNTHESIA_API_KEY: Optional[str] = None

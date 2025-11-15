@@ -1,0 +1,1324 @@
+{% extends "base.html" %}
+
+{% block title %}Smart SEO Toolkit - PanvelIQ{% endblock %}
+
+{% block extra_css %}
+<style>
+    .seo-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .seo-header {
+        margin-bottom: 2rem;
+    }
+
+    .seo-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+
+    .seo-header p {
+        color: #6c757d;
+        font-size: 1rem;
+    }
+
+    .seo-tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #e9ecef;
+        flex-wrap: wrap;
+    }
+
+    .seo-tab {
+        padding: 0.75rem 1.5rem;
+        background: none;
+        border: none;
+        font-weight: 600;
+        color: #6c757d;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .seo-tab:hover {
+        color: #9926F3;
+    }
+
+    .seo-tab.active {
+        color: #9926F3;
+    }
+
+    .seo-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+    }
+
+    .seo-tab-content {
+        display: none;
+    }
+
+    .seo-tab-content.active {
+        display: block;
+    }
+
+    .seo-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+
+    .seo-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .seo-card-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #2c3e50;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #9926F3;
+        box-shadow: 0 0 0 3px rgba(153, 38, 243, 0.1);
+    }
+
+    .form-control-textarea {
+        min-height: 150px;
+        resize: vertical;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(153, 38, 243, 0.3);
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #9926F3;
+        border: 2px solid #9926F3;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+        background: #9926F3;
+        color: white;
+    }
+
+    .score-circle {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0 auto 1rem;
+        position: relative;
+    }
+
+    .score-circle.excellent {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+
+    .score-circle.good {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: white;
+    }
+
+    .score-circle.poor {
+        background: linear-gradient(135deg, #dc3545, #e83e8c);
+        color: white;
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .metric-card {
+        background: linear-gradient(135deg, rgba(153, 38, 243, 0.1), rgba(29, 216, 252, 0.1));
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #9926F3;
+        margin-bottom: 0.5rem;
+    }
+
+    .metric-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .recommendations-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .recommendation-item {
+        padding: 1rem;
+        border-left: 3px solid #9926F3;
+        background: rgba(153, 38, 243, 0.05);
+        margin-bottom: 1rem;
+        border-radius: 8px;
+    }
+
+    .recommendation-item .severity {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .severity.critical {
+        background: #dc3545;
+        color: white;
+    }
+
+    .severity.warning {
+        background: #ffc107;
+        color: #000;
+    }
+
+    .severity.info {
+        background: #17a2b8;
+        color: white;
+    }
+
+    .project-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .project-card:hover {
+        box-shadow: 0 4px 12px rgba(153, 38, 243, 0.2);
+        border-color: #9926F3;
+    }
+
+    .project-url {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+
+    .project-keywords {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .keyword-tag {
+        background: linear-gradient(135deg, rgba(153, 38, 243, 0.1), rgba(29, 216, 252, 0.1));
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        color: #9926F3;
+    }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-left: 0.5rem;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: #dee2e6;
+        margin-bottom: 1rem;
+    }
+
+    .keywords-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+
+    .keywords-table th {
+        background: linear-gradient(135deg, rgba(153, 38, 243, 0.1), rgba(29, 216, 252, 0.1));
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .keywords-table td {
+        padding: 0.75rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .position-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .position-badge.top-10 {
+        background: #28a745;
+        color: white;
+    }
+
+    .position-badge.top-50 {
+        background: #ffc107;
+        color: #000;
+    }
+
+    .position-badge.beyond {
+        background: #6c757d;
+        color: white;
+    }
+
+    .backlink-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .backlink-url {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+
+    .email-preview {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+    }
+
+    .email-subject {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+
+    .email-body {
+        color: #495057;
+        white-space: pre-wrap;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: #6c757d;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="seo-container">
+    <div class="seo-header">
+        <h1><i class="ti ti-search"></i> Smart SEO Toolkit</h1>
+        <p>Enhance and automate your SEO with AI-powered tools</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="seo-tabs">
+        <button class="seo-tab active" onclick="switchTab('projects')">
+            <i class="ti ti-folder"></i> Projects
+        </button>
+        <button class="seo-tab" onclick="switchTab('optimization')">
+            <i class="ti ti-wand"></i> Content Optimization
+        </button>
+        <button class="seo-tab" onclick="switchTab('audit')">
+            <i class="ti ti-checklist"></i> On-Page Audit
+        </button>
+        <button class="seo-tab" onclick="switchTab('keywords')">
+            <i class="ti ti-chart-line"></i> Keyword Tracking
+        </button>
+        <button class="seo-tab" onclick="switchTab('backlinks')">
+            <i class="ti ti-link"></i> Backlinks
+        </button>
+        <button class="seo-tab" onclick="switchTab('voice')">
+            <i class="ti ti-microphone"></i> Voice Search
+        </button>
+    </div>
+
+    <!-- Projects Tab -->
+    <div id="projects-tab" class="seo-tab-content active">
+        <div class="seo-card">
+            <div class="seo-card-header">
+                <h3 class="seo-card-title">SEO Projects</h3>
+                <button class="btn-primary" onclick="openCreateProjectModal()">
+                    <i class="ti ti-plus"></i> New Project
+                </button>
+            </div>
+            <div id="projects-list"></div>
+        </div>
+    </div>
+
+    <!-- Content Optimization Tab -->
+    <div id="optimization-tab" class="seo-tab-content">
+        <div class="seo-card">
+            <h3 class="seo-card-title">AI-Powered Content Optimization</h3>
+            <div class="form-group">
+                <label class="form-label">Target Keyword</label>
+                <input type="text" id="opt-keyword" class="form-control" placeholder="Enter your target keyword">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Content Type</label>
+                <select id="opt-content-type" class="form-control">
+                    <option value="blog">Blog Post</option>
+                    <option value="product">Product Description</option>
+                    <option value="landing">Landing Page</option>
+                    <option value="article">Article</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Content</label>
+                <textarea id="opt-content" class="form-control form-control-textarea" placeholder="Paste your content here..."></textarea>
+            </div>
+            <button class="btn-primary" onclick="optimizeContent()">
+                <i class="ti ti-wand"></i> Analyze & Optimize
+            </button>
+        </div>
+
+        <div id="optimization-results" style="display: none;">
+            <div class="seo-card">
+                <h3 class="seo-card-title">Optimization Results</h3>
+                <div id="optimization-data"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- On-Page Audit Tab -->
+    <div id="audit-tab" class="seo-tab-content">
+        <div class="seo-card">
+            <h3 class="seo-card-title">Run On-Page SEO Audit</h3>
+            <div class="form-group">
+                <label class="form-label">Select Project</label>
+                <select id="audit-project" class="form-control">
+                    <option value="">Select a project...</option>
+                </select>
+            </div>
+            <button class="btn-primary" onclick="runAudit()">
+                <i class="ti ti-checklist"></i> Run Audit
+            </button>
+        </div>
+
+        <div id="audit-results" style="display: none;">
+            <div class="seo-card">
+                <h3 class="seo-card-title">Audit Results</h3>
+                <div id="audit-data"></div>
+            </div>
+        </div>
+
+        <div class="seo-card">
+            <h3 class="seo-card-title">Audit History</h3>
+            <div id="audit-history"></div>
+        </div>
+    </div>
+
+    <!-- Keyword Tracking Tab -->
+    <div id="keywords-tab" class="seo-tab-content">
+        <div class="seo-card">
+            <h3 class="seo-card-title">Track Keywords</h3>
+            <div class="form-group">
+                <label class="form-label">Select Project</label>
+                <select id="keyword-project" class="form-control">
+                    <option value="">Select a project...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Keyword</label>
+                <input type="text" id="keyword-input" class="form-control" placeholder="Enter keyword to track">
+            </div>
+            <button class="btn-primary" onclick="trackKeyword()">
+                <i class="ti ti-chart-line"></i> Track Keyword
+            </button>
+        </div>
+
+        <div class="seo-card">
+            <h3 class="seo-card-title">Keyword Rankings</h3>
+            <div id="keyword-rankings"></div>
+        </div>
+    </div>
+
+    <!-- Backlinks Tab -->
+    <div id="backlinks-tab" class="seo-tab-content">
+        <div class="seo-card">
+            <h3 class="seo-card-title">Generate Backlink Outreach</h3>
+            <div class="form-group">
+                <label class="form-label">Select Project</label>
+                <select id="backlink-project" class="form-control">
+                    <option value="">Select a project...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Target Website URL</label>
+                <input type="url" id="backlink-url" class="form-control" placeholder="https://example.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Anchor Text</label>
+                <input type="text" id="backlink-anchor" class="form-control" placeholder="Your desired anchor text">
+            </div>
+            <button class="btn-primary" onclick="generateBacklinkOutreach()">
+                <i class="ti ti-mail"></i> Generate Outreach Email
+            </button>
+        </div>
+
+        <div id="outreach-result" style="display: none;">
+            <div class="seo-card">
+                <h3 class="seo-card-title">Outreach Email Draft</h3>
+                <div id="outreach-email"></div>
+            </div>
+        </div>
+
+        <div class="seo-card">
+            <h3 class="seo-card-title">Backlinks Overview</h3>
+            <div id="backlinks-list"></div>
+        </div>
+    </div>
+
+    <!-- Voice Search Tab -->
+    <div id="voice-tab" class="seo-tab-content">
+        <div class="seo-card">
+            <h3 class="seo-card-title">Voice & Semantic Search Optimization</h3>
+            <div class="form-group">
+                <label class="form-label">Content to Optimize</label>
+                <textarea id="voice-content" class="form-control form-control-textarea" placeholder="Paste your content here..."></textarea>
+            </div>
+            <button class="btn-primary" onclick="optimizeVoiceSearch()">
+                <i class="ti ti-microphone"></i> Optimize for Voice Search
+            </button>
+        </div>
+
+        <div id="voice-results" style="display: none;">
+            <div class="seo-card">
+                <h3 class="seo-card-title">Voice Search Optimization Results</h3>
+                <div id="voice-data"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Project Modal -->
+<div id="create-project-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Create SEO Project</h3>
+            <button class="modal-close" onclick="closeCreateProjectModal()">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Website URL</label>
+            <input type="url" id="project-url" class="form-control" placeholder="https://example.com">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Target Keywords (comma-separated)</label>
+            <input type="text" id="project-keywords" class="form-control" placeholder="keyword1, keyword2, keyword3">
+        </div>
+        <button class="btn-primary" onclick="createProject()">
+            <i class="ti ti-plus"></i> Create Project
+        </button>
+    </div>
+</div>
+
+<script>
+// API Configuration
+const API_BASE = '/api/v1/seo';
+const token = localStorage.getItem('token');
+
+// Tab Switching
+function switchTab(tabName) {
+    document.querySelectorAll('.seo-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.seo-tab-content').forEach(content => content.classList.remove('active'));
+    
+    event.target.closest('.seo-tab').classList.add('active');
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+
+    if (tabName === 'projects') {
+        loadProjects();
+    } else if (tabName === 'audit') {
+        loadProjectsToSelect('audit-project');
+        loadAuditHistory();
+    } else if (tabName === 'keywords') {
+        loadProjectsToSelect('keyword-project');
+        loadKeywordRankings();
+    } else if (tabName === 'backlinks') {
+        loadProjectsToSelect('backlink-project');
+        loadBacklinks();
+    }
+}
+
+// Load Projects
+async function loadProjects() {
+    try {
+        const response = await fetch(`${API_BASE}/projects/list`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        const container = document.getElementById('projects-list');
+
+        if (data.success && data.projects.length > 0) {
+            container.innerHTML = data.projects.map(project => `
+                <div class="project-card" onclick="selectProject(${project.seo_project_id})">
+                    <div class="project-url">${project.website_url}</div>
+                    <div style="color: #6c757d; font-size: 0.9rem;">
+                        Domain Authority: ${project.current_domain_authority || 'N/A'}
+                    </div>
+                    <div class="project-keywords">
+                        ${project.target_keywords ? project.target_keywords.map(kw => 
+                            `<span class="keyword-tag">${kw}</span>`
+                        ).join('') : ''}
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="ti ti-folder-off"></i>
+                    <p>No SEO projects yet. Create your first project to get started!</p>
+                </div>
+            `;
+        }
+
+        loadProjectsToSelect('audit-project');
+        loadProjectsToSelect('keyword-project');
+        loadProjectsToSelect('backlink-project');
+    } catch (error) {
+        console.error('Error loading projects:', error);
+    }
+}
+
+// Load Projects to Select Dropdown
+async function loadProjectsToSelect(selectId) {
+    try {
+        const response = await fetch(`${API_BASE}/projects/list`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        const select = document.getElementById(selectId);
+
+        if (data.success && data.projects.length > 0) {
+            select.innerHTML = '<option value="">Select a project...</option>' +
+                data.projects.map(project => 
+                    `<option value="${project.seo_project_id}">${project.website_url}</option>`
+                ).join('');
+        }
+    } catch (error) {
+        console.error('Error loading projects:', error);
+    }
+}
+
+// Create Project Modal
+function openCreateProjectModal() {
+    document.getElementById('create-project-modal').classList.add('active');
+}
+
+function closeCreateProjectModal() {
+    document.getElementById('create-project-modal').classList.remove('active');
+}
+
+async function createProject() {
+    const url = document.getElementById('project-url').value;
+    const keywords = document.getElementById('project-keywords').value;
+
+    if (!url || !keywords) {
+        alert('Please fill in all fields');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/projects/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                website_url: url,
+                target_keywords: keywords.split(',').map(k => k.trim())
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert('SEO project created successfully!');
+            closeCreateProjectModal();
+            loadProjects();
+            document.getElementById('project-url').value = '';
+            document.getElementById('project-keywords').value = '';
+        }
+    } catch (error) {
+        console.error('Error creating project:', error);
+        alert('Failed to create project');
+    }
+}
+
+// Content Optimization
+async function optimizeContent() {
+    const keyword = document.getElementById('opt-keyword').value;
+    const content = document.getElementById('opt-content').value;
+    const contentType = document.getElementById('opt-content-type').value;
+
+    if (!keyword || !content) {
+        alert('Please enter keyword and content');
+        return;
+    }
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-wand"></i> Analyzing...<span class="loading-spinner"></span>';
+
+    try {
+        const response = await fetch(`${API_BASE}/optimize-content`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                content: content,
+                target_keyword: keyword,
+                content_type: contentType
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            displayOptimizationResults(data.optimization);
+        }
+    } catch (error) {
+        console.error('Error optimizing content:', error);
+        alert('Failed to optimize content');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-wand"></i> Analyze & Optimize';
+    }
+}
+
+function displayOptimizationResults(optimization) {
+    const container = document.getElementById('optimization-data');
+    const resultsDiv = document.getElementById('optimization-results');
+
+    const scoreClass = optimization.overall_score >= 80 ? 'excellent' : 
+                       optimization.overall_score >= 60 ? 'good' : 'poor';
+
+    container.innerHTML = `
+        <div class="score-circle ${scoreClass}">
+            ${optimization.overall_score}/100
+        </div>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value">${optimization.keyword_density}%</div>
+                <div class="metric-label">Keyword Density</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">${optimization.readability_score}/100</div>
+                <div class="metric-label">Readability</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">${optimization.semantic_relevance}/100</div>
+                <div class="metric-label">Semantic Relevance</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">${optimization.voice_search_optimized ? 'Yes' : 'No'}</div>
+                <div class="metric-label">Voice Search Ready</div>
+            </div>
+        </div>
+
+        <h4 style="margin-top: 2rem; margin-bottom: 1rem;">Strengths</h4>
+        <ul class="recommendations-list">
+            ${optimization.strengths.map(s => `
+                <li class="recommendation-item">
+                    <i class="ti ti-check" style="color: #28a745;"></i> ${s}
+                </li>
+            `).join('')}
+        </ul>
+
+        <h4 style="margin-top: 2rem; margin-bottom: 1rem;">Recommendations</h4>
+        <ul class="recommendations-list">
+            ${optimization.recommendations.map(r => `
+                <li class="recommendation-item">
+                    <i class="ti ti-alert-circle" style="color: #ffc107;"></i> ${r}
+                </li>
+            `).join('')}
+        </ul>
+
+        <h4 style="margin-top: 2rem; margin-bottom: 1rem;">Meta Suggestions</h4>
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+            <strong>Title:</strong> ${optimization.meta_suggestions.title}<br>
+            <strong>Description:</strong> ${optimization.meta_suggestions.description}
+        </div>
+    `;
+
+    resultsDiv.style.display = 'block';
+    resultsDiv.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Run Audit
+async function runAudit() {
+    const projectId = document.getElementById('audit-project').value;
+
+    if (!projectId) {
+        alert('Please select a project');
+        return;
+    }
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-checklist"></i> Running Audit...<span class="loading-spinner"></span>';
+
+    try {
+        const response = await fetch(`${API_BASE}/audit/run/${projectId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            displayAuditResults(data.audit_data, data.page_speed_score);
+            loadAuditHistory();
+        }
+    } catch (error) {
+        console.error('Error running audit:', error);
+        alert('Failed to run audit');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-checklist"></i> Run Audit';
+    }
+}
+
+function displayAuditResults(audit, pageSpeed) {
+    const container = document.getElementById('audit-data');
+    const resultsDiv = document.getElementById('audit-results');
+
+    const scoreClass = audit.overall_score >= 80 ? 'excellent' : 
+                       audit.overall_score >= 60 ? 'good' : 'poor';
+
+    container.innerHTML = `
+        <div class="score-circle ${scoreClass}">
+            ${audit.overall_score}/100
+        </div>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value">${pageSpeed}/100</div>
+                <div class="metric-label">PageSpeed Score</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">${audit.mobile_friendliness}/100</div>
+                <div class="metric-label">Mobile Friendly</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">${audit.schema_markup}</div>
+                <div class="metric-label">Schema Markup</div>
+            </div>
+        </div>
+
+        <h4 style="margin-top: 2rem; margin-bottom: 1rem;">Technical Issues</h4>
+        <ul class="recommendations-list">
+            ${audit.technical_issues.map(issue => `
+                <li class="recommendation-item">
+                    <span class="severity ${issue.severity}">${issue.severity}</span>
+                    ${issue.description}
+                </li>
+            `).join('')}
+        </ul>
+
+        <h4 style="margin-top: 2rem; margin-bottom: 1rem;">Recommendations</h4>
+        <ul class="recommendations-list">
+            ${audit.recommendations.map(rec => `
+                <li class="recommendation-item">
+                    <i class="ti ti-bulb" style="color: #ffc107;"></i> ${rec}
+                </li>
+            `).join('')}
+        </ul>
+    `;
+
+    resultsDiv.style.display = 'block';
+    resultsDiv.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Track Keyword
+async function trackKeyword() {
+    const projectId = document.getElementById('keyword-project').value;
+    const keyword = document.getElementById('keyword-input').value;
+
+    if (!projectId || !keyword) {
+        alert('Please select a project and enter a keyword');
+        return;
+    }
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-chart-line"></i> Tracking...<span class="loading-spinner"></span>';
+
+    try {
+        const response = await fetch(`${API_BASE}/keywords/track`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                seo_project_id: parseInt(projectId),
+                keyword: keyword
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(`Keyword tracked! Current position: #${data.current_position}`);
+            document.getElementById('keyword-input').value = '';
+            loadKeywordRankings();
+        }
+    } catch (error) {
+        console.error('Error tracking keyword:', error);
+        alert('Failed to track keyword');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-chart-line"></i> Track Keyword';
+    }
+}
+
+async function loadKeywordRankings() {
+    const projectId = document.getElementById('keyword-project').value;
+    if (!projectId) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/keywords/history/${projectId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        const container = document.getElementById('keyword-rankings');
+
+        if (data.success && data.keywords.length > 0) {
+            container.innerHTML = `
+                <table class="keywords-table">
+                    <thead>
+                        <tr>
+                            <th>Keyword</th>
+                            <th>Position</th>
+                            <th>Search Volume</th>
+                            <th>Date Tracked</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.keywords.map(kw => {
+                            const posClass = kw.current_position <= 10 ? 'top-10' :
+                                           kw.current_position <= 50 ? 'top-50' : 'beyond';
+                            return `
+                                <tr>
+                                    <td>${kw.keyword}</td>
+                                    <td><span class="position-badge ${posClass}">#${kw.current_position}</span></td>
+                                    <td>${kw.search_volume ? kw.search_volume.toLocaleString() : 'N/A'}</td>
+                                    <td>${new Date(kw.tracked_date).toLocaleDateString()}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="ti ti-chart-line"></i>
+                    <p>No keywords tracked yet</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading keywords:', error);
+    }
+}
+
+// Generate Backlink Outreach
+async function generateBacklinkOutreach() {
+    const projectId = document.getElementById('backlink-project').value;
+    const targetUrl = document.getElementById('backlink-url').value;
+    const anchorText = document.getElementById('backlink-anchor').value;
+
+    if (!projectId || !targetUrl || !anchorText) {
+        alert('Please fill in all fields');
+        return;
+    }
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-mail"></i> Generating...<span class="loading-spinner"></span>';
+
+    try {
+        const response = await fetch(`${API_BASE}/backlinks/suggest`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                seo_project_id: parseInt(projectId),
+                target_url: targetUrl,
+                anchor_text: anchorText
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            displayOutreachEmail(data.email_draft);
+            document.getElementById('backlink-url').value = '';
+            document.getElementById('backlink-anchor').value = '';
+            loadBacklinks();
+        }
+    } catch (error) {
+        console.error('Error generating outreach:', error);
+        alert('Failed to generate outreach email');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-mail"></i> Generate Outreach Email';
+    }
+}
+
+function displayOutreachEmail(emailDraft) {
+    const container = document.getElementById('outreach-email');
+    const resultsDiv = document.getElementById('outreach-result');
+
+    container.innerHTML = `
+        <div class="email-preview">
+            <div class="email-subject">Subject: ${emailDraft.subject}</div>
+            <div class="email-body">${emailDraft.body}</div>
+        </div>
+        <button class="btn-secondary" onclick="copyEmailToClipboard()" style="margin-top: 1rem;">
+            <i class="ti ti-copy"></i> Copy Email
+        </button>
+    `;
+
+    resultsDiv.style.display = 'block';
+    resultsDiv.scrollIntoView({ behavior: 'smooth' });
+}
+
+function copyEmailToClipboard() {
+    const emailBody = document.querySelector('.email-body').textContent;
+    const emailSubject = document.querySelector('.email-subject').textContent.replace('Subject: ', '');
+    
+    const fullEmail = `${emailSubject}\n\n${emailBody}`;
+    
+    navigator.clipboard.writeText(fullEmail).then(() => {
+        alert('Email copied to clipboard!');
+    });
+}
+
+async function loadBacklinks() {
+    const projectId = document.getElementById('backlink-project').value;
+    if (!projectId) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/backlinks/list/${projectId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        const container = document.getElementById('backlinks-list');
+
+        if (data.success && data.backlinks.length > 0) {
+            container.innerHTML = data.backlinks.map(bl => `
+                <div class="backlink-card">
+                    <div class="backlink-url">${bl.source_url}</div>
+                    <div style="color: #6c757d; font-size: 0.9rem;">
+                        Anchor: ${bl.anchor_text} | Status: ${bl.status}
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="ti ti-link-off"></i>
+                    <p>No backlinks tracked yet</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading backlinks:', error);
+    }
+}
+
+// Voice Search Optimization
+async function optimizeVoiceSearch() {
+    const content = document.getElementById('voice-content').value;
+
+    if (!content) {
+        alert('Please enter content to optimize');
+        return;
+    }
+
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-microphone"></i> Optimizing...<span class="loading-spinner"></span>';
+
+    try {
+        const response = await fetch(`${API_BASE}/optimize-voice-search`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                content: content
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            displayVoiceResults(data.voice_optimization);
+        }
+    } catch (error) {
+        console.error('Error optimizing voice search:', error);
+        alert('Failed to optimize for voice search');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-microphone"></i> Optimize for Voice Search';
+    }
+}
+
+function displayVoiceResults(optimization) {
+    const container = document.getElementById('voice-data');
+    const resultsDiv = document.getElementById('voice-results');
+
+    container.innerHTML = `
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value">${optimization.voice_search_score}/100</div>
+                <div class="metric-label">Voice Search Score</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">${optimization.conversational_tone_score}/100</div>
+                <div class="metric-label">Conversational Tone</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">${optimization.featured_snippet_potential}</div>
+                <div class="metric-label">Snippet Potential</div>
+            </div>
+        </div>
+
+        <h4 style="margin-top: 2rem; margin-bottom: 1rem;">Suggested Questions to Add</h4>
+        <ul class="recommendations-list">
+            ${optimization.question_based_optimization.map(q => `
+                <li class="recommendation-item">
+                    <i class="ti ti-help"></i> ${q}
+                </li>
+            `).join('')}
+        </ul>
+
+        <h4 style="margin-top: 2rem; margin-bottom: 1rem;">Long-Tail Keywords</h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+            ${optimization.long_tail_keywords.map(kw => 
+                `<span class="keyword-tag">${kw}</span>`
+            ).join('')}
+        </div>
+
+        <h4 style="margin-top: 2rem; margin-bottom: 1rem;">Semantic Improvements</h4>
+        <ul class="recommendations-list">
+            ${optimization.semantic_improvements.map(imp => `
+                <li class="recommendation-item">
+                    <i class="ti ti-bulb"></i> ${imp}
+                </li>
+            `).join('')}
+        </ul>
+
+        <h4 style="margin-top: 2rem; margin-bottom: 1rem;">Schema Recommendations</h4>
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+            ${optimization.structured_data_recommendations.join(', ')}
+        </div>
+    `;
+
+    resultsDiv.style.display = 'block';
+    resultsDiv.scrollIntoView({ behavior: 'smooth' });
+}
+
+async function loadAuditHistory() {
+    const projectId = document.getElementById('audit-project').value;
+    if (!projectId) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/audits/list/${projectId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        const container = document.getElementById('audit-history');
+
+        if (data.success && data.audits.length > 0) {
+            container.innerHTML = data.audits.slice(0, 5).map(audit => `
+                <div class="backlink-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>Audit: ${new Date(audit.audit_date).toLocaleDateString()}</strong>
+                            <div style="color: #6c757d; font-size: 0.9rem;">
+                                Overall Score: ${audit.overall_score}/100 | PageSpeed: ${audit.page_speed_score}/100
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="ti ti-history"></i>
+                    <p>No audit history yet</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading audit history:', error);
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    loadProjects();
+});
+</script>
+{% endblock %}

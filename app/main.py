@@ -486,6 +486,98 @@ async def media_studio_page(request: Request):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to load page"
         )
+
+
+@app.get("/modules/social-media", response_class=HTMLResponse)
+async def social_media_page(request: Request):
+    """
+    Social Media Command Center module page
+    """
+    access_token: Optional[str] = request.cookies.get("access_token")
+    role = None
+    
+    if not access_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.split(" ")[1]
+    
+    try:
+        if access_token:
+            payload = jwt.decode(
+                access_token,
+                settings.SECRET_KEY,
+                algorithms=[settings.ALGORITHM]
+            )
+            role = payload.get("role")
+        
+        # Only admin and employee can access
+        if role and role not in ["admin", "employee"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin or Employee role required."
+            )
+        
+        return templates.TemplateResponse(
+            "modules/social-media.html",
+            {
+                "request": request,
+                "show_sidebar": True
+            }
+        )
+        
+    except JWTError:
+        return RedirectResponse(url="/auth/login")
+    except Exception as e:
+        print(f"Error accessing social media page: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load page"
+        )
+
+
+@app.get("/modules/seo", response_class=HTMLResponse)
+async def seo_module_page(request: Request):
+    """Smart SEO Toolkit module page"""
+    access_token: Optional[str] = request.cookies.get("access_token")
+    role = None
+    
+    if not access_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.split(" ")[1]
+    
+    try:
+        if access_token:
+            payload = jwt.decode(
+                access_token,
+                settings.SECRET_KEY,
+                algorithms=[settings.ALGORITHM]
+            )
+            role = payload.get("role")
+            
+            # Only admin and employee can access
+            if role and role not in ["admin", "employee"]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin or Employee role required."
+                )
+            
+            return templates.TemplateResponse(
+                "modules/social-media.html",
+                {
+                    "request": request,
+                    "show_sidebar": True
+                }
+            )
+    except JWTError:
+        return RedirectResponse(url="/auth/login")
+    except Exception as e:
+        print(f"Error accessing SEO module page: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load page"
+        )
+                
 # ========== HEALTH CHECK ==========
 
 @app.get("/health")
