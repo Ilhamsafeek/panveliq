@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard - PanvelIQ{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/analytics.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heatmap.js@2.0.5/build/heatmap.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="analytics-container">
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">
+                <i class="ti ti-chart-bar"></i>
+                Analytics Dashboard
+            </h1>
+            <p class="page-subtitle">Comprehensive performance insights across all channels</p>
+        </div>
+        <div class="header-actions">
+            <select class="client-selector" id="clientSelector" onchange="handleClientChange()">
+                <option value="">Select Client...</option>
+            </select>
+            <div class="date-range-selector">
+                <input type="date" id="startDate" class="date-input">
+                <span>to</span>
+                <input type="date" id="endDate" class="date-input">
+                <button class="btn-secondary" onclick="applyDateRange()">
+                    <i class="ti ti-filter"></i> Apply
+                </button>
+            </div>
+            <button class="btn-primary" onclick="syncAnalytics()">
+                <i class="ti ti-refresh"></i>
+                Sync Data
+            </button>
+            <button class="btn-secondary" onclick="exportReport()">
+                <i class="ti ti-download"></i>
+                Export
+            </button>
+        </div>
+    </div>
+
+    <!-- View Selector Tabs -->
+    <div class="view-tabs">
+        <button class="tab-btn active" onclick="switchView('daily')" id="dailyTab">
+            <i class="ti ti-calendar-event"></i> Daily
+        </button>
+        <button class="tab-btn" onclick="switchView('weekly')" id="weeklyTab">
+            <i class="ti ti-calendar-week"></i> Weekly
+        </button>
+        <button class="tab-btn" onclick="switchView('campaign')" id="campaignTab">
+            <i class="ti ti-target"></i> Campaign
+        </button>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" id="loadingState">
+        <div class="loader-spinner"></div>
+        <p>Loading analytics data...</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="analytics-content" id="analyticsContent" style="display: none;">
+        
+        <!-- Key Metrics Overview -->
+        <div class="metrics-overview">
+            <div class="metric-card">
+                <div class="metric-icon purple">
+                    <i class="ti ti-eye"></i>
+                </div>
+                <div class="metric-details">
+                    <div class="metric-value" id="totalImpressions">0</div>
+                    <div class="metric-label">Total Impressions</div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon cyan">
+                    <i class="ti ti-click"></i>
+                </div>
+                <div class="metric-details">
+                    <div class="metric-value" id="totalClicks">0</div>
+                    <div class="metric-label">Total Clicks</div>
+                    <div class="metric-sublabel">CTR: <span id="ctr">0%</span></div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon green">
+                    <i class="ti ti-chart-line"></i>
+                </div>
+                <div class="metric-details">
+                    <div class="metric-value" id="totalConversions">0</div>
+                    <div class="metric-label">Conversions</div>
+                    <div class="metric-sublabel">Rate: <span id="conversionRate">0%</span></div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon orange">
+                    <i class="ti ti-currency-dollar"></i>
+                </div>
+                <div class="metric-details">
+                    <div class="metric-value" id="totalSpend">$0</div>
+                    <div class="metric-label">Total Ad Spend</div>
+                    <div class="metric-sublabel">ROAS: <span id="roas">0</span></div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon blue">
+                    <i class="ti ti-world"></i>
+                </div>
+                <div class="metric-details">
+                    <div class="metric-value" id="websiteVisits">0</div>
+                    <div class="metric-label">Website Visits</div>
+                    <div class="metric-sublabel">Bounce: <span id="bounceRate">0%</span></div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon pink">
+                    <i class="ti ti-heart"></i>
+                </div>
+                <div class="metric-details">
+                    <div class="metric-value" id="socialEngagement">0</div>
+                    <div class="metric-label">Social Engagement</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-grid">
+            <!-- Performance Trend Chart -->
+            <div class="chart-card large">
+                <div class="chart-header">
+                    <h3><i class="ti ti-chart-line"></i> Performance Trend</h3>
+                    <div class="chart-controls">
+                        <select id="trendMetric" onchange="updateTrendChart()">
+                            <option value="impressions">Impressions</option>
+                            <option value="clicks">Clicks</option>
+                            <option value="conversions">Conversions</option>
+                            <option value="spend">Ad Spend</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-body">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Channel Performance -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="ti ti-chart-pie"></i> Channel Distribution</h3>
+                </div>
+                <div class="chart-body">
+                    <canvas id="channelChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEO Keyword Movement Section -->
+        <div class="keyword-movement-section">
+            <div class="section-header">
+                <h3><i class="ti ti-trending-up"></i> SEO Keyword Movement</h3>
+                <button class="btn-text" onclick="loadKeywordMovement()">
+                    <i class="ti ti-refresh"></i> Refresh
+                </button>
+            </div>
+            <div class="keyword-movement-grid" id="keywordMovementGrid">
+                <!-- Will be populated dynamically -->
+            </div>
+        </div>
+
+        <!-- Campaign Performance Table -->
+        <div class="campaign-section" id="campaignSection" style="display: none;">
+            <div class="section-header">
+                <h3><i class="ti ti-target"></i> Campaign Performance</h3>
+                <div class="campaign-filters">
+                    <select id="campaignTypeFilter" onchange="filterCampaigns()">
+                        <option value="">All Campaigns</option>
+                        <option value="ads">Ad Campaigns</option>
+                        <option value="email">Email Campaigns</option>
+                        <option value="social">Social Campaigns</option>
+                        <option value="seo">SEO Campaigns</option>
+                    </select>
+                </div>
+            </div>
+            <div class="campaign-table-container">
+                <table class="campaign-table" id="campaignTable">
+                    <thead>
+                        <tr>
+                            <th>Campaign Name</th>
+                            <th>Type</th>
+                            <th>Impressions</th>
+                            <th>Clicks</th>
+                            <th>CTR</th>
+                            <th>Conversions</th>
+                            <th>Spend</th>
+                            <th>ROAS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="campaignTableBody">
+                        <!-- Will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Heatmap Section -->
+        <div class="heatmap-section">
+            <div class="section-header">
+                <h3><i class="ti ti-map-pin"></i> User Interaction Heatmap</h3>
+                <div class="heatmap-controls">
+                    <select id="heatmapPageSelect" onchange="loadHeatmapData()">
+                        <option value="">Select Page...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="heatmap-container" id="heatmapContainer">
+                <div class="empty-state">
+                    <i class="ti ti-map-off"></i>
+                    <p>Select a page to view heatmap data</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Anomaly Alerts Section -->
+        <div class="anomaly-section">
+            <div class="section-header">
+                <h3><i class="ti ti-alert-triangle"></i> Performance Anomalies</h3>
+                <button class="btn-secondary" onclick="detectAnomalies()">
+                    <i class="ti ti-scan"></i> Detect Anomalies
+                </button>
+            </div>
+            <div class="anomaly-grid" id="anomalyGrid">
+                <!-- Will be populated dynamically -->
+            </div>
+        </div>
+
+        <!-- AI Insights Panel -->
+        <div class="insights-section" id="insightsSection">
+            <div class="section-header">
+                <h3><i class="ti ti-bulb"></i> AI-Powered Insights</h3>
+            </div>
+            <div class="insights-grid" id="insightsGrid">
+                <!-- Insights will be populated dynamically -->
+            </div>
+        </div>
+
+        <!-- Performance Alerts -->
+        <div class="alerts-section">
+            <div class="section-header">
+                <h3><i class="ti ti-bell"></i> Performance Alerts</h3>
+                <button class="btn-text" onclick="loadAlerts()">
+                    <i class="ti ti-refresh"></i> Refresh
+                </button>
+            </div>
+            <div class="alerts-list" id="alertsList">
+                <div class="empty-state">
+                    <i class="ti ti-bell-off"></i>
+                    <p>No alerts at this time</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversion Funnels -->
+        <div class="funnels-section">
+            <div class="section-header">
+                <h3><i class="ti ti-funnel"></i> Conversion Funnels</h3>
+                <button class="btn-secondary" onclick="openFunnelModal()">
+                    <i class="ti ti-plus"></i> Create Funnel
+                </button>
+            </div>
+            <div class="funnels-grid" id="funnelsGrid">
+                <!-- Funnels will be populated dynamically -->
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Create Funnel Modal -->
+<div class="modal" id="funnelModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="ti ti-funnel"></i> Create Conversion Funnel</h2>
+            <button class="modal-close" onclick="closeFunnelModal()">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="funnelForm" onsubmit="handleCreateFunnel(event)">
+                <div class="form-group">
+                    <label>Funnel Name <span class="required">*</span></label>
+                    <input type="text" id="funnelName" required placeholder="e.g., Product Purchase Flow">
+                </div>
+
+                <div class="form-group">
+                    <label>Stages <span class="required">*</span></label>
+                    <div id="funnelStages">
+                        <div class="funnel-stage">
+                            <input type="text" placeholder="Stage 1 (e.g., Landing Page)" required>
+                            <input type="number" placeholder="Count" min="0">
+                        </div>
+                        <div class="funnel-stage">
+                            <input type="text" placeholder="Stage 2 (e.g., Add to Cart)" required>
+                            <input type="number" placeholder="Count" min="0">
+                        </div>
+                    </div>
+                    <button type="button" class="btn-text" onclick="addFunnelStage()">
+                        <i class="ti ti-plus"></i> Add Stage
+                    </button>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeFunnelModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Funnel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/analytics.js"></script>
+{% endblock %}

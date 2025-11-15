@@ -624,6 +624,23 @@ async def ad_strategy_page(request: Request):
             "show_sidebar": True,
         }
     )
+
+
+@app.get("/modules/analytics", response_class=HTMLResponse)
+async def analytics_page(request: Request):
+    """
+    Unified Analytics Dashboard module page
+    No backend authentication check - frontend will handle it via localStorage token
+    """
+    return templates.TemplateResponse(
+        "modules/analytics.html",
+        {
+            "request": request,
+            "show_sidebar": True
+        }
+    )
+    
+
 # ========== HEALTH CHECK ==========
 
 @app.get("/health")
