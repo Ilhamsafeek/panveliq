@@ -418,10 +418,512 @@ async function publishCampaign(campaignId) {
         showNotification(error.message, 'error');
     }
 }
-
-function viewCampaign(campaignId) {
-    showNotification(`Campaign details view - Implementation coming soon`, 'info');
+async function viewCampaign(campaignId) {
+    try {
+        // Fetch campaign details
+        const campaignResponse = await fetch(`${API_BASE}/campaigns/list/${currentClientId || (await getFirstClientId())}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!campaignResponse.ok) throw new Error('Failed to fetch campaign');
+        
+        const campaignData = await campaignResponse.json();
+        const campaign = campaignData.campaigns.find(c => c.campaign_id === campaignId);
+        
+        if (!campaign) {
+            showNotification('Campaign not found', 'error');
+            return;
+        }
+        
+        // Fetch campaign ads
+        const adsResponse = await fetch(`${API_BASE}/campaigns/${campaignId}/ads`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        let ads = [];
+        if (adsResponse.ok) {
+            const adsData = await adsResponse.json();
+            ads = adsData.ads || [];
+        }
+        
+        // Fetch performance data
+        const perfResponse = await fetch(`${API_BASE}/performance/${campaignId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        let performance = null;
+        if (perfResponse.ok) {
+            const perfData = await perfResponse.json();
+            performance = perfData.performance || null;
+        }
+        
+        // Display campaign details modal
+        displayCampaignDetailsModal(campaign, ads, performance);
+        
+    } catch (error) {
+        console.error('Error loading campaign details:', error);
+        showNotification('Failed to load campaign details', 'error');
+    }
 }
+
+function displayCampaignDetailsModal(campaign, ads, performance) {
+    const modal = document.getElementById('campaignDetailsModal');
+    if (!modal) {
+        createCampaignDetailsModal();
+    }
+    
+    const detailsContainer = document.getElementById('campaignDetailsContent');
+    
+    // Campaign header
+    let html = `
+        <div style="margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                <div>
+                    <h2 style="margin: 0 0 0.5rem 0; font-size: 1.5rem;">${campaign.campaign_name}</h2>
+                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <span class="status-badge ${campaign.status}">${campaign.status}</span>
+                        <span class="platform-badge">${campaign.platform}</span>
+                        <span style="color: #64748b; font-size: 0.875rem;">
+                            <i class="ti ti-target"></i> ${campaign.objective}
+                        </span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    ${campaign.status === 'draft' ? `
+                        <button class="btn btn-primary" onclick="publishCampaign(${campaign.campaign_id})">
+                            <i class="ti ti-send"></i> Publish
+                        </button>
+                    ` : ''}
+                    ${campaign.status === 'active' ? `
+                        <button class="btn btn-secondary" onclick="pauseCampaign(${campaign.campaign_id})">
+                            <i class="ti ti-player-pause"></i> Pause
+                        </button>
+                    ` : ''}
+                    ${campaign.status === 'paused' ? `
+                        <button class="btn btn-primary" onclick="resumeCampaign(${campaign.campaign_id})">
+                            <i class="ti ti-player-play"></i> Resume
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; background: #f8fafc; padding: 1.5rem; border-radius: 8px;">
+                <div>
+                    <div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.25rem;">Budget</div>
+                    <div style="font-size: 1.25rem; font-weight: 600;">$${Number(campaign.budget).toLocaleString()}</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.25rem;">Start Date</div>
+                    <div style="font-size: 1rem; font-weight: 500;">${new Date(campaign.start_date).toLocaleDateString()}</div>
+                </div>
+                ${campaign.end_date ? `
+                <div>
+                    <div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.25rem;">End Date</div>
+                    <div style="font-size: 1rem; font-weight: 500;">${new Date(campaign.end_date).toLocaleDateString()}</div>
+                </div>
+                ` : ''}
+                <div>
+                    <div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.25rem;">Bidding Strategy</div>
+                    <div style="font-size: 0.875rem; font-weight: 500;">${campaign.bidding_strategy || 'Automatic'}</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.25rem;">Total Ads</div>
+                    <div style="font-size: 1.25rem; font-weight: 600;">${ads.length}</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Performance metrics
+    if (performance) {
+        html += `
+            <div style="margin-bottom: 2rem;">
+                <h3 style="margin: 0 0 1rem 0; font-size: 1.125rem;">
+                    <i class="ti ti-chart-line"></i> Performance Metrics
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+                    <div class="stat-card">
+                        <div class="stat-label">Impressions</div>
+                        <div class="stat-value">${Number(performance.impressions || 0).toLocaleString()}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Clicks</div>
+                        <div class="stat-value">${Number(performance.clicks || 0).toLocaleString()}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">CTR</div>
+                        <div class="stat-value">${(performance.ctr || 0).toFixed(2)}%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">CPC</div>
+                        <div class="stat-value">$${(performance.cpc || 0).toFixed(2)}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Conversions</div>
+                        <div class="stat-value">${Number(performance.conversions || 0).toLocaleString()}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Spent</div>
+                        <div class="stat-value">$${Number(performance.amount_spent || 0).toLocaleString()}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Campaign ads
+    html += `
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin: 0; font-size: 1.125rem;">
+                    <i class="ti ti-ad"></i> Campaign Ads (${ads.length})
+                </h3>
+                <button class="btn btn-primary" onclick="openCreateAdModal(${campaign.campaign_id})">
+                    <i class="ti ti-plus"></i> Create Ad
+                </button>
+            </div>
+            
+            ${ads.length === 0 ? `
+                <div class="empty-state" style="padding: 2rem;">
+                    <i class="ti ti-ad"></i>
+                    <p>No ads created yet</p>
+                </div>
+            ` : `
+                <div style="display: grid; gap: 1rem;">
+                    ${ads.map(ad => `
+                        <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                                <div>
+                                    <div style="font-weight: 600; margin-bottom: 0.25rem;">${ad.ad_name}</div>
+                                    <div style="font-size: 0.875rem; color: #64748b;">${ad.ad_format}</div>
+                                </div>
+                                <span class="status-badge ${ad.status}">${ad.status}</span>
+                            </div>
+                            
+                            <div style="margin-bottom: 0.75rem;">
+                                <div style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem;">Headline:</div>
+                                <div style="font-size: 0.875rem;">${ad.headline}</div>
+                            </div>
+                            
+                            <div style="margin-bottom: 0.75rem;">
+                                <div style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem;">Primary Text:</div>
+                                <div style="font-size: 0.875rem; color: #64748b;">${ad.primary_text}</div>
+                            </div>
+                            
+                            ${ad.total_impressions ? `
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;">
+                                    <div>
+                                        <div style="font-size: 0.75rem; color: #64748b;">Impressions</div>
+                                        <div style="font-size: 0.875rem; font-weight: 600;">${Number(ad.total_impressions).toLocaleString()}</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.75rem; color: #64748b;">Clicks</div>
+                                        <div style="font-size: 0.875rem; font-weight: 600;">${Number(ad.total_clicks).toLocaleString()}</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.75rem; color: #64748b;">CTR</div>
+                                        <div style="font-size: 0.875rem; font-weight: 600;">${(ad.avg_ctr || 0).toFixed(2)}%</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.75rem; color: #64748b;">CPC</div>
+                                        <div style="font-size: 0.875rem; font-weight: 600;">$${(ad.avg_cpc || 0).toFixed(2)}</div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            `}
+        </div>
+    `;
+    
+    detailsContainer.innerHTML = html;
+    document.getElementById('campaignDetailsModal').style.display = 'flex';
+}
+
+function createCampaignDetailsModal() {
+    const modal = document.createElement('div');
+    modal.id = 'campaignDetailsModal';
+    modal.className = 'modal';
+    modal.style.display = 'none';
+    
+    modal.innerHTML = `
+        <div class="modal-overlay" onclick="closeCampaignDetailsModal()"></div>
+        <div class="modal-container" style="max-width: 1200px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h2><i class="ti ti-badge-ad"></i> Campaign Details</h2>
+                <button class="modal-close" onclick="closeCampaignDetailsModal()">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="campaignDetailsContent">
+                <div style="text-align: center; padding: 2rem;">
+                    <div class="loading-spinner"></div>
+                    <p>Loading campaign details...</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+function closeCampaignDetailsModal() {
+    const modal = document.getElementById('campaignDetailsModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+async function pauseCampaign(campaignId) {
+    if (!confirm('Are you sure you want to pause this campaign?')) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/campaigns/${campaignId}/control`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ action: 'pause' })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to pause campaign');
+        }
+        
+        showNotification('Campaign paused successfully', 'success');
+        closeCampaignDetailsModal();
+        loadCampaigns();
+        
+    } catch (error) {
+        console.error('Error pausing campaign:', error);
+        showNotification(error.message, 'error');
+    }
+}
+
+async function resumeCampaign(campaignId) {
+    if (!confirm('Resume this campaign?')) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/campaigns/${campaignId}/control`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ action: 'resume' })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to resume campaign');
+        }
+        
+        showNotification('Campaign resumed successfully', 'success');
+        closeCampaignDetailsModal();
+        loadCampaigns();
+        
+    } catch (error) {
+        console.error('Error resuming campaign:', error);
+        showNotification(error.message, 'error');
+    }
+}
+
+async function openCreateAdModal(campaignId) {
+    currentCampaignId = campaignId;
+    
+    // Create modal if it doesn't exist
+    if (!document.getElementById('createAdModal')) {
+        createAdModal();
+    }
+    
+    // Reset form
+    document.getElementById('createAdForm').reset();
+    document.getElementById('adCampaignId').value = campaignId;
+    
+    // Show modal
+    document.getElementById('createAdModal').style.display = 'flex';
+}
+
+function createAdModal() {
+    const modal = document.createElement('div');
+    modal.id = 'createAdModal';
+    modal.className = 'modal';
+    modal.style.display = 'none';
+    
+    modal.innerHTML = `
+        <div class="modal-overlay" onclick="closeCreateAdModal()"></div>
+        <div class="modal-container" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2><i class="ti ti-ad"></i> Create New Ad</h2>
+                <button class="modal-close" onclick="closeCreateAdModal()">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="createAdForm" onsubmit="event.preventDefault(); submitCreateAd();">
+                    <input type="hidden" id="adCampaignId">
+                    
+                    <div class="form-group">
+                        <label>Ad Name *</label>
+                        <input type="text" class="form-control" id="adName" required placeholder="e.g., Summer Sale - Variant A">
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Ad Format *</label>
+                            <select class="form-control" id="adFormat" required>
+                                <option value="">Select format...</option>
+                                <option value="feed">Feed Post</option>
+                                <option value="story">Story</option>
+                                <option value="reel">Reel</option>
+                                <option value="carousel">Carousel</option>
+                                <option value="video">Video</option>
+                                <option value="collection">Collection</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="isABTest" style="margin-right: 0.5rem;">
+                                A/B Test Variant
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="abTestGroup" style="display: none;">
+                        <div class="form-group">
+                            <label>A/B Test Group</label>
+                            <select class="form-control" id="abGroup">
+                                <option value="A">Variant A</option>
+                                <option value="B">Variant B</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Headline *</label>
+                        <input type="text" class="form-control" id="adHeadline" required placeholder="Catchy headline (max 40 characters)" maxlength="40">
+                        <small style="color: #64748b; font-size: 0.875rem;">Character count: <span id="headlineCount">0</span>/40</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Primary Text *</label>
+                        <textarea class="form-control" id="adPrimaryText" required rows="4" placeholder="Main ad copy (max 125 characters)" maxlength="125"></textarea>
+                        <small style="color: #64748b; font-size: 0.875rem;">Character count: <span id="primaryTextCount">0</span>/125</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea class="form-control" id="adDescription" rows="3" placeholder="Additional description (optional)" maxlength="30"></textarea>
+                        <small style="color: #64748b; font-size: 0.875rem;">Character count: <span id="descriptionCount">0</span>/30</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Media URLs</label>
+                        <div id="mediaUrlsContainer">
+                            <input type="url" class="form-control" id="mediaUrl1" placeholder="https://example.com/image1.jpg" style="margin-bottom: 0.5rem;">
+                            <input type="url" class="form-control" id="mediaUrl2" placeholder="https://example.com/image2.jpg" style="margin-bottom: 0.5rem;">
+                            <input type="url" class="form-control" id="mediaUrl3" placeholder="https://example.com/image3.jpg">
+                        </div>
+                        <small style="color: #64748b; font-size: 0.875rem;">Add image or video URLs for your ad creative</small>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                        <button type="button" class="btn btn-secondary" onclick="closeCreateAdModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="submitAdBtn">
+                            <i class="ti ti-check"></i> Create Ad
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Add character counters
+    document.getElementById('adHeadline').addEventListener('input', function(e) {
+        document.getElementById('headlineCount').textContent = e.target.value.length;
+    });
+    
+    document.getElementById('adPrimaryText').addEventListener('input', function(e) {
+        document.getElementById('primaryTextCount').textContent = e.target.value.length;
+    });
+    
+    document.getElementById('adDescription').addEventListener('input', function(e) {
+        document.getElementById('descriptionCount').textContent = e.target.value.length;
+    });
+    
+    // Show/hide A/B test group
+    document.getElementById('isABTest').addEventListener('change', function(e) {
+        document.getElementById('abTestGroup').style.display = e.target.checked ? 'block' : 'none';
+    });
+}
+
+function closeCreateAdModal() {
+    document.getElementById('createAdModal').style.display = 'none';
+}
+
+async function submitCreateAd() {
+    const btn = document.getElementById('submitAdBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader"></i> Creating...';
+    
+    try {
+        // Collect media URLs
+        const mediaUrls = [];
+        for (let i = 1; i <= 3; i++) {
+            const url = document.getElementById(`mediaUrl${i}`).value.trim();
+            if (url) mediaUrls.push(url);
+        }
+        
+        const isABTest = document.getElementById('isABTest').checked;
+        
+        const adData = {
+            campaign_id: parseInt(document.getElementById('adCampaignId').value),
+            ad_name: document.getElementById('adName').value,
+            ad_format: document.getElementById('adFormat').value,
+            headline: document.getElementById('adHeadline').value,
+            primary_text: document.getElementById('adPrimaryText').value,
+            description: document.getElementById('adDescription').value || null,
+            media_urls: mediaUrls,
+            is_ab_test_variant: isABTest,
+            ab_test_group: isABTest ? document.getElementById('abGroup').value : null
+        };
+        
+        const response = await fetch(`${API_BASE}/ads/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(adData)
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to create ad');
+        }
+        
+        const data = await response.json();
+        showNotification('Ad created successfully!', 'success');
+        closeCreateAdModal();
+        
+        // Reload campaign details to show new ad
+        viewCampaign(adData.campaign_id);
+        
+    } catch (error) {
+        console.error('Error creating ad:', error);
+        showNotification(error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-check"></i> Create Ad';
+    }
+}
+
 
 // =====================================================
 // AUDIENCE SEGMENTS
