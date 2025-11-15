@@ -105,20 +105,29 @@ async function loadClients() {
         
         const data = await response.json();
         
+        console.log('Clients data:', data); // Debug log
+        
         if (data.success && data.clients && data.clients.length > 0) {
             const selector = document.getElementById('clientSelector');
             selector.innerHTML = '<option value="">Select Client...</option>';
             
             data.clients.forEach(client => {
                 const option = document.createElement('option');
-                option.value = client.client_id;
+                // FIX: Use user_id instead of client_id
+                option.value = client.user_id || client.client_id;
                 option.textContent = client.business_name || client.full_name;
                 selector.appendChild(option);
             });
             
             // Auto-select first client and load data
-            currentClientId = data.clients[0].client_id;
+            currentClientId = data.clients[0].user_id || data.clients[0].client_id;
             selector.value = currentClientId;
+            
+            console.log('Selected client ID:', currentClientId); // Debug log
+            
+            // Hide loading and show content
+            hideLoading();
+            document.getElementById('analyticsContent').style.display = 'block';
             
             // Now load analytics data
             loadAnalytics();
@@ -135,19 +144,36 @@ async function loadClients() {
 
 function handleClientChange() {
     const selector = document.getElementById('clientSelector');
-    currentClientId = selector.value ? parseInt(selector.value) : null;
+    const selectedValue = selector.value;
+    
+    console.log('Client changed, selected value:', selectedValue); // Debug log
+    
+    currentClientId = selectedValue ? parseInt(selectedValue) : null;
+    
+    console.log('Current client ID after change:', currentClientId); // Debug log
     
     if (currentClientId) {
+        // Show loading
+        showLoading();
+        // Load analytics for selected client
         loadAnalytics();
+    } else {
+        // Hide content if no client selected
+        document.getElementById('analyticsContent').style.display = 'none';
+        document.getElementById('loadingState').style.display = 'none';
     }
 }
+
 
 // =====================================================
 // LOAD DAILY ANALYTICS DATA
 // =====================================================
 
 async function loadAnalytics() {
+    console.log('loadAnalytics called, currentClientId:', currentClientId); // Debug log
+    
     if (!currentClientId) {
+        console.warn('No client selected');
         hideLoading();
         return;
     }
@@ -163,30 +189,45 @@ async function loadAnalytics() {
         
         const url = `${API_BASE}/overview/${currentClientId}?start_date=${selectedDateRange.start}&end_date=${selectedDateRange.end}`;
         
+        console.log('Fetching analytics from:', url); // Debug log
+        
         const response = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
         
+        console.log('Analytics response status:', response.status); // Debug log
+        
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Analytics API error:', errorData);
+            throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
         
+        console.log('Analytics data received:', data); // Debug log
+        
         if (data.success) {
-            displayOverviewMetrics(data.overview_metrics);
-            displayDailyTrends(data.daily_metrics);
-            displayAIInsights(data.ai_insights);
+            // Show content area
+            document.getElementById('analyticsContent').style.display = 'block';
+            
+            displayOverviewMetrics(data.overview_metrics || {});
+            displayDailyTrends(data.daily_metrics || []);
+            
+            if (data.ai_insights) {
+                displayAIInsights(data.ai_insights);
+            }
+            
             hideLoading();
             
             // Load additional data in background
             setTimeout(() => {
-                loadAlerts();
-                loadFunnels();
-                loadKeywordMovement();
-                loadGA4Data();
+                if (typeof loadAlerts === 'function') loadAlerts();
+                if (typeof loadFunnels === 'function') loadFunnels();
+                if (typeof loadKeywordMovement === 'function') loadKeywordMovement();
+                if (typeof loadGA4Data === 'function') loadGA4Data();
             }, 500);
         } else {
             throw new Error(data.detail || 'Failed to load analytics');
@@ -195,8 +236,12 @@ async function loadAnalytics() {
         console.error('Error loading analytics:', error);
         hideLoading();
         
-        // Show empty state instead of error
+        // Show error message
+        showError(`Failed to load analytics: ${error.message}`);
+        
+        // Show empty state instead of error for better UX
         displayEmptyState();
+        document.getElementById('analyticsContent').style.display = 'block';
     }
 }
 
@@ -992,7 +1037,6 @@ async function handleCreateFunnel(event) {
 // =====================================================
 // SYNC & EXPORT
 // =====================================================
-
 async function syncAnalytics() {
     if (!currentClientId) {
         showError('Please select a client');
@@ -1001,29 +1045,37 @@ async function syncAnalytics() {
     
     const btn = event.target.closest('button');
     const originalHTML = btn.innerHTML;
-    btn.innerHTML = '<i class="ti ti-loader"></i> Syncing...';
+    btn.innerHTML = '<i class="ti ti-refresh"></i> Syncing from APIs...';
     btn.disabled = true;
     
     try {
         const token = localStorage.getItem('access_token');
-        const response = await fetch(`${API_BASE}/sync/${currentClientId}`, {
+        
+        const response = await fetch(`${API_BASE}/sync-all-platforms`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`
-            }
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                client_id: currentClientId,
+                start_date: selectedDateRange.start,
+                end_date: selectedDateRange.end
+            })
         });
         
         const data = await response.json();
+        console.log('Sync response:', data);
         
         if (data.success) {
-            showSuccess('Analytics data synced successfully!');
+            showSuccess('✓ Analytics synced successfully!');
             loadAnalytics();
         } else {
             throw new Error(data.detail || 'Sync failed');
         }
     } catch (error) {
-        console.error('Error syncing analytics:', error);
-        showError('Failed to sync analytics data');
+        console.error('Sync error:', error);
+        showError(`Sync failed: ${error.message}`);
     } finally {
         btn.innerHTML = originalHTML;
         btn.disabled = false;
@@ -1080,77 +1132,86 @@ async function exportReport() {
 // =====================================================
 // UTILITY FUNCTIONS
 // =====================================================
-
 function showLoading() {
     const loadingState = document.getElementById('loadingState');
     const analyticsContent = document.getElementById('analyticsContent');
     
-    if (loadingState) loadingState.style.display = 'block';
-    if (analyticsContent) analyticsContent.style.display = 'none';
+    if (loadingState) {
+        loadingState.style.display = 'flex';
+    }
+    if (analyticsContent) {
+        analyticsContent.style.display = 'none';
+    }
 }
 
 function hideLoading() {
     const loadingState = document.getElementById('loadingState');
-    const analyticsContent = document.getElementById('analyticsContent');
     
-    if (loadingState) loadingState.style.display = 'none';
-    if (analyticsContent) analyticsContent.style.display = 'block';
+    if (loadingState) {
+        loadingState.style.display = 'none';
+    }
 }
-
 function showError(message) {
-    console.error('Error:', message);
-    // Create a better notification instead of alert
-    const notification = document.createElement('div');
-    notification.style.cssText = `
+    // Simple error notification
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-notification';
+    errorDiv.innerHTML = `
+        <i class="ti ti-alert-circle"></i>
+        <span>${message}</span>
+    `;
+    errorDiv.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
-        background: #EF4444;
+        background: #ff4444;
         color: white;
-        padding: 1rem 1.5rem;
+        padding: 15px 20px;
         border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         z-index: 10000;
-        max-width: 400px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        animation: slideIn 0.3s ease;
     `;
-    notification.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <i class="ti ti-alert-circle" style="font-size: 1.5rem;"></i>
-            <span>${message}</span>
-        </div>
-    `;
-    document.body.appendChild(notification);
+    
+    document.body.appendChild(errorDiv);
     
     setTimeout(() => {
-        notification.remove();
+        errorDiv.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => errorDiv.remove(), 300);
     }, 5000);
 }
 
 function showSuccess(message) {
-    console.log('Success:', message);
-    const notification = document.createElement('div');
-    notification.style.cssText = `
+    // Simple success notification
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success-notification';
+    successDiv.innerHTML = `
+        <i class="ti ti-check-circle"></i>
+        <span>${message}</span>
+    `;
+    successDiv.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
-        background: #10B981;
+        background: #00c851;
         color: white;
-        padding: 1rem 1.5rem;
+        padding: 15px 20px;
         border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         z-index: 10000;
-        max-width: 400px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        animation: slideIn 0.3s ease;
     `;
-    notification.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <i class="ti ti-check-circle" style="font-size: 1.5rem;"></i>
-            <span>${message}</span>
-        </div>
-    `;
-    document.body.appendChild(notification);
+    
+    document.body.appendChild(successDiv);
     
     setTimeout(() => {
-        notification.remove();
+        successDiv.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => successDiv.remove(), 300);
     }, 3000);
 }
 

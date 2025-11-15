@@ -97,3 +97,16 @@ mailchimp-marketing==3.0.80
 
 # For WhatsApp Business API (using direct requests)
 requests==2.31.0
+
+
+# Google Ads API
+google-ads==23.1.0
+
+# Facebook/Meta Business SDK
+facebook-business==19.0.0
+
+# Google Analytics Data API
+google-analytics-data==0.18.5
+google-auth==2.25.2
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
