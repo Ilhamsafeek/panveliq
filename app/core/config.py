@@ -97,13 +97,16 @@ class Settings(BaseSettings):
     CANVA_API_KEY: Optional[str] = None
     CANVA_TEAM_ID: Optional[str] = None
 
+    # Ideogram
+    IDEOGRAM_API_KEY: str
+
     # Analytics
     GA4_PROPERTY_ID: Optional[str] = None
     GA4_CREDENTIALS_JSON: Optional[str] = None
     
 
     GOOGLE_API_KEY: Optional[str] = None
-    
+
     # Synthesia
     SYNTHESIA_API_KEY: Optional[str] = None
     SYNTHESIA_AVATAR_ID: Optional[str] = "anna_costume1_cameraA"  # Default avatar

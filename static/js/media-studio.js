@@ -33,11 +33,51 @@ function initializeSizeSelector() {
 }
 
 // =====================================================
+// MODAL FUNCTIONS
+// =====================================================
+
+function openImageGenerator() {
+    document.getElementById('imageModal').classList.add('show');
+}
+
+function openVideoGenerator() {
+    document.getElementById('videoModal').classList.add('show');
+}
+
+function openDesignStudio() {
+    document.getElementById('designModal').classList.add('show');
+}
+
+function openAnimationGenerator() {
+    document.getElementById('animationModal').classList.add('show');
+}
+
+function openImageToVideo() {
+    document.getElementById('imageToVideoModal').classList.add('show');
+}
+
+function openImageToAnimation() {
+    document.getElementById('imageToAnimationModal').classList.add('show');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('show');
+}
+
+// =====================================================
 // LOAD CLIENTS
 // =====================================================
 
 async function loadClients() {
-    const clientSelects = ['imageClient', 'videoClient', 'designClient', 'filterClient'];
+    const clientSelects = [
+        'imageClient', 
+        'videoClient', 
+        'designClient', 
+        'filterClient',
+        'animationClient',
+        'imageToVideoClient',
+        'imageToAnimationClient'
+    ];
     
     try {
         const token = localStorage.getItem('access_token');
@@ -55,19 +95,13 @@ async function loadClients() {
         
         clientSelects.forEach(selectId => {
             const select = document.getElementById(selectId);
-            if (select) {
-                const firstOption = select.querySelector('option:first-child');
-                select.innerHTML = '';
-                select.appendChild(firstOption.cloneNode(true));
-                
-                if (data.clients && data.clients.length > 0) {
-                    data.clients.forEach(client => {
-                        const option = document.createElement('option');
-                        option.value = client.user_id;
-                        option.textContent = client.full_name;
-                        select.appendChild(option);
-                    });
-                }
+            if (select && data.clients) {
+                data.clients.forEach(client => {
+                    const option = document.createElement('option');
+                    option.value = client.user_id;
+                    option.textContent = client.company_name || client.email;
+                    select.appendChild(option);
+                });
             }
         });
         
@@ -77,35 +111,31 @@ async function loadClients() {
 }
 
 // =====================================================
-// MODAL FUNCTIONS
+// NOTIFICATION HELPER
 // =====================================================
 
-function openImageGenerator() {
-    document.getElementById('imageModal').classList.add('show');
-    document.getElementById('imageForm').reset();
-    selectedImageSize = '1024x1024';
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
 }
-
-function openVideoGenerator() {
-    document.getElementById('videoModal').classList.add('show');
-    document.getElementById('videoForm').reset();
-}
-
-function openDesignStudio() {
-    document.getElementById('designModal').classList.add('show');
-    document.getElementById('designForm').reset();
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('show');
-}
-
-// Close modal on backdrop click
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('modal')) {
-        e.target.classList.remove('show');
-    }
-});
 
 // =====================================================
 // GENERATE IMAGE (DALL-E)
@@ -153,13 +183,8 @@ async function generateImage(event) {
         if (result.success) {
             showNotification('Image generated successfully!', 'success');
             closeModal('imageModal');
+            document.getElementById('imageForm').reset();
             loadMediaAssets();
-            
-            // Show the generated image
-            if (result.assets && result.assets.length > 0) {
-                const imageUrl = result.assets[0].url;
-                showImagePreview(imageUrl);
-            }
         }
         
     } catch (error) {
@@ -215,11 +240,11 @@ async function generateVideo(event) {
         if (result.success) {
             showNotification('Video generation started! This may take a few minutes.', 'success');
             closeModal('videoModal');
-            loadMediaAssets();
+            document.getElementById('videoForm').reset();
             
-            // Poll for video status
+            // Start checking video status
             if (result.video_id) {
-                pollVideoStatus(result.video_id, result.asset_id);
+                checkVideoStatus(result.video_id);
             }
         }
         
@@ -233,12 +258,12 @@ async function generateVideo(event) {
 }
 
 // =====================================================
-// POLL VIDEO STATUS
+// CHECK VIDEO STATUS
 // =====================================================
 
-async function pollVideoStatus(videoId, assetId) {
-    const maxAttempts = 60; // Poll for up to 10 minutes (60 * 10 seconds)
+async function checkVideoStatus(videoId) {
     let attempts = 0;
+    const maxAttempts = 30; // 5 minutes
     
     const checkStatus = async () => {
         try {
@@ -274,6 +299,209 @@ async function pollVideoStatus(videoId, assetId) {
     };
     
     setTimeout(checkStatus, 10000); // Start checking after 10 seconds
+}
+
+// =====================================================
+// GENERATE ANIMATION (TEXT-TO-ANIMATION)
+// =====================================================
+
+async function generateAnimation(event) {
+    event.preventDefault();
+    
+    const generateBtn = document.getElementById('generateAnimationBtn');
+    const originalBtnText = generateBtn.innerHTML;
+    
+    try {
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="ti ti-loader"></i> Generating...';
+        
+        const token = localStorage.getItem('access_token');
+        const clientId = document.getElementById('animationClient').value;
+        const title = document.getElementById('animationTitle').value;
+        const prompt = document.getElementById('animationPrompt').value;
+        const style = document.getElementById('animationStyle').value;
+        const duration = document.getElementById('animationDuration').value;
+        
+        const response = await fetch(`${API_BASE}/generate/animation`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                client_id: parseInt(clientId),
+                title: title,
+                prompt: prompt,
+                style: style,
+                duration: parseInt(duration)
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to generate animation');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('Animation generated successfully!', 'success');
+            closeModal('animationModal');
+            document.getElementById('animationForm').reset();
+            loadMediaAssets();
+        }
+        
+    } catch (error) {
+        console.error('Error generating animation:', error);
+        showNotification(error.message || 'Failed to generate animation', 'error');
+    } finally {
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = originalBtnText;
+    }
+}
+
+// =====================================================
+// CONVERT IMAGE TO VIDEO
+// =====================================================
+
+async function convertImageToVideo(event) {
+    event.preventDefault();
+    
+    const convertBtn = document.getElementById('convertImageToVideoBtn');
+    const originalBtnText = convertBtn.innerHTML;
+    
+    try {
+        convertBtn.disabled = true;
+        convertBtn.innerHTML = '<i class="ti ti-loader"></i> Converting...';
+        
+        const token = localStorage.getItem('access_token');
+        const clientId = document.getElementById('imageToVideoClient').value;
+        const imageFile = document.getElementById('sourceImage').files[0];
+        const motionPrompt = document.getElementById('motionPrompt').value;
+        const duration = document.getElementById('videoLength').value;
+        
+        if (!imageFile) {
+            throw new Error('Please select an image');
+        }
+        
+        // Convert image to base64
+        const base64Image = await fileToBase64(imageFile);
+        
+        const response = await fetch(`${API_BASE}/convert/image-to-video`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                client_id: parseInt(clientId),
+                image_data: base64Image,
+                motion_prompt: motionPrompt,
+                duration: parseInt(duration)
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to convert image to video');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('Image converted to video successfully!', 'success');
+            closeModal('imageToVideoModal');
+            document.getElementById('imageToVideoForm').reset();
+            loadMediaAssets();
+        }
+        
+    } catch (error) {
+        console.error('Error converting image to video:', error);
+        showNotification(error.message || 'Failed to convert image to video', 'error');
+    } finally {
+        convertBtn.disabled = false;
+        convertBtn.innerHTML = originalBtnText;
+    }
+}
+
+// =====================================================
+// CONVERT IMAGE TO ANIMATION
+// =====================================================
+
+async function convertImageToAnimation(event) {
+    event.preventDefault();
+    
+    const convertBtn = document.getElementById('convertImageToAnimationBtn');
+    const originalBtnText = convertBtn.innerHTML;
+    
+    try {
+        convertBtn.disabled = true;
+        convertBtn.innerHTML = '<i class="ti ti-loader"></i> Creating...';
+        
+        const token = localStorage.getItem('access_token');
+        const clientId = document.getElementById('imageToAnimationClient').value;
+        const imageFile = document.getElementById('animSourceImage').files[0];
+        const animationEffect = document.getElementById('animationEffect').value;
+        const animationType = document.getElementById('animationType').value;
+        
+        if (!imageFile) {
+            throw new Error('Please select an image');
+        }
+        
+        // Convert image to base64
+        const base64Image = await fileToBase64(imageFile);
+        
+        const response = await fetch(`${API_BASE}/convert/image-to-animation`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                client_id: parseInt(clientId),
+                image_data: base64Image,
+                animation_effect: animationEffect,
+                animation_type: animationType
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to create animation');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('Animation created successfully!', 'success');
+            closeModal('imageToAnimationModal');
+            document.getElementById('imageToAnimationForm').reset();
+            loadMediaAssets();
+        }
+        
+    } catch (error) {
+        console.error('Error creating animation:', error);
+        showNotification(error.message || 'Failed to create animation', 'error');
+    } finally {
+        convertBtn.disabled = false;
+        convertBtn.innerHTML = originalBtnText;
+    }
+}
+
+// =====================================================
+// FILE TO BASE64 HELPER
+// =====================================================
+
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
 }
 
 // =====================================================
@@ -414,13 +642,15 @@ function createAssetCard(asset) {
     const generationLabels = {
         'dall-e-3': 'DALL-E',
         'synthesia': 'Synthesia',
-        'canva': 'Canva'
+        'canva': 'Canva',
+        'ideogram': 'Ideogram',
+        'openai': 'OpenAI'
     };
     
     const icon = typeIcons[asset.asset_type] || 'ti-file';
     const genLabel = generationLabels[asset.generation_type] || asset.generation_type;
     
-    const isImage = asset.asset_type === 'image' && asset.file_url.startsWith('http');
+    const isImage = asset.asset_type === 'image' && asset.file_url && asset.file_url.startsWith('http');
     const previewContent = isImage 
         ? `<img src="${asset.file_url}" alt="${asset.asset_name}">`
         : `<i class="ti ${icon}"></i>`;
@@ -429,20 +659,19 @@ function createAssetCard(asset) {
         <div class="asset-card">
             <div class="asset-preview">
                 ${previewContent}
-                ${asset.ai_generated ? `<div class="asset-badge">${genLabel}</div>` : ''}
+                ${asset.ai_generated ? `<span class="asset-badge">${genLabel}</span>` : ''}
             </div>
             <div class="asset-info">
                 <h3>${asset.asset_name}</h3>
                 <div class="asset-meta">
-                    <div><i class="ti ti-user"></i> ${asset.client_name}</div>
-                    <div><i class="ti ti-calendar"></i> ${formatDate(asset.created_at)}</div>
+                    ${new Date(asset.created_at).toLocaleDateString()}
                 </div>
                 <div class="asset-actions">
-                    <button class="btn-icon" onclick="viewAsset(${asset.asset_id})" title="View">
-                        <i class="ti ti-eye"></i>
-                    </button>
-                    <button class="btn-icon" onclick="downloadAsset('${asset.file_url}', '${asset.asset_name}')" title="Download">
+                    <button class="btn-icon" onclick="downloadAsset('${asset.file_url}')" title="Download">
                         <i class="ti ti-download"></i>
+                    </button>
+                    <button class="btn-icon" onclick="viewAsset('${asset.file_url}')" title="View">
+                        <i class="ti ti-eye"></i>
                     </button>
                     <button class="btn-icon" onclick="deleteAsset(${asset.asset_id})" title="Delete">
                         <i class="ti ti-trash"></i>
@@ -457,18 +686,20 @@ function createAssetCard(asset) {
 // ASSET ACTIONS
 // =====================================================
 
-function viewAsset(assetId) {
-    window.open(`/modules/media-studio/asset/${assetId}`, '_blank');
+function downloadAsset(url) {
+    if (url && url.startsWith('http')) {
+        window.open(url, '_blank');
+    } else {
+        showNotification('Download URL not available', 'error');
+    }
 }
 
-function downloadAsset(url, filename) {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+function viewAsset(url) {
+    if (url && url.startsWith('http')) {
+        window.open(url, '_blank');
+    } else {
+        showNotification('View URL not available', 'error');
+    }
 }
 
 async function deleteAsset(assetId) {
@@ -494,73 +725,6 @@ async function deleteAsset(assetId) {
         
     } catch (error) {
         console.error('Error deleting asset:', error);
-        showNotification('Failed to delete asset', 'error');
+        showNotification(error.message || 'Failed to delete asset', 'error');
     }
-}
-
-// =====================================================
-// SHOW IMAGE PREVIEW
-// =====================================================
-
-function showImagePreview(imageUrl) {
-    const previewHtml = `
-        <div class="modal show" id="imagePreviewModal" onclick="closeModal('imagePreviewModal')">
-            <div class="modal-content" style="max-width: 90%; max-height: 90vh;" onclick="event.stopPropagation()">
-                <div class="modal-header">
-                    <h2><i class="ti ti-photo"></i> Generated Image</h2>
-                    <button class="modal-close" onclick="closeModal('imagePreviewModal')">
-                        <i class="ti ti-x"></i>
-                    </button>
-                </div>
-                <div class="modal-body" style="text-align: center;">
-                    <img src="${imageUrl}" style="max-width: 100%; max-height: 70vh; border-radius: 8px;">
-                    <div style="margin-top: 1rem;">
-                        <a href="${imageUrl}" download class="btn-primary" style="text-decoration: none;">
-                            <i class="ti ti-download"></i> Download Image
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', previewHtml);
-}
-
-// =====================================================
-// UTILITY FUNCTIONS
-// =====================================================
-
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
-    });
-}
-
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 1rem 1.5rem;
-        background: ${type === 'success' ? '#dcfce7' : type === 'error' ? '#fee2e2' : '#dbeafe'};
-        color: ${type === 'success' ? '#16a34a' : type === 'error' ? '#dc2626' : '#2563eb'};
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        z-index: 9999;
-        animation: slideIn 0.3s ease;
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
 }

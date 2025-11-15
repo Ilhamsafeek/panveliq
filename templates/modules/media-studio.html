@@ -380,7 +380,9 @@
     }
 
     @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .empty-state {
@@ -425,7 +427,7 @@
         .creation-tools {
             grid-template-columns: 1fr;
         }
-        
+
         .asset-grid {
             grid-template-columns: 1fr;
         }
@@ -441,6 +443,7 @@
         <p>AI-powered visual content creation with DALL-E, Synthesia, and Canva</p>
     </div>
 
+    <!-- Creation Tools -->
     <!-- Creation Tools -->
     <div class="creation-tools">
         <div class="tool-card" onclick="openImageGenerator()">
@@ -459,6 +462,30 @@
             <p>Generate professional AI avatar videos with Synthesia</p>
         </div>
 
+        <div class="tool-card" onclick="openAnimationGenerator()">
+            <div class="tool-icon">
+                <i class="ti ti-gif"></i>
+            </div>
+            <h3>Text-to-Animation</h3>
+            <p>Create animated content from text descriptions</p>
+        </div>
+
+        <div class="tool-card" onclick="openImageToVideo()">
+            <div class="tool-icon">
+                <i class="ti ti-movie"></i>
+            </div>
+            <h3>Image-to-Video</h3>
+            <p>Convert static images into dynamic video content</p>
+        </div>
+
+        <div class="tool-card" onclick="openImageToAnimation()">
+            <div class="tool-icon">
+                <i class="ti ti-player-play"></i>
+            </div>
+            <h3>Image-to-Animation</h3>
+            <p>Transform images into engaging animations</p>
+        </div>
+
         <div class="tool-card" onclick="openDesignStudio()">
             <div class="tool-icon">
                 <i class="ti ti-layout-dashboard"></i>
@@ -467,7 +494,6 @@
             <p>Create social media graphics and presentations with Canva</p>
         </div>
     </div>
-
     <!-- Media Library -->
     <div class="content-panel">
         <div class="panel-header">
@@ -517,8 +543,10 @@
 
                 <div class="form-group">
                     <label>Image Description <span style="color: #ef4444;">*</span></label>
-                    <textarea class="form-control" id="imagePrompt" rows="4" required placeholder="Describe the image you want to create..."></textarea>
-                    <small style="color: #64748b; font-size: 0.85rem;">Be specific and descriptive for best results</small>
+                    <textarea class="form-control" id="imagePrompt" rows="4" required
+                        placeholder="Describe the image you want to create..."></textarea>
+                    <small style="color: #64748b; font-size: 0.85rem;">Be specific and descriptive for best
+                        results</small>
                 </div>
 
                 <div class="form-group">
@@ -580,7 +608,8 @@
 
                 <div class="form-group">
                     <label>Video Script <span style="color: #ef4444;">*</span></label>
-                    <textarea class="form-control" id="videoScript" rows="6" required placeholder="Enter the narration text for your video..."></textarea>
+                    <textarea class="form-control" id="videoScript" rows="6" required
+                        placeholder="Enter the narration text for your video..."></textarea>
                     <small style="color: #64748b; font-size: 0.85rem;">This text will be spoken by the AI avatar</small>
                 </div>
 
@@ -597,6 +626,162 @@
                 <button type="submit" class="btn-primary" id="generateVideoBtn">
                     <i class="ti ti-video-plus"></i>
                     Generate Video
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- Text-to-Animation Modal -->
+<div class="modal" id="animationModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="ti ti-gif"></i> Text-to-Animation Generator</h2>
+            <button class="modal-close" onclick="closeModal('animationModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="animationForm" onsubmit="generateAnimation(event)">
+                <div class="form-group">
+                    <label>Select Client <span style="color: #ef4444;">*</span></label>
+                    <select class="form-control" id="animationClient" required>
+                        <option value="">Select client...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Animation Title <span style="color: #ef4444;">*</span></label>
+                    <input type="text" class="form-control" id="animationTitle" required placeholder="Enter animation title">
+                </div>
+
+                <div class="form-group">
+                    <label>Animation Description <span style="color: #ef4444;">*</span></label>
+                    <textarea class="form-control" id="animationPrompt" rows="4" required placeholder="Describe the animation you want to create..."></textarea>
+                    <small style="color: #64748b; font-size: 0.85rem;">Describe movement, style, and key elements</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Animation Style</label>
+                    <select class="form-control" id="animationStyle">
+                        <option value="modern">Modern</option>
+                        <option value="cartoon">Cartoon</option>
+                        <option value="abstract">Abstract</option>
+                        <option value="minimal">Minimal</option>
+                        <option value="3d">3D</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Duration</label>
+                    <select class="form-control" id="animationDuration">
+                        <option value="3">3 seconds</option>
+                        <option value="5" selected>5 seconds</option>
+                        <option value="10">10 seconds</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-primary" id="generateAnimationBtn">
+                    <i class="ti ti-sparkles"></i>
+                    Generate Animation
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Image-to-Video Modal -->
+<div class="modal" id="imageToVideoModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="ti ti-movie"></i> Image-to-Video Converter</h2>
+            <button class="modal-close" onclick="closeModal('imageToVideoModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="imageToVideoForm" onsubmit="convertImageToVideo(event)">
+                <div class="form-group">
+                    <label>Select Client <span style="color: #ef4444;">*</span></label>
+                    <select class="form-control" id="imageToVideoClient" required>
+                        <option value="">Select client...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Upload Image <span style="color: #ef4444;">*</span></label>
+                    <input type="file" class="form-control" id="sourceImage" accept="image/*" required>
+                    <small style="color: #64748b; font-size: 0.85rem;">Upload the image to convert to video</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Motion Description <span style="color: #ef4444;">*</span></label>
+                    <textarea class="form-control" id="motionPrompt" rows="3" required placeholder="Describe how the image should move or animate..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Video Duration</label>
+                    <select class="form-control" id="videoLength">
+                        <option value="3">3 seconds</option>
+                        <option value="5" selected>5 seconds</option>
+                        <option value="10">10 seconds</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-primary" id="convertImageToVideoBtn">
+                    <i class="ti ti-video-plus"></i>
+                    Convert to Video
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Image-to-Animation Modal -->
+<div class="modal" id="imageToAnimationModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="ti ti-player-play"></i> Image-to-Animation Converter</h2>
+            <button class="modal-close" onclick="closeModal('imageToAnimationModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="imageToAnimationForm" onsubmit="convertImageToAnimation(event)">
+                <div class="form-group">
+                    <label>Select Client <span style="color: #ef4444;">*</span></label>
+                    <select class="form-control" id="imageToAnimationClient" required>
+                        <option value="">Select client...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Upload Image <span style="color: #ef4444;">*</span></label>
+                    <input type="file" class="form-control" id="animSourceImage" accept="image/*" required>
+                    <small style="color: #64748b; font-size: 0.85rem;">Upload the image to animate</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Animation Effect <span style="color: #ef4444;">*</span></label>
+                    <textarea class="form-control" id="animationEffect" rows="3" required placeholder="Describe the animation effect you want to apply..."></textarea>
+                    <small style="color: #64748b; font-size: 0.85rem;">E.g., zoom in, pan left to right, fade in, etc.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Animation Type</label>
+                    <select class="form-control" id="animationType">
+                        <option value="loop">Loop</option>
+                        <option value="bounce">Bounce</option>
+                        <option value="fade">Fade</option>
+                        <option value="zoom">Zoom</option>
+                        <option value="pan">Pan</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-primary" id="convertImageToAnimationBtn">
+                    <i class="ti ti-gif"></i>
+                    Create Animation
                 </button>
             </form>
         </div>

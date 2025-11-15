@@ -131,6 +131,9 @@ class KeywordTrackingRequest(BaseModel):
     seo_project_id: int
     keyword: str
 
+class VoiceSearchRequest(BaseModel):
+    content: str
+
 
 # ========== SEO PROJECTS ==========
 
@@ -613,13 +616,16 @@ Generate a personalized, professional outreach email that:
 4. Is concise and respectful
 5. Includes a clear call-to-action
 
-Return JSON with: {{"subject": "...", "body": "..."}}
+Return ONLY valid JSON with this exact structure:
+{{"subject": "Your email subject here", "body": "Your email body here"}}
+
+No markdown, no explanations, just the JSON.
 """
         
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an expert SEO outreach specialist. Return only valid JSON."},
+                {"role": "system", "content": "You are an expert SEO outreach specialist. Return ONLY valid JSON with subject and body keys. No markdown formatting."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.8,
@@ -628,15 +634,33 @@ Return JSON with: {{"subject": "...", "body": "..."}}
         
         # Get response content
         response_content = response.choices[0].message.content.strip()
+        print(f"OpenAI response: {response_content}")
         
         # Remove markdown if present
         if response_content.startswith('```'):
-            response_content = response_content.split('```')[1]
-            if response_content.startswith('json'):
-                response_content = response_content[4:]
+            lines = response_content.split('\n')
+            response_content = '\n'.join(lines[1:-1])  # Remove first and last line
             response_content = response_content.strip()
         
-        email_draft = json.loads(response_content)
+        # Try to parse JSON
+        try:
+            email_draft = json.loads(response_content)
+            
+            # Ensure required keys exist
+            if 'subject' not in email_draft or 'body' not in email_draft:
+                # Fallback to creating structure
+                email_draft = {
+                    "subject": "Partnership Opportunity - Quality Backlink Exchange",
+                    "body": response_content if isinstance(response_content, str) else "Regarding a potential collaboration opportunity..."
+                }
+        except json.JSONDecodeError as e:
+            print(f"JSON decode failed: {str(e)}")
+            print(f"Content: {response_content}")
+            # Create fallback email
+            email_draft = {
+                "subject": "Partnership Opportunity - Quality Backlink Exchange",
+                "body": f"Hi,\n\nI hope this email finds you well. I'm reaching out from {project['website_url']} regarding a potential collaboration.\n\nWe've been following your work at {request.target_url} and believe there could be mutual value in connecting our audiences.\n\nWould you be interested in discussing how we might work together?\n\nBest regards"
+            }
         
         # Save backlink record
         query = """
@@ -662,11 +686,6 @@ Return JSON with: {{"subject": "...", "body": "..."}}
             "email_draft": email_draft
         }
     
-    except json.JSONDecodeError:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate email draft"
-        )
     except HTTPException:
         raise
     except Exception as e:
@@ -869,9 +888,12 @@ async def get_keyword_history(
 
 # ========== VOICE & SEMANTIC SEARCH ==========
 
+class VoiceSearchRequest(BaseModel):
+    content: str
+
 @router.post("/optimize-voice-search")
 async def optimize_for_voice_search(
-    content: str,
+    request: VoiceSearchRequest,
     current_user: dict = Depends(get_current_user)
 ):
     """Optimize content for voice and semantic search"""
@@ -886,7 +908,7 @@ async def optimize_for_voice_search(
 Analyze and optimize the following content for voice search and semantic SEO.
 
 Content:
-{content}
+{request.content}
 
 Provide JSON response with:
 1. voice_search_score (0-100)
