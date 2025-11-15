@@ -392,10 +392,43 @@ async def communication_page(request: Request):
         {
             "request": request,
             "show_sidebar": True,
-            "show_navbar": True
+            
         }
     )
 
+
+# Task Management Page
+@app.get("/admin/tasks", response_class=HTMLResponse)
+async def admin_tasks_page(request: Request):
+    return templates.TemplateResponse(
+        "admin/tasks.html",
+        {"request": request, "show_sidebar": True}
+    )
+
+# Financial P&L Page
+@app.get("/admin/financial", response_class=HTMLResponse)
+async def admin_financial_page(request: Request):
+    return templates.TemplateResponse(
+        "admin/financial.html",
+        {"request": request, "show_sidebar": True}
+    )
+
+# User Management Page
+@app.get("/admin/users", response_class=HTMLResponse)
+async def admin_users_page(request: Request):
+    return templates.TemplateResponse(
+        "admin/users.html",
+        {"request": request, "show_sidebar": True}
+    )
+
+# Campaign Reports Page (Client)
+@app.get("/client/campaigns", response_class=HTMLResponse)
+async def client_campaigns_page(request: Request):
+    return templates.TemplateResponse(
+        "client/campaigns.html",
+        {"request": request, "show_sidebar": True}
+    )
+    
 
 # ========== HEALTH CHECK ==========
 

@@ -14,7 +14,7 @@ from app.api.v1.endpoints import (
     admin,
     employees,
 #     dashboard,
-#     tasks,
+    tasks,
 #     messages,
     communication,
 #     content,
@@ -40,7 +40,7 @@ api_router.include_router(admin.router, prefix="/admin", tags=["Admin"])
 api_router.include_router(employees.router, prefix="/employees", tags=["Employees"])
 
 # api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
-# api_router.include_router(tasks.router, prefix="/tasks", tags=["Tasks"])
+api_router.include_router(tasks.router, prefix="/tasks", tags=["Tasks"])
 # api_router.include_router(messages.router, prefix="/messages", tags=["Messages"])
 api_router.include_router(communication.router, prefix="/communication", tags=["Communication"])
 # api_router.include_router(content.router, prefix="/content", tags=["Content"])

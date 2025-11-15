@@ -671,3 +671,5 @@ async def update_client_profile(
             cursor.close()
         if connection:
             connection.close()
+
+            
