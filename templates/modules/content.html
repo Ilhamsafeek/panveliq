@@ -1,0 +1,604 @@
+{% extends "base.html" %}
+
+{% block title %}Content Intelligence Hub - PanvelIQ{% endblock %}
+
+{% block extra_css %}
+<style>
+    .content-hub-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .content-header {
+        margin-bottom: 2rem;
+    }
+
+    .content-header h1 {
+        font-size: 2rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+
+    .content-header p {
+        color: #64748b;
+        font-size: 0.95rem;
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .content-panel {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #e2e8f0;
+    }
+
+    .panel-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f1f5f9;
+    }
+
+    .panel-header i {
+        font-size: 1.5rem;
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .panel-header h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #334155;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #9926F3;
+        box-shadow: 0 0 0 3px rgba(153, 38, 243, 0.1);
+    }
+
+    .platform-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .platform-option {
+        padding: 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .platform-option:hover {
+        border-color: #9926F3;
+        background: #faf5ff;
+    }
+
+    .platform-option.active {
+        border-color: #9926F3;
+        background: linear-gradient(135deg, rgba(153, 38, 243, 0.1), rgba(29, 216, 252, 0.1));
+    }
+
+    .platform-option i {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .platform-option span {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #334155;
+    }
+
+    .content-type-selector {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
+    }
+
+    .type-chip {
+        padding: 0.5rem 1rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .type-chip:hover {
+        border-color: #9926F3;
+        background: #faf5ff;
+    }
+
+    .type-chip.active {
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        color: white;
+        border-color: transparent;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(153, 38, 243, 0.3);
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+        border-color: #9926F3;
+        color: #9926F3;
+    }
+
+    .generated-content {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .content-preview {
+        background: white;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        border: 1px solid #e2e8f0;
+    }
+
+    .hashtag-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .hashtag-tag {
+        background: linear-gradient(135deg, rgba(153, 38, 243, 0.1), rgba(29, 216, 252, 0.1));
+        color: #9926F3;
+        padding: 0.375rem 0.75rem;
+        border-radius: 16px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .optimization-score {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .score-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        color: white;
+    }
+
+    .score-details h4 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 0.25rem;
+    }
+
+    .score-details p {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin: 0;
+    }
+
+    .character-counter {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.875rem;
+        color: #64748b;
+        margin-top: 0.5rem;
+    }
+
+    .counter-bar {
+        height: 4px;
+        background: #e2e8f0;
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+
+    .counter-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #9926F3, #1DD8FC);
+        transition: width 0.3s;
+    }
+
+    .loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem;
+        text-align: center;
+    }
+
+    .loader-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #e2e8f0;
+        border-top-color: #9926F3;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #64748b;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .content-library {
+        margin-top: 2rem;
+    }
+
+    .content-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s;
+    }
+
+    .content-card:hover {
+        border-color: #9926F3;
+        box-shadow: 0 4px 12px rgba(153, 38, 243, 0.1);
+    }
+
+    .content-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .content-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: #64748b;
+        margin-top: 0.5rem;
+    }
+
+    .content-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+        border-color: #9926F3;
+        color: #9926F3;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .status-draft {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .status-approved {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .status-published {
+        background: #dbeafe;
+        color: #2563eb;
+    }
+
+    .guideline-box {
+        background: #f8fafc;
+        border-left: 4px solid #9926F3;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+    }
+
+    .guideline-box h4 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 0.5rem;
+    }
+
+    .guideline-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .guideline-list li {
+        font-size: 0.85rem;
+        color: #64748b;
+        padding: 0.25rem 0;
+        padding-left: 1.5rem;
+        position: relative;
+    }
+
+    .guideline-list li:before {
+        content: "→";
+        position: absolute;
+        left: 0;
+        color: #9926F3;
+    }
+
+    @media (max-width: 968px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .platform-selector {
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-hub-container">
+    <!-- Header -->
+    <div class="content-header">
+        <h1><i class="ti ti-file-text"></i> Content Intelligence Hub</h1>
+        <p>AI-powered content creation and optimization for social media platforms</p>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="content-grid">
+        <!-- Left Panel: Content Generator -->
+        <div class="content-panel">
+            <div class="panel-header">
+                <i class="ti ti-wand"></i>
+                <h2>AI Content Generator</h2>
+            </div>
+
+            <!-- Platform Selection -->
+            <div class="form-group">
+                <label>Select Platform</label>
+                <div class="platform-selector" id="platformSelector">
+                    <div class="platform-option" data-platform="instagram">
+                        <i class="ti ti-brand-instagram"></i>
+                        <span>Instagram</span>
+                    </div>
+                    <div class="platform-option" data-platform="facebook">
+                        <i class="ti ti-brand-facebook"></i>
+                        <span>Facebook</span>
+                    </div>
+                    <div class="platform-option" data-platform="linkedin">
+                        <i class="ti ti-brand-linkedin"></i>
+                        <span>LinkedIn</span>
+                    </div>
+                    <div class="platform-option" data-platform="twitter">
+                        <i class="ti ti-brand-twitter"></i>
+                        <span>Twitter</span>
+                    </div>
+                    <div class="platform-option" data-platform="pinterest">
+                        <i class="ti ti-brand-pinterest"></i>
+                        <span>Pinterest</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Type Selection -->
+            <div class="form-group">
+                <label>Content Type</label>
+                <div class="content-type-selector" id="contentTypeSelector">
+                    <div class="type-chip" data-type="text">Text Post</div>
+                    <div class="type-chip" data-type="image">Image Caption</div>
+                    <div class="type-chip" data-type="video">Video Caption</div>
+                    <div class="type-chip" data-type="carousel">Carousel Caption</div>
+                </div>
+            </div>
+
+            <!-- Client Selection -->
+            <div class="form-group">
+                <label>Select Client</label>
+                <select class="form-control" id="clientSelect">
+                    <option value="">Loading clients...</option>
+                </select>
+            </div>
+
+            <!-- Topic/Brief -->
+            <div class="form-group">
+                <label>Topic / Content Brief</label>
+                <textarea class="form-control" id="topicInput" rows="3" placeholder="Describe what you want to create content about..."></textarea>
+            </div>
+
+            <!-- Tone Selection -->
+            <div class="form-group">
+                <label>Tone</label>
+                <select class="form-control" id="toneSelect">
+                    <option value="professional">Professional</option>
+                    <option value="casual">Casual</option>
+                    <option value="friendly">Friendly</option>
+                    <option value="inspirational">Inspirational</option>
+                    <option value="humorous">Humorous</option>
+                    <option value="educational">Educational</option>
+                </select>
+            </div>
+
+            <!-- Target Audience -->
+            <div class="form-group">
+                <label>Target Audience (Optional)</label>
+                <input type="text" class="form-control" id="audienceInput" placeholder="e.g., Small business owners, Gen Z, Tech professionals">
+            </div>
+
+            <!-- Keywords -->
+            <div class="form-group">
+                <label>Keywords (Optional)</label>
+                <input type="text" class="form-control" id="keywordsInput" placeholder="Separate keywords with commas">
+            </div>
+
+            <!-- Generate Button -->
+            <button class="btn-primary" id="generateBtn" onclick="generateContent()">
+                <i class="ti ti-sparkles"></i>
+                Generate Content
+            </button>
+        </div>
+
+        <!-- Right Panel: Preview & Results -->
+        <div class="content-panel">
+            <div class="panel-header">
+                <i class="ti ti-eye"></i>
+                <h2>Content Preview</h2>
+            </div>
+
+            <div id="previewContainer">
+                <div class="empty-state">
+                    <i class="ti ti-file-text"></i>
+                    <h3>No Content Generated Yet</h3>
+                    <p>Fill in the form and click "Generate Content" to get AI-powered suggestions</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Platform Guidelines Section -->
+    <div class="content-panel" id="guidelinesSection" style="display: none;">
+        <div class="panel-header">
+            <i class="ti ti-info-circle"></i>
+            <h2>Platform Guidelines</h2>
+        </div>
+        <div id="guidelinesContent"></div>
+    </div>
+
+    <!-- Content Library -->
+    <div class="content-library">
+        <div class="content-panel">
+            <div class="panel-header">
+                <i class="ti ti-folder"></i>
+                <h2>Content Library</h2>
+            </div>
+
+            <div id="contentLibrary">
+                <div class="loading-state">
+                    <div class="loader-spinner"></div>
+                    <p>Loading content library...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/content.js"></script>
+{% endblock %}

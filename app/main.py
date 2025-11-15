@@ -397,39 +397,95 @@ async def communication_page(request: Request):
     )
 
 
-# Task Management Page
-@app.get("/admin/tasks", response_class=HTMLResponse)
-async def admin_tasks_page(request: Request):
-    return templates.TemplateResponse(
-        "admin/tasks.html",
-        {"request": request, "show_sidebar": True}
-    )
-
-# Financial P&L Page
-@app.get("/admin/financial", response_class=HTMLResponse)
-async def admin_financial_page(request: Request):
-    return templates.TemplateResponse(
-        "admin/financial.html",
-        {"request": request, "show_sidebar": True}
-    )
-
-# User Management Page
-@app.get("/admin/users", response_class=HTMLResponse)
-async def admin_users_page(request: Request):
-    return templates.TemplateResponse(
-        "admin/users.html",
-        {"request": request, "show_sidebar": True}
-    )
-
-# Campaign Reports Page (Client)
-@app.get("/client/campaigns", response_class=HTMLResponse)
-async def client_campaigns_page(request: Request):
-    return templates.TemplateResponse(
-        "client/campaigns.html",
-        {"request": request, "show_sidebar": True}
-    )
+@app.get("/modules/content", response_class=HTMLResponse)
+async def content_page(request: Request):
+    """Content Intelligence Hub module page"""
+    access_token: Optional[str] = request.cookies.get("access_token")
+    role = None
     
+    if not access_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.split(" ")[1]
+    
+    try:
+        if access_token:
+            payload = jwt.decode(
+                access_token,
+                settings.SECRET_KEY,
+                algorithms=[settings.ALGORITHM]
+            )
+            role = payload.get("role")
+        
+        if role and role not in ["admin", "employee"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin or Employee role required."
+            )
+        
+        return templates.TemplateResponse(
+            "modules/content.html",
+            {
+                "request": request,
+                "show_sidebar": True
+            }
+        )
+        
+    except JWTError:
+        return RedirectResponse(url="/auth/login")
+    except Exception as e:
+        print(f"Error accessing content page: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load page"
+        )
 
+
+@app.get("/modules/media-studio", response_class=HTMLResponse)
+async def media_studio_page(request: Request):
+    """
+    Creative Media Studio module page
+    """
+    access_token: Optional[str] = request.cookies.get("access_token")
+    role = None
+    
+    if not access_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.split(" ")[1]
+    
+    try:
+        if access_token:
+            payload = jwt.decode(
+                access_token,
+                settings.SECRET_KEY,
+                algorithms=[settings.ALGORITHM]
+            )
+            role = payload.get("role")
+        
+        # Only admin and employee can access
+        if role and role not in ["admin", "employee"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin or Employee role required."
+            )
+        
+        return templates.TemplateResponse(
+            "modules/media-studio.html",
+            {
+                "request": request,
+                "show_sidebar": True
+            }
+        )
+        
+    except JWTError:
+        return RedirectResponse(url="/auth/login")
+    except Exception as e:
+        print(f"Error accessing media studio page: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load page"
+        )
 # ========== HEALTH CHECK ==========
 
 @app.get("/health")

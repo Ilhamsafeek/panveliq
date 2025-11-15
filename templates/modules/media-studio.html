@@ -1,0 +1,657 @@
+{% extends "base.html" %}
+
+{% block title %}Creative Media Studio - PanvelIQ{% endblock %}
+
+{% block extra_css %}
+<style>
+    .media-studio-container {
+        padding: 2rem;
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    .studio-header {
+        margin-bottom: 2rem;
+    }
+
+    .studio-header h1 {
+        font-size: 2rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+
+    .studio-header p {
+        color: #64748b;
+        font-size: 0.95rem;
+    }
+
+    .creation-tools {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .tool-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        border: 2px solid #e2e8f0;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .tool-card:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #9926F3, #1DD8FC);
+        transform: scaleX(0);
+        transition: transform 0.3s;
+    }
+
+    .tool-card:hover {
+        transform: translateY(-4px);
+        border-color: #9926F3;
+        box-shadow: 0 8px 24px rgba(153, 38, 243, 0.2);
+    }
+
+    .tool-card:hover:before {
+        transform: scaleX(1);
+    }
+
+    .tool-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba(153, 38, 243, 0.1), rgba(29, 216, 252, 0.1));
+        margin-bottom: 1rem;
+    }
+
+    .tool-icon i {
+        font-size: 2rem;
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .tool-card h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+
+    .tool-card p {
+        color: #64748b;
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+
+    .content-panel {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 2rem;
+    }
+
+    .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f1f5f9;
+    }
+
+    .panel-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .panel-title i {
+        font-size: 1.5rem;
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .panel-title h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #334155;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #9926F3;
+        box-shadow: 0 0 0 3px rgba(153, 38, 243, 0.1);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(153, 38, 243, 0.3);
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-secondary {
+        background: white;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+        border-color: #9926F3;
+        color: #9926F3;
+    }
+
+    .asset-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .asset-card {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        transition: all 0.2s;
+    }
+
+    .asset-card:hover {
+        border-color: #9926F3;
+        box-shadow: 0 4px 12px rgba(153, 38, 243, 0.1);
+    }
+
+    .asset-preview {
+        width: 100%;
+        height: 200px;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .asset-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .asset-preview i {
+        font-size: 3rem;
+        color: #cbd5e1;
+    }
+
+    .asset-badge {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .asset-info {
+        padding: 1rem;
+    }
+
+    .asset-info h3 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+
+    .asset-meta {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin-bottom: 0.75rem;
+    }
+
+    .asset-actions {
+        display: flex;
+        gap: 0.5rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+        border-color: #9926F3;
+        color: #9926F3;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .modal-header h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .modal-close {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: none;
+        background: #f1f5f9;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-close:hover {
+        background: #e2e8f0;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem;
+        text-align: center;
+    }
+
+    .loader-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #e2e8f0;
+        border-top-color: #9926F3;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #64748b;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .size-options {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .size-chip {
+        padding: 0.5rem 1rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .size-chip:hover {
+        border-color: #9926F3;
+        background: #faf5ff;
+    }
+
+    .size-chip.active {
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        color: white;
+        border-color: transparent;
+    }
+
+    @media (max-width: 768px) {
+        .creation-tools {
+            grid-template-columns: 1fr;
+        }
+        
+        .asset-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="media-studio-container">
+    <!-- Header -->
+    <div class="studio-header">
+        <h1><i class="ti ti-photo"></i> Creative Media Studio</h1>
+        <p>AI-powered visual content creation with DALL-E, Synthesia, and Canva</p>
+    </div>
+
+    <!-- Creation Tools -->
+    <div class="creation-tools">
+        <div class="tool-card" onclick="openImageGenerator()">
+            <div class="tool-icon">
+                <i class="ti ti-photo-ai"></i>
+            </div>
+            <h3>AI Image Generator</h3>
+            <p>Create stunning images from text descriptions using DALL-E 3</p>
+        </div>
+
+        <div class="tool-card" onclick="openVideoGenerator()">
+            <div class="tool-icon">
+                <i class="ti ti-video"></i>
+            </div>
+            <h3>AI Video Creator</h3>
+            <p>Generate professional AI avatar videos with Synthesia</p>
+        </div>
+
+        <div class="tool-card" onclick="openDesignStudio()">
+            <div class="tool-icon">
+                <i class="ti ti-layout-dashboard"></i>
+            </div>
+            <h3>Design Studio</h3>
+            <p>Create social media graphics and presentations with Canva</p>
+        </div>
+    </div>
+
+    <!-- Media Library -->
+    <div class="content-panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <i class="ti ti-folder"></i>
+                <h2>Media Library</h2>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+                <select class="form-control" id="filterType" onchange="loadMediaAssets()" style="width: auto;">
+                    <option value="">All Types</option>
+                    <option value="image">Images</option>
+                    <option value="video">Videos</option>
+                    <option value="presentation">Designs</option>
+                </select>
+                <select class="form-control" id="filterClient" onchange="loadMediaAssets()" style="width: auto;">
+                    <option value="">All Clients</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="mediaLibrary">
+            <div class="loading-state">
+                <div class="loader-spinner"></div>
+                <p>Loading media library...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Generator Modal -->
+<div class="modal" id="imageModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="ti ti-photo-ai"></i> AI Image Generator</h2>
+            <button class="modal-close" onclick="closeModal('imageModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="imageForm" onsubmit="generateImage(event)">
+                <div class="form-group">
+                    <label>Select Client <span style="color: #ef4444;">*</span></label>
+                    <select class="form-control" id="imageClient" required>
+                        <option value="">Select client...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Image Description <span style="color: #ef4444;">*</span></label>
+                    <textarea class="form-control" id="imagePrompt" rows="4" required placeholder="Describe the image you want to create..."></textarea>
+                    <small style="color: #64748b; font-size: 0.85rem;">Be specific and descriptive for best results</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Image Size</label>
+                    <div class="size-options">
+                        <div class="size-chip active" data-size="1024x1024">Square (1024×1024)</div>
+                        <div class="size-chip" data-size="1024x1792">Portrait (1024×1792)</div>
+                        <div class="size-chip" data-size="1792x1024">Landscape (1792×1024)</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Quality</label>
+                    <select class="form-control" id="imageQuality">
+                        <option value="standard">Standard</option>
+                        <option value="hd">HD (Higher quality)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Style</label>
+                    <select class="form-control" id="imageStyle">
+                        <option value="vivid">Vivid (More dramatic)</option>
+                        <option value="natural">Natural (More realistic)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-primary" id="generateImageBtn">
+                    <i class="ti ti-sparkles"></i>
+                    Generate Image
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Video Generator Modal -->
+<div class="modal" id="videoModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="ti ti-video"></i> AI Video Creator</h2>
+            <button class="modal-close" onclick="closeModal('videoModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="videoForm" onsubmit="generateVideo(event)">
+                <div class="form-group">
+                    <label>Select Client <span style="color: #ef4444;">*</span></label>
+                    <select class="form-control" id="videoClient" required>
+                        <option value="">Select client...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Video Title <span style="color: #ef4444;">*</span></label>
+                    <input type="text" class="form-control" id="videoTitle" required placeholder="Enter video title">
+                </div>
+
+                <div class="form-group">
+                    <label>Video Script <span style="color: #ef4444;">*</span></label>
+                    <textarea class="form-control" id="videoScript" rows="6" required placeholder="Enter the narration text for your video..."></textarea>
+                    <small style="color: #64748b; font-size: 0.85rem;">This text will be spoken by the AI avatar</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Background</label>
+                    <select class="form-control" id="videoBackground">
+                        <option value="white">White</option>
+                        <option value="black">Black</option>
+                        <option value="blue">Blue</option>
+                        <option value="green">Green</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-primary" id="generateVideoBtn">
+                    <i class="ti ti-video-plus"></i>
+                    Generate Video
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Design Studio Modal -->
+<div class="modal" id="designModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="ti ti-layout-dashboard"></i> Design Studio</h2>
+            <button class="modal-close" onclick="closeModal('designModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="designForm" onsubmit="createDesign(event)">
+                <div class="form-group">
+                    <label>Select Client <span style="color: #ef4444;">*</span></label>
+                    <select class="form-control" id="designClient" required>
+                        <option value="">Select client...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Design Title <span style="color: #ef4444;">*</span></label>
+                    <input type="text" class="form-control" id="designTitle" required placeholder="Enter design title">
+                </div>
+
+                <div class="form-group">
+                    <label>Design Type <span style="color: #ef4444;">*</span></label>
+                    <select class="form-control" id="designType" required>
+                        <option value="social_post">Instagram Post</option>
+                        <option value="story">Instagram Story</option>
+                        <option value="facebook_post">Facebook Post</option>
+                        <option value="linkedin_post">LinkedIn Post</option>
+                        <option value="twitter_post">Twitter Post</option>
+                        <option value="presentation">Presentation</option>
+                        <option value="flyer">Flyer</option>
+                        <option value="poster">Poster</option>
+                        <option value="banner">Banner</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-primary" id="createDesignBtn">
+                    <i class="ti ti-plus"></i>
+                    Create Design
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/media-studio.js"></script>
+{% endblock %}

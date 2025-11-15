@@ -99,7 +99,7 @@ class Settings(BaseSettings):
     
     # Synthesia
     SYNTHESIA_API_KEY: Optional[str] = None
-    SYNTHESIA_AVATAR_ID: Optional[str] = None
+    SYNTHESIA_AVATAR_ID: Optional[str] = "anna_costume1_cameraA"  # Default avatar
     
     # File Storage
     UPLOAD_DIR: str = "./static/uploads"

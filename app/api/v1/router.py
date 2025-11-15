@@ -17,10 +17,10 @@ from app.api.v1.endpoints import (
     tasks,
 #     messages,
     communication,
-#     content,
+    content,
 #     social_media,
 #     seo,
-#     media_studio,
+    media_studio,
 #     ads,
 #     analytics,
 #     chatbot,
@@ -43,10 +43,10 @@ api_router.include_router(employees.router, prefix="/employees", tags=["Employee
 api_router.include_router(tasks.router, prefix="/tasks", tags=["Tasks"])
 # api_router.include_router(messages.router, prefix="/messages", tags=["Messages"])
 api_router.include_router(communication.router, prefix="/communication", tags=["Communication"])
-# api_router.include_router(content.router, prefix="/content", tags=["Content"])
+api_router.include_router(content.router, prefix="/content", tags=["Content"])
 # api_router.include_router(social_media.router, prefix="/social-media", tags=["Social Media"])
 # api_router.include_router(seo.router, prefix="/seo", tags=["SEO"])
-# api_router.include_router(media_studio.router, prefix="/media-studio", tags=["Media Studio"])
+api_router.include_router(media_studio.router, prefix="/media-studio", tags=["Media Studio"])
 # api_router.include_router(ads.router, prefix="/ads", tags=["Ads"])
 # api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 # api_router.include_router(chatbot.router, prefix="/chatbot", tags=["Chatbot"])
