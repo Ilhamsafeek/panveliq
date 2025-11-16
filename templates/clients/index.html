@@ -4,8 +4,6 @@
 
 {% block extra_css %}
 <style>
-  
-
     * {
         margin: 0;
         padding: 0;
@@ -407,7 +405,9 @@
     }
 
     @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     /* Modal */
@@ -522,20 +522,22 @@
 {% block content %}
 <div class="main-container">
     <!-- Page Header -->
-    <div class="page-header">
-        <div class="header-top">
-            <h1 class="page-title">Clients</h1>
-            <div class="header-actions">
-                <button class="btn btn-secondary" onclick="exportClients()">
-                    <i class="ti ti-download"></i>
-                    Export
-                </button>
-                <button class="btn btn-primary" onclick="refreshClients()" id="refreshBtn">
-                    <i class="ti ti-refresh"></i>
-                    Refresh
-                </button>
-            </div>
+    <div class="header-hero">
+        <div>
+            <h1><i class="ti ti-briefcase"></i> Clients</h1>
         </div>
+
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="exportClients()">
+                <i class="ti ti-download"></i>
+                Export
+            </button>
+            <button class="btn btn-primary" onclick="refreshClients()" id="refreshBtn">
+                <i class="ti ti-refresh"></i>
+                Refresh
+            </button>
+        </div>
+
     </div>
 
     <!-- Statistics Cards (Admin Only) -->
@@ -594,13 +596,8 @@
         <div class="filters-grid">
             <div class="form-group">
                 <label class="form-label">Search</label>
-                <input 
-                    type="text" 
-                    class="form-input" 
-                    id="searchInput" 
-                    placeholder="Search by name or email..."
-                    onkeyup="filterClients()"
-                >
+                <input type="text" class="form-input" id="searchInput" placeholder="Search by name or email..."
+                    onkeyup="filterClients()">
             </div>
 
             <div class="form-group">
@@ -680,142 +677,142 @@
 
 {% block extra_js %}
 <script>
-// Initialize or extend APP_CONFIG
-window.APP_CONFIG = window.APP_CONFIG || {
-    apiBaseUrl: '/api/v1'
-};
+    // Initialize or extend APP_CONFIG
+    window.APP_CONFIG = window.APP_CONFIG || {
+        apiBaseUrl: '/api/v1'
+    };
 
-let currentUser = null;
-let allClients = [];
-let selectedClientId = null;
+    let currentUser = null;
+    let allClients = [];
+    let selectedClientId = null;
 
-// Initialize page
-document.addEventListener('DOMContentLoaded', async () => {
-    const token = localStorage.getItem('access_token') || getCookie('access_token');
-    
-    if (!token) {
-        window.location.href = '/auth/login';
-        return;
-    }
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', async () => {
+        const token = localStorage.getItem('access_token') || getCookie('access_token');
 
-    try {
-        // Get current user
-        const userResponse = await fetch(window.APP_CONFIG.apiBaseUrl + '/auth/me', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-
-        if (userResponse.ok) {
-            currentUser = await userResponse.json();
-            
-            // Show stats for admin
-            if (currentUser.role === 'admin') {
-                document.getElementById('statsGrid').style.display = 'grid';
-                loadStatistics(token);
-            }
-
-            // Load clients based on role
-            if (currentUser.role === 'admin') {
-                loadAllClients(token);
-            } else if (currentUser.role === 'employee') {
-                loadMyClients(token);
-            } else {
-                showError('Access denied. This page is for admin and employees only.');
-            }
-        } else {
+        if (!token) {
             window.location.href = '/auth/login';
+            return;
         }
-    } catch (error) {
-        console.error('Initialization error:', error);
-        showError('Failed to load page');
-    }
-});
 
-// Load statistics (Admin only)
-async function loadStatistics(token) {
-    try {
-        const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/clients/stats/overview', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+        try {
+            // Get current user
+            const userResponse = await fetch(window.APP_CONFIG.apiBaseUrl + '/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
 
-        if (response.ok) {
-            const data = await response.json();
-            const stats = data.statistics;
+            if (userResponse.ok) {
+                currentUser = await userResponse.json();
 
-            document.getElementById('totalClients').textContent = stats.total_clients;
-            document.getElementById('activeClients').textContent = stats.active_clients;
-            document.getElementById('totalRevenue').textContent = `$${stats.total_revenue.toFixed(2)}`;
+                // Show stats for admin
+                if (currentUser.role === 'admin') {
+                    document.getElementById('statsGrid').style.display = 'grid';
+                    loadStatistics(token);
+                }
 
-            // Calculate enterprise clients
-            const enterpriseCount = stats.clients_by_tier.find(t => t.package_tier === 'enterprise')?.count || 0;
-            document.getElementById('enterpriseClients').textContent = enterpriseCount;
+                // Load clients based on role
+                if (currentUser.role === 'admin') {
+                    loadAllClients(token);
+                } else if (currentUser.role === 'employee') {
+                    loadMyClients(token);
+                } else {
+                    showError('Access denied. This page is for admin and employees only.');
+                }
+            } else {
+                window.location.href = '/auth/login';
+            }
+        } catch (error) {
+            console.error('Initialization error:', error);
+            showError('Failed to load page');
         }
-    } catch (error) {
-        console.error('Error loading statistics:', error);
+    });
+
+    // Load statistics (Admin only)
+    async function loadStatistics(token) {
+        try {
+            const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/clients/stats/overview', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const stats = data.statistics;
+
+                document.getElementById('totalClients').textContent = stats.total_clients;
+                document.getElementById('activeClients').textContent = stats.active_clients;
+                document.getElementById('totalRevenue').textContent = `$${stats.total_revenue.toFixed(2)}`;
+
+                // Calculate enterprise clients
+                const enterpriseCount = stats.clients_by_tier.find(t => t.package_tier === 'enterprise')?.count || 0;
+                document.getElementById('enterpriseClients').textContent = enterpriseCount;
+            }
+        } catch (error) {
+            console.error('Error loading statistics:', error);
+        }
     }
-}
 
-// Load all clients (Admin)
-async function loadAllClients(token) {
-    try {
-        const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/clients/all', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+    // Load all clients (Admin)
+    async function loadAllClients(token) {
+        try {
+            const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/clients/all', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
 
-        if (response.ok) {
-            const data = await response.json();
-            allClients = data.clients;
-            renderClientsTable(allClients);
-        } else {
+            if (response.ok) {
+                const data = await response.json();
+                allClients = data.clients;
+                renderClientsTable(allClients);
+            } else {
+                showError('Failed to load clients');
+            }
+        } catch (error) {
+            console.error('Error loading clients:', error);
             showError('Failed to load clients');
         }
-    } catch (error) {
-        console.error('Error loading clients:', error);
-        showError('Failed to load clients');
     }
-}
 
-// Load assigned clients (Employee)
-async function loadMyClients(token) {
-    try {
-        const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/clients/my-clients', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+    // Load assigned clients (Employee)
+    async function loadMyClients(token) {
+        try {
+            const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/clients/my-clients', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
 
-        if (response.ok) {
-            const data = await response.json();
-            allClients = data.clients;
-            renderClientsTable(allClients);
-        } else {
+            if (response.ok) {
+                const data = await response.json();
+                allClients = data.clients;
+                renderClientsTable(allClients);
+            } else {
+                showError('Failed to load assigned clients');
+            }
+        } catch (error) {
+            console.error('Error loading clients:', error);
             showError('Failed to load assigned clients');
         }
-    } catch (error) {
-        console.error('Error loading clients:', error);
-        showError('Failed to load assigned clients');
     }
-}
 
-// Render clients table
-function renderClientsTable(clients) {
-    
-    const tableContent = document.getElementById('tableContent');
-    document.getElementById('clientCount').textContent = `${clients.length} ${clients.length === 1 ? 'client' : 'clients'}`;
+    // Render clients table
+    function renderClientsTable(clients) {
 
-    if (clients.length === 0) {
-        tableContent.innerHTML = `
+        const tableContent = document.getElementById('tableContent');
+        document.getElementById('clientCount').textContent = `${clients.length} ${clients.length === 1 ? 'client' : 'clients'}`;
+
+        if (clients.length === 0) {
+            tableContent.innerHTML = `
             <div class="empty-state">
                 <i class="ti ti-users"></i>
                 <h3>No clients found</h3>
                 <p>There are no clients matching your criteria</p>
             </div>
         `;
-        return;
-    }
+            return;
+        }
 
-    const actionsColumn = currentUser.role === 'admin' 
-        ? '<th>Actions</th>' 
-        : '';
+        const actionsColumn = currentUser.role === 'admin'
+            ? '<th>Actions</th>'
+            : '';
 
-    tableContent.innerHTML = `
+        tableContent.innerHTML = `
         <table class="clients-table">
             <thead>
                 <tr>
@@ -883,180 +880,180 @@ function renderClientsTable(clients) {
             </tbody>
         </table>
     `;
-}
+    }
 
-// Filter clients
-function filterClients() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const statusFilter = document.getElementById('statusFilter').value;
-    const packageFilter = document.getElementById('packageFilter').value;
+    // Filter clients
+    function filterClients() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value;
+        const packageFilter = document.getElementById('packageFilter').value;
 
-    const filtered = allClients.filter(client => {
-        const matchesSearch = 
-            client.full_name.toLowerCase().includes(searchTerm) ||
-            client.email.toLowerCase().includes(searchTerm) ||
-            (client.business_name && client.business_name.toLowerCase().includes(searchTerm));
+        const filtered = allClients.filter(client => {
+            const matchesSearch =
+                client.full_name.toLowerCase().includes(searchTerm) ||
+                client.email.toLowerCase().includes(searchTerm) ||
+                (client.business_name && client.business_name.toLowerCase().includes(searchTerm));
 
-        const matchesStatus = !statusFilter || client.status === statusFilter;
-        const matchesPackage = !packageFilter || (client.package_tier && client.package_tier.toLowerCase() === packageFilter);
+            const matchesStatus = !statusFilter || client.status === statusFilter;
+            const matchesPackage = !packageFilter || (client.package_tier && client.package_tier.toLowerCase() === packageFilter);
 
-        return matchesSearch && matchesStatus && matchesPackage;
-    });
-
-    renderClientsTable(filtered);
-}
-
-// Reset filters
-function resetFilters() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('statusFilter').value = '';
-    document.getElementById('packageFilter').value = '';
-    renderClientsTable(allClients);
-}
-
-// View client details
-function viewClient(clientId) {
-    window.location.href = `/clients/${clientId}`;
-}
-
-// Open assign employee modal
-async function openAssignEmployeeModal(clientId) {
-    selectedClientId = clientId;
-    const modal = document.getElementById('assignEmployeeModal');
-    const token = localStorage.getItem('access_token') || getCookie('access_token');
-
-    try {
-        // Load employees
-        const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/admin/employees', {
-            headers: { 'Authorization': 'Bearer ' + token }
+            return matchesSearch && matchesStatus && matchesPackage;
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            const select = document.getElementById('employeeSelect');
-            
-            select.innerHTML = '<option value="">Select an employee</option>' +
-                data.employees.map(emp => 
-                    `<option value="${emp.user_id}">${emp.full_name} (${emp.email})</option>`
-                ).join('');
+        renderClientsTable(filtered);
+    }
+
+    // Reset filters
+    function resetFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('statusFilter').value = '';
+        document.getElementById('packageFilter').value = '';
+        renderClientsTable(allClients);
+    }
+
+    // View client details
+    function viewClient(clientId) {
+        window.location.href = `/clients/${clientId}`;
+    }
+
+    // Open assign employee modal
+    async function openAssignEmployeeModal(clientId) {
+        selectedClientId = clientId;
+        const modal = document.getElementById('assignEmployeeModal');
+        const token = localStorage.getItem('access_token') || getCookie('access_token');
+
+        try {
+            // Load employees
+            const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/admin/employees', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const select = document.getElementById('employeeSelect');
+
+                select.innerHTML = '<option value="">Select an employee</option>' +
+                    data.employees.map(emp =>
+                        `<option value="${emp.user_id}">${emp.full_name} (${emp.email})</option>`
+                    ).join('');
+            }
+        } catch (error) {
+            console.error('Error loading employees:', error);
+            showError('Failed to load employees');
         }
-    } catch (error) {
-        console.error('Error loading employees:', error);
-        showError('Failed to load employees');
+
+        modal.classList.add('active');
     }
 
-    modal.classList.add('active');
-}
-
-// Close modal
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('active');
-}
-
-// Confirm assign employee
-async function confirmAssignEmployee() {
-    const employeeId = document.getElementById('employeeSelect').value;
-    
-    if (!employeeId) {
-        showError('Please select an employee');
-        return;
+    // Close modal
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
     }
 
-    const token = localStorage.getItem('access_token') || getCookie('access_token');
+    // Confirm assign employee
+    async function confirmAssignEmployee() {
+        const employeeId = document.getElementById('employeeSelect').value;
 
-    try {
-        const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/clients/assign-employee', {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                client_id: selectedClientId,
-                employee_id: parseInt(employeeId)
-            })
-        });
+        if (!employeeId) {
+            showError('Please select an employee');
+            return;
+        }
 
-        if (response.ok) {
-            showSuccess('Employee assigned successfully');
-            closeModal('assignEmployeeModal');
-            refreshClients();
+        const token = localStorage.getItem('access_token') || getCookie('access_token');
+
+        try {
+            const response = await fetch(window.APP_CONFIG.apiBaseUrl + '/clients/assign-employee', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    client_id: selectedClientId,
+                    employee_id: parseInt(employeeId)
+                })
+            });
+
+            if (response.ok) {
+                showSuccess('Employee assigned successfully');
+                closeModal('assignEmployeeModal');
+                refreshClients();
+            } else {
+                const error = await response.json();
+                showError(error.detail || 'Failed to assign employee');
+            }
+        } catch (error) {
+            console.error('Error assigning employee:', error);
+            showError('Failed to assign employee');
+        }
+    }
+
+    // Refresh clients
+    async function refreshClients() {
+        const token = localStorage.getItem('access_token') || getCookie('access_token');
+        const btn = document.getElementById('refreshBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ti ti-loader"></i> Refreshing...';
+
+        if (currentUser.role === 'admin') {
+            await loadAllClients(token);
+            await loadStatistics(token);
         } else {
-            const error = await response.json();
-            showError(error.detail || 'Failed to assign employee');
+            await loadMyClients(token);
         }
-    } catch (error) {
-        console.error('Error assigning employee:', error);
-        showError('Failed to assign employee');
-    }
-}
 
-// Refresh clients
-async function refreshClients() {
-    const token = localStorage.getItem('access_token') || getCookie('access_token');
-    const btn = document.getElementById('refreshBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="ti ti-loader"></i> Refreshing...';
-
-    if (currentUser.role === 'admin') {
-        await loadAllClients(token);
-        await loadStatistics(token);
-    } else {
-        await loadMyClients(token);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-refresh"></i> Refresh';
     }
 
-    btn.disabled = false;
-    btn.innerHTML = '<i class="ti ti-refresh"></i> Refresh';
-}
+    // Export clients
+    function exportClients() {
+        // Implementation for CSV export
+        showInfo('Export feature coming soon');
+    }
 
-// Export clients
-function exportClients() {
-    // Implementation for CSV export
-    showInfo('Export feature coming soon');
-}
+    // Utility functions
+    function getInitials(name) {
+        if (!name) return 'C';
+        return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    }
 
-// Utility functions
-function getInitials(name) {
-    if (!name) return 'C';
-    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-}
+    function getStatusClass(status) {
+        const classes = {
+            'active': 'success',
+            'pending': 'warning',
+            'suspended': 'error'
+        };
+        return classes[status] || 'info';
+    }
 
-function getStatusClass(status) {
-    const classes = {
-        'active': 'success',
-        'pending': 'warning',
-        'suspended': 'error'
-    };
-    return classes[status] || 'info';
-}
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
 
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-    });
-}
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
 
-function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-}
+    // Notification functions
+    function showSuccess(message) {
+        alert(message);
+    }
 
-// Notification functions
-function showSuccess(message) {
-    alert(message);
-}
+    function showError(message) {
+        alert(message);
+    }
 
-function showError(message) {
-    alert(message);
-}
-
-function showInfo(message) {
-    alert(message);
-}
+    function showInfo(message) {
+        alert(message);
+    }
 </script>
 {% endblock %}

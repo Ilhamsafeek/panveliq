@@ -281,7 +281,9 @@
     }
 
     @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     /* Modal */
@@ -423,8 +425,12 @@
 
 {% block content %}
 <div class="admin-container">
-    <div class="page-header">
-        <h1>Onboarding Verifications</h1>
+    <div class="header-hero">
+        
+        <h1>
+            <i class="ti ti-user-check"></i>
+            Onboarding Verifications
+        </h1>
         <div class="stats-badge">
             <i class="ti ti-clock"></i>
             <span id="pendingCount">0 Pending</span>
@@ -462,11 +468,8 @@
                 <label class="form-label" for="discussionNotes">
                     Discussion Notes (Optional)
                 </label>
-                <textarea 
-                    id="discussionNotes" 
-                    class="form-textarea" 
-                    placeholder="Add any notes or reasons for your decision..."
-                ></textarea>
+                <textarea id="discussionNotes" class="form-textarea"
+                    placeholder="Add any notes or reasons for your decision..."></textarea>
             </div>
         </div>
         <div class="modal-footer">
@@ -485,64 +488,64 @@
 
 {% block extra_js %}
 <script>
-let currentAction = null;
-let currentOnboardingId = null;
+    let currentAction = null;
+    let currentOnboardingId = null;
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadPendingVerifications();
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        loadPendingVerifications();
+    });
 
-async function loadPendingVerifications() {
-    const loadingState = document.getElementById('loadingState');
-    const verificationsGrid = document.getElementById('verificationsGrid');
-    const emptyState = document.getElementById('emptyState');
-    
-    loadingState.style.display = 'block';
-    verificationsGrid.style.display = 'none';
-    emptyState.style.display = 'none';
-    
-    try {
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/onboarding/pending-verifications`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+    async function loadPendingVerifications() {
+        const loadingState = document.getElementById('loadingState');
+        const verificationsGrid = document.getElementById('verificationsGrid');
+        const emptyState = document.getElementById('emptyState');
+
+        loadingState.style.display = 'block';
+        verificationsGrid.style.display = 'none';
+        emptyState.style.display = 'none';
+
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/onboarding/pending-verifications`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load verifications');
             }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to load verifications');
-        }
-        
-        const data = await response.json();
-        
-        loadingState.style.display = 'none';
-        
-        if (data.status === 'success' && data.pending_verifications && data.pending_verifications.length > 0) {
-            renderVerifications(data.pending_verifications);
-            verificationsGrid.style.display = 'grid';
-            document.getElementById('pendingCount').textContent = `${data.count} Pending`;
-        } else {
-            emptyState.style.display = 'block';
-            document.getElementById('pendingCount').textContent = '0 Pending';
-        }
-        
-    } catch (error) {
-        console.error('Error loading verifications:', error);
-        showAlert('Failed to load verifications. Please try again.', 'error');
-        loadingState.style.display = 'none';
-    }
-}
 
-function renderVerifications(verifications) {
-    const grid = document.getElementById('verificationsGrid');
-    grid.innerHTML = '';
-    
-    verifications.forEach(verification => {
-        const card = document.createElement('div');
-        card.className = 'verification-card';
-        
-        const vData = verification.verification_data || {};
-        
-        card.innerHTML = `
+            const data = await response.json();
+
+            loadingState.style.display = 'none';
+
+            if (data.status === 'success' && data.pending_verifications && data.pending_verifications.length > 0) {
+                renderVerifications(data.pending_verifications);
+                verificationsGrid.style.display = 'grid';
+                document.getElementById('pendingCount').textContent = `${data.count} Pending`;
+            } else {
+                emptyState.style.display = 'block';
+                document.getElementById('pendingCount').textContent = '0 Pending';
+            }
+
+        } catch (error) {
+            console.error('Error loading verifications:', error);
+            showAlert('Failed to load verifications. Please try again.', 'error');
+            loadingState.style.display = 'none';
+        }
+    }
+
+    function renderVerifications(verifications) {
+        const grid = document.getElementById('verificationsGrid');
+        grid.innerHTML = '';
+
+        verifications.forEach(verification => {
+            const card = document.createElement('div');
+            card.className = 'verification-card';
+
+            const vData = verification.verification_data || {};
+
+            card.innerHTML = `
             <div class="card-header">
                 <div class="client-info">
                     <h3>${verification.full_name}</h3>
@@ -611,112 +614,112 @@ function renderVerifications(verifications) {
                 </button>
             </div>
         `;
-        
-        grid.appendChild(card);
-    });
-}
 
-function openModal(action, onboardingId) {
-    currentAction = action;
-    currentOnboardingId = onboardingId;
-    
-    const modal = document.getElementById('verificationModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const confirmBtn = document.getElementById('confirmBtn');
-    const confirmText = document.getElementById('confirmText');
-    
-    if (action === 'approve') {
-        modalTitle.textContent = 'Approve Onboarding';
-        confirmText.textContent = 'Approve';
-        confirmBtn.className = 'btn btn-confirm';
-        confirmBtn.style.background = '#10B981';
-    } else {
-        modalTitle.textContent = 'Reject Onboarding';
-        confirmText.textContent = 'Reject';
-        confirmBtn.className = 'btn btn-confirm';
-        confirmBtn.style.background = '#EF4444';
-    }
-    
-    document.getElementById('discussionNotes').value = '';
-    modal.classList.add('active');
-}
-
-function closeModal() {
-    document.getElementById('verificationModal').classList.remove('active');
-    currentAction = null;
-    currentOnboardingId = null;
-}
-
-async function confirmAction() {
-    if (!currentAction || !currentOnboardingId) return;
-    
-    const discussionNotes = document.getElementById('discussionNotes').value.trim();
-    const confirmBtn = document.getElementById('confirmBtn');
-    
-    confirmBtn.disabled = true;
-    confirmBtn.innerHTML = '<div style="width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>';
-    
-    try {
-        const status = currentAction === 'approve' ? 'verified' : 'rejected';
-        
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/onboarding/verify/${currentOnboardingId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-            },
-            body: JSON.stringify({
-                verification_status: status,
-                discussion_notes: discussionNotes || null
-            })
+            grid.appendChild(card);
         });
-        
-        const data = await response.json();
-        
-        if (response.ok && data.status === 'success') {
-            showAlert(`Onboarding ${status} successfully!`, 'success');
-            closeModal();
-            
-            // Reload the list after 1 second
-            setTimeout(() => {
-                loadPendingVerifications();
-            }, 1000);
-        } else {
-            throw new Error(data.detail || 'Action failed');
-        }
-        
-    } catch (error) {
-        console.error('Error:', error);
-        showAlert(error.message || 'Failed to process verification', 'error');
-        confirmBtn.disabled = false;
-        confirmBtn.innerHTML = `<i class="ti ti-check"></i><span>${currentAction === 'approve' ? 'Approve' : 'Reject'}</span>`;
     }
-}
 
-function showAlert(message, type) {
-    const alertContainer = document.getElementById('alertContainer');
-    const icon = type === 'success' ? 'ti-check-circle' : 'ti-alert-circle';
-    
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${type}`;
-    alert.innerHTML = `
+    function openModal(action, onboardingId) {
+        currentAction = action;
+        currentOnboardingId = onboardingId;
+
+        const modal = document.getElementById('verificationModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const confirmBtn = document.getElementById('confirmBtn');
+        const confirmText = document.getElementById('confirmText');
+
+        if (action === 'approve') {
+            modalTitle.textContent = 'Approve Onboarding';
+            confirmText.textContent = 'Approve';
+            confirmBtn.className = 'btn btn-confirm';
+            confirmBtn.style.background = '#10B981';
+        } else {
+            modalTitle.textContent = 'Reject Onboarding';
+            confirmText.textContent = 'Reject';
+            confirmBtn.className = 'btn btn-confirm';
+            confirmBtn.style.background = '#EF4444';
+        }
+
+        document.getElementById('discussionNotes').value = '';
+        modal.classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('verificationModal').classList.remove('active');
+        currentAction = null;
+        currentOnboardingId = null;
+    }
+
+    async function confirmAction() {
+        if (!currentAction || !currentOnboardingId) return;
+
+        const discussionNotes = document.getElementById('discussionNotes').value.trim();
+        const confirmBtn = document.getElementById('confirmBtn');
+
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<div style="width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>';
+
+        try {
+            const status = currentAction === 'approve' ? 'verified' : 'rejected';
+
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/onboarding/verify/${currentOnboardingId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                },
+                body: JSON.stringify({
+                    verification_status: status,
+                    discussion_notes: discussionNotes || null
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.status === 'success') {
+                showAlert(`Onboarding ${status} successfully!`, 'success');
+                closeModal();
+
+                // Reload the list after 1 second
+                setTimeout(() => {
+                    loadPendingVerifications();
+                }, 1000);
+            } else {
+                throw new Error(data.detail || 'Action failed');
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert(error.message || 'Failed to process verification', 'error');
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = `<i class="ti ti-check"></i><span>${currentAction === 'approve' ? 'Approve' : 'Reject'}</span>`;
+        }
+    }
+
+    function showAlert(message, type) {
+        const alertContainer = document.getElementById('alertContainer');
+        const icon = type === 'success' ? 'ti-check-circle' : 'ti-alert-circle';
+
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.innerHTML = `
         <i class="ti ${icon}"></i>
         <span>${message}</span>
     `;
-    
-    alertContainer.innerHTML = '';
-    alertContainer.appendChild(alert);
-    
-    setTimeout(() => {
-        alert.remove();
-    }, 5000);
-}
 
-// Close modal when clicking outside
-document.getElementById('verificationModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeModal();
+        alertContainer.innerHTML = '';
+        alertContainer.appendChild(alert);
+
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
     }
-});
+
+    // Close modal when clicking outside
+    document.getElementById('verificationModal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
 </script>
 {% endblock %}

@@ -4,9 +4,10 @@
 
 {% block extra_css %}
 <style>
-    .ti{
+    .ti {
         font-size: 20px;
     }
+
     .seo-container {
         padding: 2rem;
         max-width: 1400px;
@@ -81,7 +82,7 @@
         background: white;
         border-radius: 12px;
         padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         margin-bottom: 1.5rem;
     }
 
@@ -294,7 +295,7 @@
         display: inline-block;
         width: 20px;
         height: 20px;
-        border: 3px solid rgba(255,255,255,0.3);
+        border: 3px solid rgba(255, 255, 255, 0.3);
         border-top-color: white;
         border-radius: 50%;
         animation: spin 1s linear infinite;
@@ -302,7 +303,9 @@
     }
 
     @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .empty-state {
@@ -398,7 +401,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0,0,0,0.5);
+        background: rgba(0, 0, 0, 0.5);
         z-index: 1000;
         align-items: center;
         justify-content: center;
@@ -443,9 +446,11 @@
 
 {% block content %}
 <div class="seo-container">
-    <div class="seo-header">
-        <h1><i class="ti ti-search"></i> Smart SEO Toolkit</h1>
-        <p>Enhance and automate your SEO with AI-powered tools</p>
+    <div class="header-hero">
+        <div>
+            <h1><i class="ti ti-search"></i> Smart SEO Toolkit</h1>
+            <p>Enhance and automate your SEO with AI-powered tools</p>
+        </div>
     </div>
 
     <!-- Tabs -->
@@ -502,7 +507,8 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Content</label>
-                <textarea id="opt-content" class="form-control form-control-textarea" placeholder="Paste your content here..."></textarea>
+                <textarea id="opt-content" class="form-control form-control-textarea"
+                    placeholder="Paste your content here..."></textarea>
             </div>
             <button class="btn-primary" onclick="optimizeContent()">
                 <i class="ti ti-wand"></i> Analyze & Optimize
@@ -612,7 +618,8 @@
             <h3 class="seo-card-title">Voice & Semantic Search Optimization</h3>
             <div class="form-group">
                 <label class="form-label">Content to Optimize</label>
-                <textarea id="voice-content" class="form-control form-control-textarea" placeholder="Paste your content here..."></textarea>
+                <textarea id="voice-content" class="form-control form-control-textarea"
+                    placeholder="Paste your content here..."></textarea>
             </div>
             <button class="btn-primary" onclick="optimizeVoiceSearch()">
                 <i class="ti ti-microphone"></i> Optimize for Voice Search
@@ -652,195 +659,195 @@
 </div>
 
 <script>
-// API Configuration
-const API_BASE = '/api/v1/seo';
-const token = localStorage.getItem('access_token');
+    // API Configuration
+    const API_BASE = '/api/v1/seo';
+    const token = localStorage.getItem('access_token');
 
-// Tab Switching
-function switchTab(tabName) {
-    document.querySelectorAll('.seo-tab').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.seo-tab-content').forEach(content => content.classList.remove('active'));
-    
-    event.target.closest('.seo-tab').classList.add('active');
-    document.getElementById(`${tabName}-tab`).classList.add('active');
+    // Tab Switching
+    function switchTab(tabName) {
+        document.querySelectorAll('.seo-tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.seo-tab-content').forEach(content => content.classList.remove('active'));
 
-    if (tabName === 'projects') {
-        loadProjects();
-    } else if (tabName === 'audit') {
-        loadProjectsToSelect('audit-project');
-        loadAuditHistory();
-    } else if (tabName === 'keywords') {
-        loadProjectsToSelect('keyword-project');
-        loadKeywordRankings();
-    } else if (tabName === 'backlinks') {
-        loadProjectsToSelect('backlink-project');
-        loadBacklinks();
+        event.target.closest('.seo-tab').classList.add('active');
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+
+        if (tabName === 'projects') {
+            loadProjects();
+        } else if (tabName === 'audit') {
+            loadProjectsToSelect('audit-project');
+            loadAuditHistory();
+        } else if (tabName === 'keywords') {
+            loadProjectsToSelect('keyword-project');
+            loadKeywordRankings();
+        } else if (tabName === 'backlinks') {
+            loadProjectsToSelect('backlink-project');
+            loadBacklinks();
+        }
     }
-}
 
-// Load Projects
-async function loadProjects() {
-    try {
-        const response = await fetch(`${API_BASE}/projects/list`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+    // Load Projects
+    async function loadProjects() {
+        try {
+            const response = await fetch(`${API_BASE}/projects/list`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-        const data = await response.json();
-        const container = document.getElementById('projects-list');
+            const data = await response.json();
+            const container = document.getElementById('projects-list');
 
-        if (data.success && data.projects.length > 0) {
-            container.innerHTML = data.projects.map(project => `
+            if (data.success && data.projects.length > 0) {
+                container.innerHTML = data.projects.map(project => `
                 <div class="project-card" onclick="selectProject(${project.seo_project_id})">
                     <div class="project-url">${project.website_url}</div>
                     <div style="color: #6c757d; font-size: 0.9rem;">
                         Domain Authority: ${project.current_domain_authority || 'N/A'}
                     </div>
                     <div class="project-keywords">
-                        ${project.target_keywords ? project.target_keywords.map(kw => 
-                            `<span class="keyword-tag">${kw}</span>`
-                        ).join('') : ''}
+                        ${project.target_keywords ? project.target_keywords.map(kw =>
+                    `<span class="keyword-tag">${kw}</span>`
+                ).join('') : ''}
                     </div>
                 </div>
             `).join('');
-        } else {
-            container.innerHTML = `
+            } else {
+                container.innerHTML = `
                 <div class="empty-state">
                     <i class="ti ti-folder-off"></i>
                     <p>No SEO projects yet. Create your first project to get started!</p>
                 </div>
             `;
-        }
-
-        loadProjectsToSelect('audit-project');
-        loadProjectsToSelect('keyword-project');
-        loadProjectsToSelect('backlink-project');
-    } catch (error) {
-        console.error('Error loading projects:', error);
-    }
-}
-
-// Load Projects to Select Dropdown
-async function loadProjectsToSelect(selectId) {
-    try {
-        const response = await fetch(`${API_BASE}/projects/list`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
             }
-        });
 
-        const data = await response.json();
-        const select = document.getElementById(selectId);
-
-        if (data.success && data.projects.length > 0) {
-            select.innerHTML = '<option value="">Select a project...</option>' +
-                data.projects.map(project => 
-                    `<option value="${project.seo_project_id}">${project.website_url}</option>`
-                ).join('');
+            loadProjectsToSelect('audit-project');
+            loadProjectsToSelect('keyword-project');
+            loadProjectsToSelect('backlink-project');
+        } catch (error) {
+            console.error('Error loading projects:', error);
         }
-    } catch (error) {
-        console.error('Error loading projects:', error);
-    }
-}
-
-// Create Project Modal
-function openCreateProjectModal() {
-    document.getElementById('create-project-modal').classList.add('active');
-}
-
-function closeCreateProjectModal() {
-    document.getElementById('create-project-modal').classList.remove('active');
-}
-
-async function createProject() {
-    const url = document.getElementById('project-url').value;
-    const keywords = document.getElementById('project-keywords').value;
-
-    if (!url || !keywords) {
-        alert('Please fill in all fields');
-        return;
     }
 
-    try {
-        const response = await fetch(`${API_BASE}/projects/create`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                website_url: url,
-                target_keywords: keywords.split(',').map(k => k.trim())
-            })
-        });
+    // Load Projects to Select Dropdown
+    async function loadProjectsToSelect(selectId) {
+        try {
+            const response = await fetch(`${API_BASE}/projects/list`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-        const data = await response.json();
+            const data = await response.json();
+            const select = document.getElementById(selectId);
 
-        if (data.success) {
-            alert('SEO project created successfully!');
-            closeCreateProjectModal();
-            loadProjects();
-            document.getElementById('project-url').value = '';
-            document.getElementById('project-keywords').value = '';
+            if (data.success && data.projects.length > 0) {
+                select.innerHTML = '<option value="">Select a project...</option>' +
+                    data.projects.map(project =>
+                        `<option value="${project.seo_project_id}">${project.website_url}</option>`
+                    ).join('');
+            }
+        } catch (error) {
+            console.error('Error loading projects:', error);
         }
-    } catch (error) {
-        console.error('Error creating project:', error);
-        alert('Failed to create project');
-    }
-}
-
-// Content Optimization
-async function optimizeContent() {
-    const keyword = document.getElementById('opt-keyword').value;
-    const content = document.getElementById('opt-content').value;
-    const contentType = document.getElementById('opt-content-type').value;
-
-    if (!keyword || !content) {
-        alert('Please enter keyword and content');
-        return;
     }
 
-    const btn = event.target;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="ti ti-wand"></i> Analyzing...<span class="loading-spinner"></span>';
+    // Create Project Modal
+    function openCreateProjectModal() {
+        document.getElementById('create-project-modal').classList.add('active');
+    }
 
-    try {
-        const response = await fetch(`${API_BASE}/optimize-content`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                content: content,
-                target_keyword: keyword,
-                content_type: contentType
-            })
-        });
+    function closeCreateProjectModal() {
+        document.getElementById('create-project-modal').classList.remove('active');
+    }
 
-        const data = await response.json();
+    async function createProject() {
+        const url = document.getElementById('project-url').value;
+        const keywords = document.getElementById('project-keywords').value;
 
-        if (data.success) {
-            displayOptimizationResults(data.optimization);
+        if (!url || !keywords) {
+            alert('Please fill in all fields');
+            return;
         }
-    } catch (error) {
-        console.error('Error optimizing content:', error);
-        alert('Failed to optimize content');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="ti ti-wand"></i> Analyze & Optimize';
+
+        try {
+            const response = await fetch(`${API_BASE}/projects/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    website_url: url,
+                    target_keywords: keywords.split(',').map(k => k.trim())
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert('SEO project created successfully!');
+                closeCreateProjectModal();
+                loadProjects();
+                document.getElementById('project-url').value = '';
+                document.getElementById('project-keywords').value = '';
+            }
+        } catch (error) {
+            console.error('Error creating project:', error);
+            alert('Failed to create project');
+        }
     }
-}
 
-function displayOptimizationResults(optimization) {
-    const container = document.getElementById('optimization-data');
-    const resultsDiv = document.getElementById('optimization-results');
+    // Content Optimization
+    async function optimizeContent() {
+        const keyword = document.getElementById('opt-keyword').value;
+        const content = document.getElementById('opt-content').value;
+        const contentType = document.getElementById('opt-content-type').value;
 
-    const scoreClass = optimization.overall_score >= 80 ? 'excellent' : 
-                       optimization.overall_score >= 60 ? 'good' : 'poor';
+        if (!keyword || !content) {
+            alert('Please enter keyword and content');
+            return;
+        }
 
-    container.innerHTML = `
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ti ti-wand"></i> Analyzing...<span class="loading-spinner"></span>';
+
+        try {
+            const response = await fetch(`${API_BASE}/optimize-content`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    content: content,
+                    target_keyword: keyword,
+                    content_type: contentType
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                displayOptimizationResults(data.optimization);
+            }
+        } catch (error) {
+            console.error('Error optimizing content:', error);
+            alert('Failed to optimize content');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-wand"></i> Analyze & Optimize';
+        }
+    }
+
+    function displayOptimizationResults(optimization) {
+        const container = document.getElementById('optimization-data');
+        const resultsDiv = document.getElementById('optimization-results');
+
+        const scoreClass = optimization.overall_score >= 80 ? 'excellent' :
+            optimization.overall_score >= 60 ? 'good' : 'poor';
+
+        container.innerHTML = `
         <div class="score-circle ${scoreClass}">
             ${optimization.overall_score}/100
         </div>
@@ -888,54 +895,54 @@ function displayOptimizationResults(optimization) {
         </div>
     `;
 
-    resultsDiv.style.display = 'block';
-    resultsDiv.scrollIntoView({ behavior: 'smooth' });
-}
-
-// Run Audit
-async function runAudit() {
-    const projectId = document.getElementById('audit-project').value;
-
-    if (!projectId) {
-        alert('Please select a project');
-        return;
+        resultsDiv.style.display = 'block';
+        resultsDiv.scrollIntoView({ behavior: 'smooth' });
     }
 
-    const btn = event.target;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="ti ti-checklist"></i> Running Audit...<span class="loading-spinner"></span>';
+    // Run Audit
+    async function runAudit() {
+        const projectId = document.getElementById('audit-project').value;
 
-    try {
-        const response = await fetch(`${API_BASE}/audit/run/${projectId}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            displayAuditResults(data.audit_data, data.page_speed_score);
-            loadAuditHistory();
+        if (!projectId) {
+            alert('Please select a project');
+            return;
         }
-    } catch (error) {
-        console.error('Error running audit:', error);
-        alert('Failed to run audit');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="ti ti-checklist"></i> Run Audit';
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ti ti-checklist"></i> Running Audit...<span class="loading-spinner"></span>';
+
+        try {
+            const response = await fetch(`${API_BASE}/audit/run/${projectId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                displayAuditResults(data.audit_data, data.page_speed_score);
+                loadAuditHistory();
+            }
+        } catch (error) {
+            console.error('Error running audit:', error);
+            alert('Failed to run audit');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-checklist"></i> Run Audit';
+        }
     }
-}
 
-function displayAuditResults(audit, pageSpeed) {
-    const container = document.getElementById('audit-data');
-    const resultsDiv = document.getElementById('audit-results');
+    function displayAuditResults(audit, pageSpeed) {
+        const container = document.getElementById('audit-data');
+        const resultsDiv = document.getElementById('audit-results');
 
-    const scoreClass = audit.overall_score >= 80 ? 'excellent' : 
-                       audit.overall_score >= 60 ? 'good' : 'poor';
+        const scoreClass = audit.overall_score >= 80 ? 'excellent' :
+            audit.overall_score >= 60 ? 'good' : 'poor';
 
-    container.innerHTML = `
+        container.innerHTML = `
         <div class="score-circle ${scoreClass}">
             ${audit.overall_score}/100
         </div>
@@ -974,69 +981,69 @@ function displayAuditResults(audit, pageSpeed) {
         </ul>
     `;
 
-    resultsDiv.style.display = 'block';
-    resultsDiv.scrollIntoView({ behavior: 'smooth' });
-}
-
-// Track Keyword
-async function trackKeyword() {
-    const projectId = document.getElementById('keyword-project').value;
-    const keyword = document.getElementById('keyword-input').value;
-
-    if (!projectId || !keyword) {
-        alert('Please select a project and enter a keyword');
-        return;
+        resultsDiv.style.display = 'block';
+        resultsDiv.scrollIntoView({ behavior: 'smooth' });
     }
 
-    const btn = event.target;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="ti ti-chart-line"></i> Tracking...<span class="loading-spinner"></span>';
+    // Track Keyword
+    async function trackKeyword() {
+        const projectId = document.getElementById('keyword-project').value;
+        const keyword = document.getElementById('keyword-input').value;
 
-    try {
-        const response = await fetch(`${API_BASE}/keywords/track`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                seo_project_id: parseInt(projectId),
-                keyword: keyword
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            alert(`Keyword tracked! Current position: #${data.current_position}`);
-            document.getElementById('keyword-input').value = '';
-            loadKeywordRankings();
+        if (!projectId || !keyword) {
+            alert('Please select a project and enter a keyword');
+            return;
         }
-    } catch (error) {
-        console.error('Error tracking keyword:', error);
-        alert('Failed to track keyword');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="ti ti-chart-line"></i> Track Keyword';
-    }
-}
 
-async function loadKeywordRankings() {
-    const projectId = document.getElementById('keyword-project').value;
-    if (!projectId) return;
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ti ti-chart-line"></i> Tracking...<span class="loading-spinner"></span>';
 
-    try {
-        const response = await fetch(`${API_BASE}/keywords/history/${projectId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
+        try {
+            const response = await fetch(`${API_BASE}/keywords/track`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    seo_project_id: parseInt(projectId),
+                    keyword: keyword
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert(`Keyword tracked! Current position: #${data.current_position}`);
+                document.getElementById('keyword-input').value = '';
+                loadKeywordRankings();
             }
-        });
+        } catch (error) {
+            console.error('Error tracking keyword:', error);
+            alert('Failed to track keyword');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-chart-line"></i> Track Keyword';
+        }
+    }
 
-        const data = await response.json();
-        const container = document.getElementById('keyword-rankings');
+    async function loadKeywordRankings() {
+        const projectId = document.getElementById('keyword-project').value;
+        if (!projectId) return;
 
-        if (data.success && data.keywords.length > 0) {
-            container.innerHTML = `
+        try {
+            const response = await fetch(`${API_BASE}/keywords/history/${projectId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+            const container = document.getElementById('keyword-rankings');
+
+            if (data.success && data.keywords.length > 0) {
+                container.innerHTML = `
                 <table class="keywords-table">
                     <thead>
                         <tr>
@@ -1048,9 +1055,9 @@ async function loadKeywordRankings() {
                     </thead>
                     <tbody>
                         ${data.keywords.map(kw => {
-                            const posClass = kw.current_position <= 10 ? 'top-10' :
-                                           kw.current_position <= 50 ? 'top-50' : 'beyond';
-                            return `
+                    const posClass = kw.current_position <= 10 ? 'top-10' :
+                        kw.current_position <= 50 ? 'top-50' : 'beyond';
+                    return `
                                 <tr>
                                     <td>${kw.keyword}</td>
                                     <td><span class="position-badge ${posClass}">#${kw.current_position}</span></td>
@@ -1058,74 +1065,74 @@ async function loadKeywordRankings() {
                                     <td>${new Date(kw.tracked_date).toLocaleDateString()}</td>
                                 </tr>
                             `;
-                        }).join('')}
+                }).join('')}
                     </tbody>
                 </table>
             `;
-        } else {
-            container.innerHTML = `
+            } else {
+                container.innerHTML = `
                 <div class="empty-state">
                     <i class="ti ti-chart-line"></i>
                     <p>No keywords tracked yet</p>
                 </div>
             `;
+            }
+        } catch (error) {
+            console.error('Error loading keywords:', error);
         }
-    } catch (error) {
-        console.error('Error loading keywords:', error);
-    }
-}
-
-// Generate Backlink Outreach
-async function generateBacklinkOutreach() {
-    const projectId = document.getElementById('backlink-project').value;
-    const targetUrl = document.getElementById('backlink-url').value;
-    const anchorText = document.getElementById('backlink-anchor').value;
-
-    if (!projectId || !targetUrl || !anchorText) {
-        alert('Please fill in all fields');
-        return;
     }
 
-    const btn = event.target;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="ti ti-mail"></i> Generating...<span class="loading-spinner"></span>';
+    // Generate Backlink Outreach
+    async function generateBacklinkOutreach() {
+        const projectId = document.getElementById('backlink-project').value;
+        const targetUrl = document.getElementById('backlink-url').value;
+        const anchorText = document.getElementById('backlink-anchor').value;
 
-    try {
-        const response = await fetch(`${API_BASE}/backlinks/suggest`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                seo_project_id: parseInt(projectId),
-                target_url: targetUrl,
-                anchor_text: anchorText
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            displayOutreachEmail(data.email_draft);
-            document.getElementById('backlink-url').value = '';
-            document.getElementById('backlink-anchor').value = '';
-            loadBacklinks();
+        if (!projectId || !targetUrl || !anchorText) {
+            alert('Please fill in all fields');
+            return;
         }
-    } catch (error) {
-        console.error('Error generating outreach:', error);
-        alert('Failed to generate outreach email');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="ti ti-mail"></i> Generate Outreach Email';
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ti ti-mail"></i> Generating...<span class="loading-spinner"></span>';
+
+        try {
+            const response = await fetch(`${API_BASE}/backlinks/suggest`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    seo_project_id: parseInt(projectId),
+                    target_url: targetUrl,
+                    anchor_text: anchorText
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                displayOutreachEmail(data.email_draft);
+                document.getElementById('backlink-url').value = '';
+                document.getElementById('backlink-anchor').value = '';
+                loadBacklinks();
+            }
+        } catch (error) {
+            console.error('Error generating outreach:', error);
+            alert('Failed to generate outreach email');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-mail"></i> Generate Outreach Email';
+        }
     }
-}
 
-function displayOutreachEmail(emailDraft) {
-    const container = document.getElementById('outreach-email');
-    const resultsDiv = document.getElementById('outreach-result');
+    function displayOutreachEmail(emailDraft) {
+        const container = document.getElementById('outreach-email');
+        const resultsDiv = document.getElementById('outreach-result');
 
-    container.innerHTML = `
+        container.innerHTML = `
         <div class="email-preview">
             <div class="email-subject">Subject: ${emailDraft.subject}</div>
             <div class="email-body">${emailDraft.body}</div>
@@ -1135,37 +1142,37 @@ function displayOutreachEmail(emailDraft) {
         </button>
     `;
 
-    resultsDiv.style.display = 'block';
-    resultsDiv.scrollIntoView({ behavior: 'smooth' });
-}
+        resultsDiv.style.display = 'block';
+        resultsDiv.scrollIntoView({ behavior: 'smooth' });
+    }
 
-function copyEmailToClipboard() {
-    const emailBody = document.querySelector('.email-body').textContent;
-    const emailSubject = document.querySelector('.email-subject').textContent.replace('Subject: ', '');
-    
-    const fullEmail = `${emailSubject}\n\n${emailBody}`;
-    
-    navigator.clipboard.writeText(fullEmail).then(() => {
-        alert('Email copied to clipboard!');
-    });
-}
+    function copyEmailToClipboard() {
+        const emailBody = document.querySelector('.email-body').textContent;
+        const emailSubject = document.querySelector('.email-subject').textContent.replace('Subject: ', '');
 
-async function loadBacklinks() {
-    const projectId = document.getElementById('backlink-project').value;
-    if (!projectId) return;
+        const fullEmail = `${emailSubject}\n\n${emailBody}`;
 
-    try {
-        const response = await fetch(`${API_BASE}/backlinks/list/${projectId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+        navigator.clipboard.writeText(fullEmail).then(() => {
+            alert('Email copied to clipboard!');
         });
+    }
 
-        const data = await response.json();
-        const container = document.getElementById('backlinks-list');
+    async function loadBacklinks() {
+        const projectId = document.getElementById('backlink-project').value;
+        if (!projectId) return;
 
-        if (data.success && data.backlinks.length > 0) {
-            container.innerHTML = data.backlinks.map(bl => `
+        try {
+            const response = await fetch(`${API_BASE}/backlinks/list/${projectId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+            const container = document.getElementById('backlinks-list');
+
+            if (data.success && data.backlinks.length > 0) {
+                container.innerHTML = data.backlinks.map(bl => `
                 <div class="backlink-card">
                     <div class="backlink-url">${bl.source_url}</div>
                     <div style="color: #6c757d; font-size: 0.9rem;">
@@ -1173,63 +1180,63 @@ async function loadBacklinks() {
                     </div>
                 </div>
             `).join('');
-        } else {
-            container.innerHTML = `
+            } else {
+                container.innerHTML = `
                 <div class="empty-state">
                     <i class="ti ti-link-off"></i>
                     <p>No backlinks tracked yet</p>
                 </div>
             `;
+            }
+        } catch (error) {
+            console.error('Error loading backlinks:', error);
         }
-    } catch (error) {
-        console.error('Error loading backlinks:', error);
-    }
-}
-
-// Voice Search Optimization
-async function optimizeVoiceSearch() {
-    const content = document.getElementById('voice-content').value;
-
-    if (!content) {
-        alert('Please enter content to optimize');
-        return;
     }
 
-    const btn = event.target;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="ti ti-microphone"></i> Optimizing...<span class="loading-spinner"></span>';
+    // Voice Search Optimization
+    async function optimizeVoiceSearch() {
+        const content = document.getElementById('voice-content').value;
 
-    try {
-        const response = await fetch(`${API_BASE}/optimize-voice-search`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                content: content
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            displayVoiceResults(data.voice_optimization);
+        if (!content) {
+            alert('Please enter content to optimize');
+            return;
         }
-    } catch (error) {
-        console.error('Error optimizing voice search:', error);
-        alert('Failed to optimize for voice search');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="ti ti-microphone"></i> Optimize for Voice Search';
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ti ti-microphone"></i> Optimizing...<span class="loading-spinner"></span>';
+
+        try {
+            const response = await fetch(`${API_BASE}/optimize-voice-search`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    content: content
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                displayVoiceResults(data.voice_optimization);
+            }
+        } catch (error) {
+            console.error('Error optimizing voice search:', error);
+            alert('Failed to optimize for voice search');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-microphone"></i> Optimize for Voice Search';
+        }
     }
-}
 
-function displayVoiceResults(optimization) {
-    const container = document.getElementById('voice-data');
-    const resultsDiv = document.getElementById('voice-results');
+    function displayVoiceResults(optimization) {
+        const container = document.getElementById('voice-data');
+        const resultsDiv = document.getElementById('voice-results');
 
-    container.innerHTML = `
+        container.innerHTML = `
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-value">${optimization.voice_search_score}/100</div>
@@ -1256,9 +1263,9 @@ function displayVoiceResults(optimization) {
 
         <h4 style="margin-top: 2rem; margin-bottom: 1rem;">Long-Tail Keywords</h4>
         <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-            ${optimization.long_tail_keywords.map(kw => 
-                `<span class="keyword-tag">${kw}</span>`
-            ).join('')}
+            ${optimization.long_tail_keywords.map(kw =>
+            `<span class="keyword-tag">${kw}</span>`
+        ).join('')}
         </div>
 
         <h4 style="margin-top: 2rem; margin-bottom: 1rem;">Semantic Improvements</h4>
@@ -1276,26 +1283,26 @@ function displayVoiceResults(optimization) {
         </div>
     `;
 
-    resultsDiv.style.display = 'block';
-    resultsDiv.scrollIntoView({ behavior: 'smooth' });
-}
+        resultsDiv.style.display = 'block';
+        resultsDiv.scrollIntoView({ behavior: 'smooth' });
+    }
 
-async function loadAuditHistory() {
-    const projectId = document.getElementById('audit-project').value;
-    if (!projectId) return;
+    async function loadAuditHistory() {
+        const projectId = document.getElementById('audit-project').value;
+        if (!projectId) return;
 
-    try {
-        const response = await fetch(`${API_BASE}/audits/list/${projectId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        try {
+            const response = await fetch(`${API_BASE}/audits/list/${projectId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-        const data = await response.json();
-        const container = document.getElementById('audit-history');
+            const data = await response.json();
+            const container = document.getElementById('audit-history');
 
-        if (data.success && data.audits.length > 0) {
-            container.innerHTML = data.audits.slice(0, 5).map(audit => `
+            if (data.success && data.audits.length > 0) {
+                container.innerHTML = data.audits.slice(0, 5).map(audit => `
                 <div class="backlink-card">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
@@ -1307,42 +1314,42 @@ async function loadAuditHistory() {
                     </div>
                 </div>
             `).join('');
-        } else {
-            container.innerHTML = `
+            } else {
+                container.innerHTML = `
                 <div class="empty-state">
                     <i class="ti ti-history"></i>
                     <p>No audit history yet</p>
                 </div>
             `;
+            }
+        } catch (error) {
+            console.error('Error loading audit history:', error);
         }
-    } catch (error) {
-        console.error('Error loading audit history:', error);
     }
-}
 
-// Select Project Function
-function selectProject(projectId) {
-    console.log('Selected project:', projectId);
-    
-    // Auto-populate all dropdowns with selected project
-    const auditSelect = document.getElementById('audit-project');
-    const keywordSelect = document.getElementById('keyword-project');
-    const backlinkSelect = document.getElementById('backlink-project');
-    
-    if (auditSelect) auditSelect.value = projectId;
-    if (keywordSelect) keywordSelect.value = projectId;
-    if (backlinkSelect) backlinkSelect.value = projectId;
-    
-    // Optional: Switch to a relevant tab
-    // switchTab('audit'); // Uncomment if you want to auto-switch
-    
-    alert('Project selected! Check the Audit, Keywords, or Backlinks tabs.');
-}
+    // Select Project Function
+    function selectProject(projectId) {
+        console.log('Selected project:', projectId);
+
+        // Auto-populate all dropdowns with selected project
+        const auditSelect = document.getElementById('audit-project');
+        const keywordSelect = document.getElementById('keyword-project');
+        const backlinkSelect = document.getElementById('backlink-project');
+
+        if (auditSelect) auditSelect.value = projectId;
+        if (keywordSelect) keywordSelect.value = projectId;
+        if (backlinkSelect) backlinkSelect.value = projectId;
+
+        // Optional: Switch to a relevant tab
+        // switchTab('audit'); // Uncomment if you want to auto-switch
+
+        alert('Project selected! Check the Audit, Keywords, or Backlinks tabs.');
+    }
 
 
-// Initialize
-document.addEventListener('DOMContentLoaded', function() {
-    loadProjects();
-});
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function () {
+        loadProjects();
+    });
 </script>
 {% endblock %}

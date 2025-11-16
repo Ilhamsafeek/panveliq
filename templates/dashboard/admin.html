@@ -11,22 +11,22 @@
 {% block extra_css %}
 <style>
     /* Admin Dashboard Styles */
-  
+
     .dashboard-header {
         margin-bottom: 2rem;
     }
-    
+
     .dashboard-header h1 {
         font-size: 28px;
         font-weight: 700;
         color: var(--color-gray-900);
         margin-bottom: 0.5rem;
     }
-    
+
     .dashboard-header p {
         color: var(--color-gray-600);
     }
-    
+
     /* Stats Grid */
     .stats-grid {
         display: grid;
@@ -34,7 +34,7 @@
         gap: 1.5rem;
         margin-bottom: 2rem;
     }
-    
+
     .stat-card {
         background: white;
         padding: 1.5rem;
@@ -42,19 +42,19 @@
         border: 1px solid var(--color-gray-200);
         transition: all 0.3s;
     }
-    
+
     .stat-card:hover {
         box-shadow: var(--shadow-lg);
         transform: translateY(-2px);
     }
-    
+
     .stat-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         margin-bottom: 1rem;
     }
-    
+
     .stat-icon {
         width: 48px;
         height: 48px;
@@ -64,37 +64,52 @@
         justify-content: center;
         font-size: 24px;
     }
-    
-    .stat-icon.purple { background: rgba(153, 38, 243, 0.1); color: var(--primary-purple); }
-    .stat-icon.cyan { background: rgba(29, 216, 252, 0.1); color: var(--primary-cyan); }
-    .stat-icon.green { background: rgba(16, 185, 129, 0.1); color: var(--color-success); }
-    .stat-icon.orange { background: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
-    
+
+    .stat-icon.purple {
+        background: rgba(153, 38, 243, 0.1);
+        color: var(--primary-purple);
+    }
+
+    .stat-icon.cyan {
+        background: rgba(29, 216, 252, 0.1);
+        color: var(--primary-cyan);
+    }
+
+    .stat-icon.green {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--color-success);
+    }
+
+    .stat-icon.orange {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--color-warning);
+    }
+
     .stat-value {
         font-size: 32px;
         font-weight: 700;
         color: var(--color-gray-900);
         margin-bottom: 0.25rem;
     }
-    
+
     .stat-label {
         color: var(--color-gray-600);
         font-size: 14px;
     }
-    
+
     /* Content Sections */
     .content-grid {
         display: grid;
         gap: 1.5rem;
     }
-    
+
     .content-card {
         background: white;
         border-radius: var(--radius-lg);
         border: 1px solid var(--color-gray-200);
         padding: 1.5rem;
     }
-    
+
     .card-header {
         display: flex;
         align-items: center;
@@ -103,13 +118,13 @@
         padding-bottom: 1rem;
         border-bottom: 1px solid var(--color-gray-200);
     }
-    
+
     .card-title {
         font-size: 18px;
         font-weight: 700;
         color: var(--color-gray-900);
     }
-    
+
     .btn-primary {
         padding: 0.75rem 1.5rem;
         background: var(--gradient-primary);
@@ -123,17 +138,17 @@
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .btn-primary:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(153, 38, 243, 0.3);
     }
-    
+
     @media (max-width: 768px) {
         .dashboard-container {
             padding: 1rem;
         }
-        
+
         .stats-grid {
             grid-template-columns: 1fr;
         }
@@ -143,11 +158,13 @@
 
 {% block content %}
 <div class="dashboard-container">
-    <div class="dashboard-header">
-        <h1><i class="ti ti-dashboard"></i> Admin Dashboard</h1>
-        <p>Manage platform, users, finances, and operations</p>
+    <div class="header-hero">
+        <div>
+            <h1><i class="ti ti-dashboard"></i> Admin Dashboard</h1>
+            <p>Manage platform, users, finances, and operations</p>
+        </div>
     </div>
-    
+
     <!-- Stats Overview -->
     <div class="stats-grid">
         <div class="stat-card">
@@ -159,7 +176,7 @@
             <div class="stat-value" id="totalUsers">0</div>
             <div class="stat-label">Total Users</div>
         </div>
-        
+
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon cyan">
@@ -169,7 +186,7 @@
             <div class="stat-value" id="activeClients">0</div>
             <div class="stat-label">Active Clients</div>
         </div>
-        
+
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon green">
@@ -179,7 +196,7 @@
             <div class="stat-value" id="totalRevenue">$0</div>
             <div class="stat-label">Total Revenue</div>
         </div>
-        
+
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon orange">
@@ -190,7 +207,7 @@
             <div class="stat-label">Pending Tasks</div>
         </div>
     </div>
-    
+
     <!-- Recent Activity -->
     <div class="content-grid">
         <div class="content-card">
@@ -211,34 +228,34 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    loadDashboardStats();
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        loadDashboardStats();
+    });
 
-async function loadDashboardStats() {
-    try {
-        const token = localStorage.getItem('access_token');
-        if (!token) return;
-        
-        // Load user stats
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/users/stats`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
+    async function loadDashboardStats() {
+        try {
+            const token = localStorage.getItem('access_token');
+            if (!token) return;
+
+            // Load user stats
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/users/stats`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.stats) {
+                    document.getElementById('totalUsers').textContent = data.stats.total_users || 0;
+                    document.getElementById('activeClients').textContent = data.stats.active_clients || 0;
+                    document.getElementById('totalRevenue').textContent = `$${data.stats.total_revenue || 0}`;
+                    document.getElementById('pendingTasks').textContent = data.stats.pending_tasks || 0;
+                }
             }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data.stats) {
-                document.getElementById('totalUsers').textContent = data.stats.total_users || 0;
-                document.getElementById('activeClients').textContent = data.stats.active_clients || 0;
-                document.getElementById('totalRevenue').textContent = `$${data.stats.total_revenue || 0}`;
-                document.getElementById('pendingTasks').textContent = data.stats.pending_tasks || 0;
-            }
+        } catch (error) {
+            console.error('Error loading dashboard stats:', error);
         }
-    } catch (error) {
-        console.error('Error loading dashboard stats:', error);
     }
-}
 </script>
 {% endblock %}

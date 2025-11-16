@@ -438,9 +438,11 @@
 {% block content %}
 <div class="media-studio-container">
     <!-- Header -->
-    <div class="studio-header">
-        <h1><i class="ti ti-photo"></i> Creative Media Studio</h1>
-        <p>AI-powered visual content creation with DALL-E, Synthesia, and Canva</p>
+    <div class="header-hero">
+        <div>
+            <h1><i class="ti ti-photo"></i> Creative Media Studio</h1>
+            <p>AI-powered visual content creation with DALL-E, Synthesia, and Canva</p>
+        </div>
     </div>
 
     <!-- Creation Tools -->
@@ -653,13 +655,16 @@
 
                 <div class="form-group">
                     <label>Animation Title <span style="color: #ef4444;">*</span></label>
-                    <input type="text" class="form-control" id="animationTitle" required placeholder="Enter animation title">
+                    <input type="text" class="form-control" id="animationTitle" required
+                        placeholder="Enter animation title">
                 </div>
 
                 <div class="form-group">
                     <label>Animation Description <span style="color: #ef4444;">*</span></label>
-                    <textarea class="form-control" id="animationPrompt" rows="4" required placeholder="Describe the animation you want to create..."></textarea>
-                    <small style="color: #64748b; font-size: 0.85rem;">Describe movement, style, and key elements</small>
+                    <textarea class="form-control" id="animationPrompt" rows="4" required
+                        placeholder="Describe the animation you want to create..."></textarea>
+                    <small style="color: #64748b; font-size: 0.85rem;">Describe movement, style, and key
+                        elements</small>
                 </div>
 
                 <div class="form-group">
@@ -717,7 +722,8 @@
 
                 <div class="form-group">
                     <label>Motion Description <span style="color: #ef4444;">*</span></label>
-                    <textarea class="form-control" id="motionPrompt" rows="3" required placeholder="Describe how the image should move or animate..."></textarea>
+                    <textarea class="form-control" id="motionPrompt" rows="3" required
+                        placeholder="Describe how the image should move or animate..."></textarea>
                 </div>
 
                 <div class="form-group">
@@ -764,8 +770,10 @@
 
                 <div class="form-group">
                     <label>Animation Effect <span style="color: #ef4444;">*</span></label>
-                    <textarea class="form-control" id="animationEffect" rows="3" required placeholder="Describe the animation effect you want to apply..."></textarea>
-                    <small style="color: #64748b; font-size: 0.85rem;">E.g., zoom in, pan left to right, fade in, etc.</small>
+                    <textarea class="form-control" id="animationEffect" rows="3" required
+                        placeholder="Describe the animation effect you want to apply..."></textarea>
+                    <small style="color: #64748b; font-size: 0.85rem;">E.g., zoom in, pan left to right, fade in,
+                        etc.</small>
                 </div>
 
                 <div class="form-group">

@@ -128,7 +128,7 @@
         background: white;
         padding: 1.5rem;
         border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
     .stat-value {
@@ -149,7 +149,7 @@
         background: white;
         border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
     table {
@@ -281,7 +281,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0,0,0,0.5);
+        background: rgba(0, 0, 0, 0.5);
         z-index: 1000;
         align-items: center;
         justify-content: center;
@@ -437,7 +437,9 @@
     }
 
     @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .empty-state {
@@ -495,9 +497,11 @@
 {% block content %}
 <div class="user-management-container">
     <!-- Page Header -->
-    <div class="page-header">
-        <h1>User Management & Access Control</h1>
-        <p>Manage users, roles, and permissions</p>
+    <div class="header-hero">
+        <div>
+            <h1><i class="ti ti-users"></i> User Management & Access Control</h1>
+            <p>Manage users, roles, and permissions</p>
+        </div>
     </div>
 
     <!-- Tabs -->

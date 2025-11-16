@@ -244,17 +244,24 @@
     }
 
     @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="package-container">
-    <div class="page-header">
-        <h1><i class="ti ti-package"></i> My Package</h1>
-        <p>View your current subscription details and features</p>
+    <div class="header-hero">
+        <div>
+            <h1><i class="ti ti-package"></i> My Package</h1>
+            <p>View your current subscription details and features</p>
+        </div>
     </div>
 
     <div id="packageContent">
@@ -304,7 +311,7 @@
     function renderPackage(pkg) {
         const isActive = pkg.status === 'active';
         const daysRemaining = pkg.days_remaining || 0;
-        
+
         const content = `
             <div class="package-card">
                 <div class="package-header">

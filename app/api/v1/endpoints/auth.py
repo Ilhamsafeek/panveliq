@@ -64,6 +64,23 @@ class Token(BaseModel):
     user: UserResponse
 
 
+
+class ForgotPasswordRequest(BaseModel):
+    """Schema for forgot password request"""
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Schema for reset password request"""
+    token: str
+    new_password: str = Field(..., min_length=8)
+    
+    @validator('new_password')
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        return v
+
 # ========== DATABASE FUNCTIONS ==========
 
 def get_db_connection():
@@ -348,6 +365,239 @@ async def get_current_user_info(token: str = Depends(oauth2_scheme)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get user: {str(e)}"
         )
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+
+# ========== PASSWORD RECOVERY ENDPOINTS ==========
+
+@router.post("/forgot-password", summary="Request password reset")
+async def forgot_password(request: ForgotPasswordRequest):
+    """
+    Request password reset - generates token and sends email
+    """
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Check if user exists
+        cursor.execute(
+            "SELECT user_id, email, full_name FROM users WHERE email = %s",
+            (request.email,)
+        )
+        user = cursor.fetchone()
+        
+        # Always return success even if user doesn't exist (security best practice)
+        # This prevents email enumeration attacks
+        if not user:
+            return {
+                "status": "success",
+                "message": "If the email exists, a password reset link has been sent"
+            }
+        
+        # Generate secure reset token
+        reset_token = secrets.token_urlsafe(32)
+        
+        # Token expires in 1 hour
+        expires_at = datetime.now() + timedelta(hours=1)
+        
+        # Store reset token in database
+        cursor.execute(
+            """
+            INSERT INTO password_reset_tokens 
+            (user_id, reset_token, expires_at)
+            VALUES (%s, %s, %s)
+            """,
+            (user['user_id'], reset_token, expires_at)
+        )
+        
+        connection.commit()
+        
+        # In production, send email with reset link here
+        # For now, we'll return the token for testing
+        # reset_link = f"http://yourdomain.com/auth/reset-password?token={reset_token}"
+        
+        # TODO: Send email using SMTP or email service
+        # send_reset_email(user['email'], user['full_name'], reset_link)
+        
+        print(f"🔐 Password reset token for {request.email}: {reset_token}")
+        print(f"   Expires at: {expires_at}")
+        
+        return {
+            "status": "success",
+            "message": "If the email exists, a password reset link has been sent",
+            # For development/testing only - remove in production!
+            "debug_token": reset_token if settings.DEBUG else None
+        }
+    
+    except Exception as e:
+        if connection:
+            connection.rollback()
+        print(f"❌ Error in forgot password: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process password reset request"
+        )
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@router.post("/reset-password", summary="Reset password with token")
+async def reset_password(request: ResetPasswordRequest):
+    """
+    Reset password using valid token
+    """
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Verify token exists and is valid
+        cursor.execute(
+            """
+            SELECT prt.token_id, prt.user_id, prt.expires_at, prt.is_used,
+                   u.email, u.full_name
+            FROM password_reset_tokens prt
+            JOIN users u ON prt.user_id = u.user_id
+            WHERE prt.reset_token = %s
+            """,
+            (request.token,)
+        )
+        
+        token_data = cursor.fetchone()
+        
+        if not token_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired reset token"
+            )
+        
+        # Check if token is already used
+        if token_data['is_used']:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This reset token has already been used"
+            )
+        
+        # Check if token is expired
+        if datetime.now() > token_data['expires_at']:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Reset token has expired. Please request a new one"
+            )
+        
+        # Hash new password
+        new_password_hash = pwd_context.hash(request.new_password)
+        
+        # Update user password
+        cursor.execute(
+            "UPDATE users SET password_hash = %s WHERE user_id = %s",
+            (new_password_hash, token_data['user_id'])
+        )
+        
+        # Mark token as used
+        cursor.execute(
+            "UPDATE password_reset_tokens SET is_used = TRUE, used_at = %s WHERE token_id = %s",
+            (datetime.now(), token_data['token_id'])
+        )
+        
+        connection.commit()
+        
+        print(f"✅ Password reset successful for user: {token_data['email']}")
+        
+        # TODO: Send confirmation email
+        # send_password_changed_email(token_data['email'], token_data['full_name'])
+        
+        return {
+            "status": "success",
+            "message": "Password has been reset successfully. You can now login with your new password."
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        if connection:
+            connection.rollback()
+        print(f"❌ Error in reset password: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset password"
+        )
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@router.post("/verify-reset-token", summary="Verify reset token validity")
+async def verify_reset_token(token: str):
+    """
+    Verify if a reset token is valid (for frontend validation)
+    """
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        cursor.execute(
+            """
+            SELECT expires_at, is_used
+            FROM password_reset_tokens
+            WHERE reset_token = %s
+            """,
+            (token,)
+        )
+        
+        token_data = cursor.fetchone()
+        
+        if not token_data:
+            return {
+                "valid": False,
+                "message": "Invalid token"
+            }
+        
+        if token_data['is_used']:
+            return {
+                "valid": False,
+                "message": "Token already used"
+            }
+        
+        if datetime.now() > token_data['expires_at']:
+            return {
+                "valid": False,
+                "message": "Token expired"
+            }
+        
+        return {
+            "valid": True,
+            "message": "Token is valid",
+            "expires_at": token_data['expires_at'].isoformat()
+        }
+    
+    except Exception as e:
+        print(f"❌ Error verifying token: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to verify token"
+        )
+    
     finally:
         if cursor:
             cursor.close()

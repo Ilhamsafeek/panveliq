@@ -311,7 +311,9 @@
     }
 
     @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .empty-state {
@@ -445,7 +447,7 @@
         .content-grid {
             grid-template-columns: 1fr;
         }
-        
+
         .platform-selector {
             grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
         }
@@ -456,9 +458,11 @@
 {% block content %}
 <div class="content-hub-container">
     <!-- Header -->
-    <div class="content-header">
-        <h1><i class="ti ti-file-text"></i> Content Intelligence Hub</h1>
-        <p>AI-powered content creation and optimization for social media platforms</p>
+    <div class="header-hero">
+        <div>
+            <h1><i class="ti ti-file-text"></i> Content Intelligence Hub</h1>
+            <p>AI-powered content creation and optimization for social media platforms</p>
+        </div>
     </div>
 
     <!-- Main Grid -->
@@ -519,7 +523,8 @@
             <!-- Topic/Brief -->
             <div class="form-group">
                 <label>Topic / Content Brief</label>
-                <textarea class="form-control" id="topicInput" rows="3" placeholder="Describe what you want to create content about..."></textarea>
+                <textarea class="form-control" id="topicInput" rows="3"
+                    placeholder="Describe what you want to create content about..."></textarea>
             </div>
 
             <!-- Tone Selection -->
@@ -538,7 +543,8 @@
             <!-- Target Audience -->
             <div class="form-group">
                 <label>Target Audience (Optional)</label>
-                <input type="text" class="form-control" id="audienceInput" placeholder="e.g., Small business owners, Gen Z, Tech professionals">
+                <input type="text" class="form-control" id="audienceInput"
+                    placeholder="e.g., Small business owners, Gen Z, Tech professionals">
             </div>
 
             <!-- Keywords -->

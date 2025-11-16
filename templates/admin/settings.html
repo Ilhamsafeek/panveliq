@@ -351,9 +351,11 @@
 
 {% block content %}
 <div class="settings-container">
-    <div class="settings-header">
-        <h1><i class="ti ti-settings"></i> Settings</h1>
-        <p>Manage your account and system configurations</p>
+    <div class="header-hero">
+        <div>
+            <h1><i class="ti ti-settings"></i> Settings</h1>
+            <p>Manage your account and system configurations</p>
+        </div>
     </div>
 
     <div id="alertContainer"></div>
@@ -385,7 +387,8 @@
                 <div class="profile-avatar" id="profileAvatar">A</div>
                 <div>
                     <h4 id="profileName" style="margin: 0 0 0.25rem 0;">Loading...</h4>
-                    <p id="profileRole" style="margin: 0; color: var(--color-gray-600); font-size: 0.875rem;">Loading...</p>
+                    <p id="profileRole" style="margin: 0; color: var(--color-gray-600); font-size: 0.875rem;">Loading...
+                    </p>
                 </div>
             </div>
 
@@ -436,7 +439,8 @@
 
                 <div class="form-group">
                     <label class="form-label">New Password</label>
-                    <input type="password" id="newPassword" class="form-control" required minlength="8" oninput="checkPasswordStrength()">
+                    <input type="password" id="newPassword" class="form-control" required minlength="8"
+                        oninput="checkPasswordStrength()">
                     <div class="password-strength">
                         <div id="passwordStrengthBar" class="password-strength-bar"></div>
                     </div>
@@ -465,7 +469,9 @@
 
             <div class="api-keys-grid" id="apiKeysGrid">
                 <div style="text-align: center; padding: 2rem;">
-                    <div class="spinner" style="border: 3px solid var(--color-gray-200); border-top: 3px solid var(--primary-purple); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                    <div class="spinner"
+                        style="border: 3px solid var(--color-gray-200); border-top: 3px solid var(--primary-purple); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1rem;">
+                    </div>
                     <p>Loading API keys...</p>
                 </div>
             </div>
@@ -505,7 +511,7 @@
     // Initialize
     document.addEventListener('DOMContentLoaded', async () => {
         await loadProfile();
-        
+
         // Show API Keys tab only for admin
         if (currentUser && currentUser.role === 'admin') {
             document.getElementById('apiKeysTab').style.display = 'inline-flex';
@@ -542,10 +548,10 @@
         document.getElementById('email').value = profile.email || '';
         document.getElementById('phone').value = profile.phone || '';
         document.getElementById('role').value = profile.role || '';
-        
+
         document.getElementById('profileName').textContent = profile.full_name;
         document.getElementById('profileRole').textContent = profile.role.charAt(0).toUpperCase() + profile.role.slice(1);
-        
+
         // Set avatar initial
         const initial = profile.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U';
         document.getElementById('profileAvatar').textContent = initial;
@@ -631,13 +637,13 @@
     function checkPasswordStrength() {
         const password = document.getElementById('newPassword').value;
         const strengthBar = document.getElementById('passwordStrengthBar');
-        
+
         let strength = 0;
         if (password.length >= 8) strength++;
         if (/[A-Z]/.test(password)) strength++;
         if (/[0-9]/.test(password)) strength++;
         if (/[^A-Za-z0-9]/.test(password)) strength++;
-        
+
         strengthBar.className = 'password-strength-bar';
         if (strength <= 1) {
             strengthBar.classList.add('weak');
@@ -670,7 +676,7 @@
     // Render API keys
     function renderApiKeys(apiKeys) {
         const grid = document.getElementById('apiKeysGrid');
-        
+
         const apiKeyLabels = {
             'openai_api_key': 'OpenAI API Key',
             'meta_app_id': 'Meta App ID',
@@ -773,7 +779,7 @@
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert ${type} show`;
         alertDiv.textContent = message;
-        
+
         const container = document.getElementById('alertContainer');
         container.innerHTML = '';
         container.appendChild(alertDiv);

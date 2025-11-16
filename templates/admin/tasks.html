@@ -9,22 +9,22 @@
         max-width: 1400px;
         margin: 0 auto;
     }
-    
+
     .page-header {
         margin-bottom: 2rem;
     }
-    
+
     .page-header h1 {
         font-size: 28px;
         font-weight: 700;
         color: var(--color-gray-900);
         margin-bottom: 0.5rem;
     }
-    
+
     .page-header p {
         color: var(--color-gray-600);
     }
-    
+
     /* Stats Grid */
     .stats-grid {
         display: grid;
@@ -32,21 +32,21 @@
         gap: 1.5rem;
         margin-bottom: 2rem;
     }
-    
+
     .stat-card {
         background: white;
         border-radius: var(--radius-lg);
         padding: 1.5rem;
         border: 1px solid var(--color-gray-200);
     }
-    
+
     .stat-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         margin-bottom: 1rem;
     }
-    
+
     .stat-icon {
         width: 48px;
         height: 48px;
@@ -56,24 +56,39 @@
         justify-content: center;
         font-size: 24px;
     }
-    
-    .stat-icon.purple { background: rgba(153, 38, 243, 0.1); color: var(--primary-purple); }
-    .stat-icon.cyan { background: rgba(29, 216, 252, 0.1); color: var(--primary-cyan); }
-    .stat-icon.green { background: rgba(16, 185, 129, 0.1); color: var(--color-success); }
-    .stat-icon.orange { background: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
-    
+
+    .stat-icon.purple {
+        background: rgba(153, 38, 243, 0.1);
+        color: var(--primary-purple);
+    }
+
+    .stat-icon.cyan {
+        background: rgba(29, 216, 252, 0.1);
+        color: var(--primary-cyan);
+    }
+
+    .stat-icon.green {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--color-success);
+    }
+
+    .stat-icon.orange {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--color-warning);
+    }
+
     .stat-value {
         font-size: 32px;
         font-weight: 700;
         color: var(--color-gray-900);
         margin-bottom: 0.25rem;
     }
-    
+
     .stat-label {
         color: var(--color-gray-600);
         font-size: 14px;
     }
-    
+
     /* Toolbar */
     .toolbar {
         background: white;
@@ -87,20 +102,20 @@
         flex-wrap: wrap;
         gap: 1rem;
     }
-    
+
     .toolbar-left {
         display: flex;
         align-items: center;
         gap: 1rem;
         flex: 1;
     }
-    
+
     .search-box {
         position: relative;
         flex: 1;
         max-width: 400px;
     }
-    
+
     .search-box i {
         position: absolute;
         left: 1rem;
@@ -108,7 +123,7 @@
         transform: translateY(-50%);
         color: var(--color-gray-400);
     }
-    
+
     .search-box input {
         width: 100%;
         padding: 0.75rem 1rem 0.75rem 2.75rem;
@@ -116,7 +131,7 @@
         border-radius: var(--radius-md);
         font-size: 14px;
     }
-    
+
     .filter-select {
         padding: 0.75rem 1rem;
         border: 1px solid var(--color-gray-300);
@@ -124,7 +139,7 @@
         font-size: 14px;
         min-width: 150px;
     }
-    
+
     .btn-primary {
         background: var(--gradient-primary);
         color: white;
@@ -138,18 +153,18 @@
         gap: 0.5rem;
         transition: all 0.2s;
     }
-    
+
     .btn-primary:hover {
         transform: translateY(-2px);
         box-shadow: var(--shadow-md);
     }
-    
+
     /* Tasks Grid */
     .tasks-grid {
         display: grid;
         gap: 1rem;
     }
-    
+
     .task-card {
         background: white;
         border-radius: var(--radius-lg);
@@ -159,37 +174,48 @@
         transition: all 0.2s;
         cursor: pointer;
     }
-    
+
     .task-card:hover {
         box-shadow: var(--shadow-md);
         transform: translateY(-2px);
     }
-    
-    .task-card.priority-low { border-left-color: var(--color-success); }
-    .task-card.priority-medium { border-left-color: var(--color-warning); }
-    .task-card.priority-high { border-left-color: var(--color-error); }
-    .task-card.priority-urgent { border-left-color: #dc2626; }
-    
+
+    .task-card.priority-low {
+        border-left-color: var(--color-success);
+    }
+
+    .task-card.priority-medium {
+        border-left-color: var(--color-warning);
+    }
+
+    .task-card.priority-high {
+        border-left-color: var(--color-error);
+    }
+
+    .task-card.priority-urgent {
+        border-left-color: #dc2626;
+    }
+
     .task-header {
         display: flex;
         align-items: start;
         justify-content: space-between;
         margin-bottom: 1rem;
     }
-    
+
     .task-title {
         font-size: 16px;
         font-weight: 600;
         color: var(--color-gray-900);
         margin-bottom: 0.5rem;
     }
-    
+
     .task-description {
         font-size: 14px;
         color: var(--color-gray-600);
         line-height: 1.5;
     }
-    
+
     .task-meta {
         display: flex;
         align-items: center;
@@ -198,18 +224,18 @@
         font-size: 13px;
         color: var(--color-gray-600);
     }
-    
+
     .task-meta-item {
         display: flex;
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .task-actions {
         display: flex;
         gap: 0.5rem;
     }
-    
+
     .btn-icon {
         width: 32px;
         height: 32px;
@@ -222,22 +248,33 @@
         cursor: pointer;
         transition: all 0.2s;
     }
-    
+
     .btn-icon:hover {
         background: var(--color-gray-50);
     }
-    
+
     .badge {
         padding: 0.25rem 0.75rem;
         border-radius: var(--radius-md);
         font-size: 12px;
         font-weight: 600;
     }
-    
-    .badge.pending { background: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
-    .badge.in_progress { background: rgba(29, 216, 252, 0.1); color: var(--primary-cyan); }
-    .badge.completed { background: rgba(16, 185, 129, 0.1); color: var(--color-success); }
-    
+
+    .badge.pending {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--color-warning);
+    }
+
+    .badge.in_progress {
+        background: rgba(29, 216, 252, 0.1);
+        color: var(--primary-cyan);
+    }
+
+    .badge.completed {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--color-success);
+    }
+
     /* Modal */
     .modal {
         display: none;
@@ -251,11 +288,11 @@
         align-items: center;
         justify-content: center;
     }
-    
+
     .modal.active {
         display: flex;
     }
-    
+
     .modal-content {
         background: white;
         border-radius: var(--radius-lg);
@@ -264,7 +301,7 @@
         max-height: 90vh;
         overflow-y: auto;
     }
-    
+
     .modal-header {
         padding: 1.5rem;
         border-bottom: 1px solid var(--color-gray-200);
@@ -272,16 +309,16 @@
         align-items: center;
         justify-content: space-between;
     }
-    
+
     .modal-title {
         font-size: 20px;
         font-weight: 700;
     }
-    
+
     .modal-body {
         padding: 1.5rem;
     }
-    
+
     .modal-footer {
         padding: 1.5rem;
         border-top: 1px solid var(--color-gray-200);
@@ -289,31 +326,33 @@
         gap: 1rem;
         justify-content: flex-end;
     }
-    
+
     .form-group {
         margin-bottom: 1.5rem;
     }
-    
+
     .form-label {
         display: block;
         margin-bottom: 0.5rem;
         font-weight: 600;
         color: var(--color-gray-700);
     }
-    
-    .form-input, .form-select, .form-textarea {
+
+    .form-input,
+    .form-select,
+    .form-textarea {
         width: 100%;
         padding: 0.75rem 1rem;
         border: 1px solid var(--color-gray-300);
         border-radius: var(--radius-md);
         font-size: 14px;
     }
-    
+
     .form-textarea {
         min-height: 100px;
         resize: vertical;
     }
-    
+
     .btn-secondary {
         padding: 0.75rem 1.5rem;
         border-radius: var(--radius-md);
@@ -322,13 +361,13 @@
         font-weight: 600;
         cursor: pointer;
     }
-    
+
     .empty-state {
         text-align: center;
         padding: 4rem 2rem;
         color: var(--color-gray-400);
     }
-    
+
     .empty-state i {
         font-size: 64px;
         margin-bottom: 1rem;
@@ -338,11 +377,13 @@
 
 {% block content %}
 <div class="tasks-container">
-    <div class="page-header">
-        <h1><i class="ti ti-checklist"></i> Task Assignment</h1>
-        <p>Create and manage tasks for your team</p>
+    <div class="header-hero">
+        <div>
+            <h1><i class="ti ti-checklist"></i> Task Assignment</h1>
+            <p>Create and manage tasks for your team</p>
+        </div>
     </div>
-    
+
     <!-- Stats -->
     <div class="stats-grid">
         <div class="stat-card">
@@ -354,7 +395,7 @@
             <div class="stat-value" id="totalTasks">0</div>
             <div class="stat-label">Total Tasks</div>
         </div>
-        
+
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon orange">
@@ -364,7 +405,7 @@
             <div class="stat-value" id="pendingTasks">0</div>
             <div class="stat-label">Pending</div>
         </div>
-        
+
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon cyan">
@@ -374,7 +415,7 @@
             <div class="stat-value" id="inProgressTasks">0</div>
             <div class="stat-label">In Progress</div>
         </div>
-        
+
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon green">
@@ -385,7 +426,7 @@
             <div class="stat-label">Completed</div>
         </div>
     </div>
-    
+
     <!-- Toolbar -->
     <div class="toolbar">
         <div class="toolbar-left">
@@ -393,14 +434,14 @@
                 <i class="ti ti-search"></i>
                 <input type="text" id="searchInput" placeholder="Search tasks..." oninput="filterTasks()">
             </div>
-            
+
             <select class="filter-select" id="statusFilter" onchange="filterTasks()">
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>
                 <option value="in_progress">In Progress</option>
                 <option value="completed">Completed</option>
             </select>
-            
+
             <select class="filter-select" id="priorityFilter" onchange="filterTasks()">
                 <option value="">All Priority</option>
                 <option value="low">Low</option>
@@ -409,13 +450,13 @@
                 <option value="urgent">Urgent</option>
             </select>
         </div>
-        
+
         <button class="btn-primary" onclick="openCreateTaskModal()">
             <i class="ti ti-plus"></i>
             Create Task
         </button>
     </div>
-    
+
     <!-- Tasks Grid -->
     <div class="tasks-grid" id="tasksGrid">
         <div class="empty-state">
@@ -437,31 +478,31 @@
         <div class="modal-body">
             <form id="taskForm">
                 <input type="hidden" id="taskId">
-                
+
                 <div class="form-group">
                     <label class="form-label">Task Title *</label>
                     <input type="text" class="form-input" id="taskTitle" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">Description</label>
                     <textarea class="form-textarea" id="taskDescription"></textarea>
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">Client *</label>
                     <select class="form-select" id="taskClient" required>
                         <option value="">Select client...</option>
                     </select>
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">Assign To</label>
                     <select class="form-select" id="taskAssignee">
                         <option value="">Unassigned</option>
                     </select>
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">Priority *</label>
                     <select class="form-select" id="taskPriority" required>
@@ -471,7 +512,7 @@
                         <option value="urgent">Urgent</option>
                     </select>
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">Due Date</label>
                     <input type="date" class="form-input" id="taskDueDate">
@@ -491,170 +532,170 @@
 
 {% block extra_js %}
 <script>
-window.APP_CONFIG = window.APP_CONFIG || { apiBaseUrl: '/api/v1' };
+    window.APP_CONFIG = window.APP_CONFIG || { apiBaseUrl: '/api/v1' };
 
-let allTasks = [];
-let allClients = [];
-let allEmployees = [];
+    let allTasks = [];
+    let allClients = [];
+    let allEmployees = [];
 
-// Initialize page
-document.addEventListener('DOMContentLoaded', async () => {
-    const token = localStorage.getItem('access_token') || getCookie('access_token');
-    
-    if (!token) {
-        window.location.href = '/auth/login';
-        return;
-    }
-    
-    await loadInitialData(token);
-    await loadTasks(token);
-});
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', async () => {
+        const token = localStorage.getItem('access_token') || getCookie('access_token');
 
-async function loadInitialData(token) {
-    try {
-        // Load clients - Try the correct endpoint
-        let clientsRes = await fetch(`${APP_CONFIG.apiBaseUrl}/clients/all`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        // If that fails, try alternative endpoint
-        if (!clientsRes.ok) {
-            console.log('Trying alternative clients endpoint...');
-            clientsRes = await fetch(`${APP_CONFIG.apiBaseUrl}/admin/clients`, {
+        if (!token) {
+            window.location.href = '/auth/login';
+            return;
+        }
+
+        await loadInitialData(token);
+        await loadTasks(token);
+    });
+
+    async function loadInitialData(token) {
+        try {
+            // Load clients - Try the correct endpoint
+            let clientsRes = await fetch(`${APP_CONFIG.apiBaseUrl}/clients/all`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-        }
-        
-        if (clientsRes.ok) {
-            const data = await clientsRes.json();
-            console.log('Clients API response:', data);
-            
-            // Handle different response structures
-            if (data.clients) {
-                allClients = data.clients;
-            } else if (Array.isArray(data)) {
-                allClients = data;
-            } else {
-                console.error('Unexpected clients response format:', data);
-                allClients = [];
+
+            // If that fails, try alternative endpoint
+            if (!clientsRes.ok) {
+                console.log('Trying alternative clients endpoint...');
+                clientsRes = await fetch(`${APP_CONFIG.apiBaseUrl}/admin/clients`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
             }
-            
-            console.log('Loaded clients:', allClients);
-            populateClientDropdown();
-        } else {
-            console.error('Failed to load clients. Status:', clientsRes.status);
-            alert('Failed to load clients. Please refresh the page.');
-        }
-        
-        // Load employees
-        const employeesRes = await fetch(`${APP_CONFIG.apiBaseUrl}/admin/employees`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (employeesRes.ok) {
-            const data = await employeesRes.json();
-            console.log('Employees API response:', data);
-            
-            if (data.employees) {
-                allEmployees = data.employees;
-            } else if (Array.isArray(data)) {
-                allEmployees = data;
+
+            if (clientsRes.ok) {
+                const data = await clientsRes.json();
+                console.log('Clients API response:', data);
+
+                // Handle different response structures
+                if (data.clients) {
+                    allClients = data.clients;
+                } else if (Array.isArray(data)) {
+                    allClients = data;
+                } else {
+                    console.error('Unexpected clients response format:', data);
+                    allClients = [];
+                }
+
+                console.log('Loaded clients:', allClients);
+                populateClientDropdown();
             } else {
-                console.error('Unexpected employees response format:', data);
-                allEmployees = [];
+                console.error('Failed to load clients. Status:', clientsRes.status);
+                alert('Failed to load clients. Please refresh the page.');
             }
-            
-            console.log('Loaded employees:', allEmployees);
-            populateEmployeeDropdown();
-        } else {
-            console.error('Failed to load employees. Status:', employeesRes.status);
+
+            // Load employees
+            const employeesRes = await fetch(`${APP_CONFIG.apiBaseUrl}/admin/employees`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (employeesRes.ok) {
+                const data = await employeesRes.json();
+                console.log('Employees API response:', data);
+
+                if (data.employees) {
+                    allEmployees = data.employees;
+                } else if (Array.isArray(data)) {
+                    allEmployees = data;
+                } else {
+                    console.error('Unexpected employees response format:', data);
+                    allEmployees = [];
+                }
+
+                console.log('Loaded employees:', allEmployees);
+                populateEmployeeDropdown();
+            } else {
+                console.error('Failed to load employees. Status:', employeesRes.status);
+            }
+        } catch (error) {
+            console.error('Error loading initial data:', error);
+            alert('Failed to load form data. Please refresh the page.');
         }
-    } catch (error) {
-        console.error('Error loading initial data:', error);
-        alert('Failed to load form data. Please refresh the page.');
     }
-}
 
-function populateClientDropdown() {
-    const select = document.getElementById('taskClient');
-    
-    console.log('Populating client dropdown with:', allClients);
-    
-    if (!allClients || allClients.length === 0) {
-        select.innerHTML = '<option value="">No clients available</option>';
-        console.warn('No clients available to populate dropdown');
-        return;
-    }
-    
-    const options = allClients.map(c => {
-        // Handle different possible field names
-        const name = c.full_name || c.name || c.email || 'Unknown';
-        const id = c.user_id || c.client_id || c.id;
-        console.log('Client option:', { id, name });
-        return `<option value="${id}">${name}</option>`;
-    }).join('');
-    
-    select.innerHTML = '<option value="">Select client...</option>' + options;
-    console.log('Client dropdown HTML:', select.innerHTML);
-}
+    function populateClientDropdown() {
+        const select = document.getElementById('taskClient');
 
-function populateEmployeeDropdown() {
-    const select = document.getElementById('taskAssignee');
-    
-    console.log('Populating employee dropdown with:', allEmployees);
-    
-    if (!allEmployees || allEmployees.length === 0) {
-        select.innerHTML = '<option value="">Unassigned</option>';
-        return;
-    }
-    
-    const options = allEmployees.map(e => {
-        const name = e.full_name || e.name || e.email || 'Unknown';
-        const id = e.user_id || e.employee_id || e.id;
-        return `<option value="${id}">${name}</option>`;
-    }).join('');
-    
-    select.innerHTML = '<option value="">Unassigned</option>' + options;
-}
+        console.log('Populating client dropdown with:', allClients);
 
-async function loadTasks(token) {
-    try {
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/tasks/all`, {
-            headers: { 'Authorization': `Bearer ${token || localStorage.getItem('access_token')}` }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            allTasks = data.tasks || [];
-            updateStats();
-            renderTasks(allTasks);
+        if (!allClients || allClients.length === 0) {
+            select.innerHTML = '<option value="">No clients available</option>';
+            console.warn('No clients available to populate dropdown');
+            return;
         }
-    } catch (error) {
-        console.error('Error loading tasks:', error);
+
+        const options = allClients.map(c => {
+            // Handle different possible field names
+            const name = c.full_name || c.name || c.email || 'Unknown';
+            const id = c.user_id || c.client_id || c.id;
+            console.log('Client option:', { id, name });
+            return `<option value="${id}">${name}</option>`;
+        }).join('');
+
+        select.innerHTML = '<option value="">Select client...</option>' + options;
+        console.log('Client dropdown HTML:', select.innerHTML);
     }
-}
 
-function updateStats() {
-    document.getElementById('totalTasks').textContent = allTasks.length;
-    document.getElementById('pendingTasks').textContent = allTasks.filter(t => t.status === 'pending').length;
-    document.getElementById('inProgressTasks').textContent = allTasks.filter(t => t.status === 'in_progress').length;
-    document.getElementById('completedTasks').textContent = allTasks.filter(t => t.status === 'completed').length;
-}
+    function populateEmployeeDropdown() {
+        const select = document.getElementById('taskAssignee');
 
-function renderTasks(tasks) {
-    const grid = document.getElementById('tasksGrid');
-    
-    if (tasks.length === 0) {
-        grid.innerHTML = `
+        console.log('Populating employee dropdown with:', allEmployees);
+
+        if (!allEmployees || allEmployees.length === 0) {
+            select.innerHTML = '<option value="">Unassigned</option>';
+            return;
+        }
+
+        const options = allEmployees.map(e => {
+            const name = e.full_name || e.name || e.email || 'Unknown';
+            const id = e.user_id || e.employee_id || e.id;
+            return `<option value="${id}">${name}</option>`;
+        }).join('');
+
+        select.innerHTML = '<option value="">Unassigned</option>' + options;
+    }
+
+    async function loadTasks(token) {
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/tasks/all`, {
+                headers: { 'Authorization': `Bearer ${token || localStorage.getItem('access_token')}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                allTasks = data.tasks || [];
+                updateStats();
+                renderTasks(allTasks);
+            }
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+        }
+    }
+
+    function updateStats() {
+        document.getElementById('totalTasks').textContent = allTasks.length;
+        document.getElementById('pendingTasks').textContent = allTasks.filter(t => t.status === 'pending').length;
+        document.getElementById('inProgressTasks').textContent = allTasks.filter(t => t.status === 'in_progress').length;
+        document.getElementById('completedTasks').textContent = allTasks.filter(t => t.status === 'completed').length;
+    }
+
+    function renderTasks(tasks) {
+        const grid = document.getElementById('tasksGrid');
+
+        if (tasks.length === 0) {
+            grid.innerHTML = `
             <div class="empty-state">
                 <i class="ti ti-clipboard-off"></i>
                 <p>No tasks found</p>
             </div>
         `;
-        return;
-    }
-    
-    grid.innerHTML = tasks.map(task => `
+            return;
+        }
+
+        grid.innerHTML = tasks.map(task => `
         <div class="task-card priority-${task.priority}" onclick="editTask(${task.task_id})">
             <div class="task-header">
                 <div>
@@ -687,203 +728,203 @@ function renderTasks(tasks) {
             </div>
         </div>
     `).join('');
-}
+    }
 
-function filterTasks() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const status = document.getElementById('statusFilter').value;
-    const priority = document.getElementById('priorityFilter').value;
-    
-    const filtered = allTasks.filter(task => {
-        const matchSearch = task.title.toLowerCase().includes(search) || 
-                          (task.description && task.description.toLowerCase().includes(search));
-        const matchStatus = !status || task.status === status;
-        const matchPriority = !priority || task.priority === priority;
-        
-        return matchSearch && matchStatus && matchPriority;
-    });
-    
-    renderTasks(filtered);
-}
+    function filterTasks() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+        const priority = document.getElementById('priorityFilter').value;
 
-function openCreateTaskModal() {
-    document.getElementById('modalTitle').textContent = 'Create Task';
-    document.getElementById('taskForm').reset();
-    document.getElementById('taskId').value = '';
-    
-    // Ensure dropdowns are populated
-    if (allClients.length === 0 || allEmployees.length === 0) {
-        const token = localStorage.getItem('access_token');
-        loadInitialData(token).then(() => {
-            document.getElementById('taskModal').classList.add('active');
+        const filtered = allTasks.filter(task => {
+            const matchSearch = task.title.toLowerCase().includes(search) ||
+                (task.description && task.description.toLowerCase().includes(search));
+            const matchStatus = !status || task.status === status;
+            const matchPriority = !priority || task.priority === priority;
+
+            return matchSearch && matchStatus && matchPriority;
         });
-    } else {
-        populateClientDropdown();
-        populateEmployeeDropdown();
+
+        renderTasks(filtered);
+    }
+
+    function openCreateTaskModal() {
+        document.getElementById('modalTitle').textContent = 'Create Task';
+        document.getElementById('taskForm').reset();
+        document.getElementById('taskId').value = '';
+
+        // Ensure dropdowns are populated
+        if (allClients.length === 0 || allEmployees.length === 0) {
+            const token = localStorage.getItem('access_token');
+            loadInitialData(token).then(() => {
+                document.getElementById('taskModal').classList.add('active');
+            });
+        } else {
+            populateClientDropdown();
+            populateEmployeeDropdown();
+            document.getElementById('taskModal').classList.add('active');
+        }
+    }
+
+    function closeTaskModal() {
+        document.getElementById('taskModal').classList.remove('active');
+    }
+
+    async function saveTask() {
+        const token = localStorage.getItem('access_token');
+        const taskId = document.getElementById('taskId').value;
+        const isEdit = !!taskId;
+
+        // Get form values
+        const title = document.getElementById('taskTitle').value.trim();
+        const description = document.getElementById('taskDescription').value.trim();
+        const clientSelect = document.getElementById('taskClient');
+        const clientId = clientSelect.value;
+        const assigneeSelect = document.getElementById('taskAssignee');
+        const assignedTo = assigneeSelect.value;
+        const priority = document.getElementById('taskPriority').value;
+        const dueDate = document.getElementById('taskDueDate').value;
+
+        console.log('Raw form values:', {
+            title,
+            clientId,
+            assignedTo,
+            priority,
+            dueDate,
+            description
+        });
+
+        // Validation
+        if (!title) {
+            alert('Please enter a task title');
+            return;
+        }
+
+        if (!clientId || clientId === '' || clientId === 'null') {
+            alert('Please select a client. Available clients: ' + allClients.length);
+            console.error('Client ID invalid:', clientId);
+            console.error('Client select HTML:', clientSelect.innerHTML);
+            return;
+        }
+
+        // Parse and validate client_id
+        const parsedClientId = parseInt(clientId);
+        if (isNaN(parsedClientId)) {
+            alert('Invalid client selected. Please try again or refresh the page.');
+            console.error('Cannot parse client ID:', clientId);
+            return;
+        }
+
+        if (!priority) {
+            alert('Please select a priority');
+            return;
+        }
+
+        // Build task data object
+        const taskData = {
+            title: title,
+            client_id: parsedClientId,
+            priority: priority
+        };
+
+        // Add optional fields
+        if (description) {
+            taskData.description = description;
+        }
+
+        if (assignedTo && assignedTo !== '' && assignedTo !== 'null') {
+            const parsedAssignedTo = parseInt(assignedTo);
+            if (!isNaN(parsedAssignedTo)) {
+                taskData.assigned_to = parsedAssignedTo;
+            }
+        }
+
+        if (dueDate) {
+            taskData.due_date = dueDate;
+        }
+
+        console.log('Sending task data:', taskData);
+
+        try {
+            const url = isEdit
+                ? `${APP_CONFIG.apiBaseUrl}/tasks/${taskId}`
+                : `${APP_CONFIG.apiBaseUrl}/tasks/create`;
+
+            const method = isEdit ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(taskData)
+            });
+
+            const data = await response.json();
+            console.log('Response:', data);
+
+            if (response.ok) {
+                alert(isEdit ? 'Task updated successfully!' : 'Task created successfully!');
+                closeTaskModal();
+                await loadTasks(token);
+            } else {
+                console.error('Error response:', data);
+                alert('Error: ' + (data.detail || 'Failed to save task'));
+            }
+        } catch (error) {
+            console.error('Error saving task:', error);
+            alert('Failed to save task: ' + error.message);
+        }
+    }
+
+    async function editTask(taskId) {
+        const task = allTasks.find(t => t.task_id === taskId);
+        if (!task) return;
+
+        document.getElementById('modalTitle').textContent = 'Edit Task';
+        document.getElementById('taskId').value = task.task_id;
+        document.getElementById('taskTitle').value = task.title;
+        document.getElementById('taskDescription').value = task.description || '';
+        document.getElementById('taskClient').value = task.client_id;
+        document.getElementById('taskAssignee').value = task.assigned_to_id || '';
+        document.getElementById('taskPriority').value = task.priority;
+        document.getElementById('taskDueDate').value = task.due_date || '';
+
         document.getElementById('taskModal').classList.add('active');
     }
-}
 
-function closeTaskModal() {
-    document.getElementById('taskModal').classList.remove('active');
-}
+    async function deleteTask(taskId) {
+        if (!confirm('Are you sure you want to delete this task?')) return;
 
-async function saveTask() {
-    const token = localStorage.getItem('access_token');
-    const taskId = document.getElementById('taskId').value;
-    const isEdit = !!taskId;
-    
-    // Get form values
-    const title = document.getElementById('taskTitle').value.trim();
-    const description = document.getElementById('taskDescription').value.trim();
-    const clientSelect = document.getElementById('taskClient');
-    const clientId = clientSelect.value;
-    const assigneeSelect = document.getElementById('taskAssignee');
-    const assignedTo = assigneeSelect.value;
-    const priority = document.getElementById('taskPriority').value;
-    const dueDate = document.getElementById('taskDueDate').value;
-    
-    console.log('Raw form values:', {
-        title,
-        clientId,
-        assignedTo,
-        priority,
-        dueDate,
-        description
-    });
-    
-    // Validation
-    if (!title) {
-        alert('Please enter a task title');
-        return;
-    }
-    
-    if (!clientId || clientId === '' || clientId === 'null') {
-        alert('Please select a client. Available clients: ' + allClients.length);
-        console.error('Client ID invalid:', clientId);
-        console.error('Client select HTML:', clientSelect.innerHTML);
-        return;
-    }
-    
-    // Parse and validate client_id
-    const parsedClientId = parseInt(clientId);
-    if (isNaN(parsedClientId)) {
-        alert('Invalid client selected. Please try again or refresh the page.');
-        console.error('Cannot parse client ID:', clientId);
-        return;
-    }
-    
-    if (!priority) {
-        alert('Please select a priority');
-        return;
-    }
-    
-    // Build task data object
-    const taskData = {
-        title: title,
-        client_id: parsedClientId,
-        priority: priority
-    };
-    
-    // Add optional fields
-    if (description) {
-        taskData.description = description;
-    }
-    
-    if (assignedTo && assignedTo !== '' && assignedTo !== 'null') {
-        const parsedAssignedTo = parseInt(assignedTo);
-        if (!isNaN(parsedAssignedTo)) {
-            taskData.assigned_to = parsedAssignedTo;
-        }
-    }
-    
-    if (dueDate) {
-        taskData.due_date = dueDate;
-    }
-    
-    console.log('Sending task data:', taskData);
-    
-    try {
-        const url = isEdit 
-            ? `${APP_CONFIG.apiBaseUrl}/tasks/${taskId}`
-            : `${APP_CONFIG.apiBaseUrl}/tasks/create`;
-        
-        const method = isEdit ? 'PUT' : 'POST';
-        
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(taskData)
-        });
-        
-        const data = await response.json();
-        console.log('Response:', data);
-        
-        if (response.ok) {
-            alert(isEdit ? 'Task updated successfully!' : 'Task created successfully!');
-            closeTaskModal();
-            await loadTasks(token);
-        } else {
-            console.error('Error response:', data);
-            alert('Error: ' + (data.detail || 'Failed to save task'));
-        }
-    } catch (error) {
-        console.error('Error saving task:', error);
-        alert('Failed to save task: ' + error.message);
-    }
-}
+        const token = localStorage.getItem('access_token');
 
-async function editTask(taskId) {
-    const task = allTasks.find(t => t.task_id === taskId);
-    if (!task) return;
-    
-    document.getElementById('modalTitle').textContent = 'Edit Task';
-    document.getElementById('taskId').value = task.task_id;
-    document.getElementById('taskTitle').value = task.title;
-    document.getElementById('taskDescription').value = task.description || '';
-    document.getElementById('taskClient').value = task.client_id;
-    document.getElementById('taskAssignee').value = task.assigned_to_id || '';
-    document.getElementById('taskPriority').value = task.priority;
-    document.getElementById('taskDueDate').value = task.due_date || '';
-    
-    document.getElementById('taskModal').classList.add('active');
-}
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/tasks/${taskId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-async function deleteTask(taskId) {
-    if (!confirm('Are you sure you want to delete this task?')) return;
-    
-    const token = localStorage.getItem('access_token');
-    
-    try {
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/tasks/${taskId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (response.ok) {
-            alert('Task deleted successfully!');
-            await loadTasks(token);
-        } else {
+            if (response.ok) {
+                alert('Task deleted successfully!');
+                await loadTasks(token);
+            } else {
+                alert('Failed to delete task');
+            }
+        } catch (error) {
+            console.error('Error deleting task:', error);
             alert('Failed to delete task');
         }
-    } catch (error) {
-        console.error('Error deleting task:', error);
-        alert('Failed to delete task');
     }
-}
 
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
 
-function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-}
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
 </script>
 {% endblock %}

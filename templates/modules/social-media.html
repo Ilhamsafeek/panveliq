@@ -736,7 +736,9 @@
     }
 
     @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     /* Best Times Panel */
@@ -1014,7 +1016,7 @@
         display: inline-block;
     }
 
-        .btn {
+    .btn {
         padding: 0.75rem 1.25rem;
         border-radius: 8px;
         font-size: 14px;
@@ -1092,9 +1094,11 @@
 {% block content %}
 <div class="social-media-container">
     <!-- Module Header -->
-    <div class="module-header">
-        <h1><i class="ti ti-calendar-event"></i> Social Media Command Center</h1>
-        <p>Multi-platform scheduling with AI-powered best time recommendations</p>
+    <div class="header-hero">
+        <div>
+            <h1><i class="ti ti-calendar-event"></i> Social Media Command Center</h1>
+            <p>Multi-platform scheduling with AI-powered best time recommendations</p>
+        </div>
     </div>
 
     <!-- Action Bar -->
@@ -1155,7 +1159,8 @@
 
     <!-- Performance Summaries -->
     <div class="performance-section" id="performanceSection" style="margin-bottom: 2rem;">
-        <h2 style="font-size: 1.25rem; font-weight: 600; color: #1e293b; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+        <h2
+            style="font-size: 1.25rem; font-weight: 600; color: #1e293b; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
             <i class="ti ti-chart-bar"></i> Performance Summary by Platform
         </h2>
         <div id="performanceSummaries" class="performance-grid"></div>
@@ -1164,10 +1169,12 @@
     <!-- Trending Topics -->
     <div class="trending-section" style="margin-bottom: 2rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h2 style="font-size: 1.25rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
+            <h2
+                style="font-size: 1.25rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
                 <i class="ti ti-trending-up"></i> Trending Topics
             </h2>
-            <select class="form-control" id="trendingPlatformFilter" onchange="loadTrendingTopics()" style="width: auto;">
+            <select class="form-control" id="trendingPlatformFilter" onchange="loadTrendingTopics()"
+                style="width: auto;">
                 <option value="">All Platforms</option>
                 <option value="instagram">Instagram</option>
                 <option value="facebook">Facebook</option>
@@ -1273,8 +1280,10 @@
 
                 <!-- Content from Module 5 -->
                 <div class="modal-section">
-                    <h3><i class="ti ti-file-text"></i> Content <small>(Optional: Pull from Content Library)</small></h3>
-                    <button type="button" class="btn btn-secondary" onclick="loadContentLibrary()" style="margin-bottom: 1rem;">
+                    <h3><i class="ti ti-file-text"></i> Content <small>(Optional: Pull from Content Library)</small>
+                    </h3>
+                    <button type="button" class="btn btn-secondary" onclick="loadContentLibrary()"
+                        style="margin-bottom: 1rem;">
                         <i class="ti ti-download"></i> Load from Content Library
                     </button>
                     <div id="contentLibraryPicker" class="content-library-picker" style="display: none;"></div>
@@ -1284,14 +1293,16 @@
                 <div class="modal-section">
                     <div class="form-group">
                         <label>Caption</label>
-                        <textarea class="form-control" id="postCaption" placeholder="Write your caption..." required></textarea>
+                        <textarea class="form-control" id="postCaption" placeholder="Write your caption..."
+                            required></textarea>
                     </div>
                 </div>
 
                 <!-- Media from Module 8 -->
                 <div class="modal-section">
                     <h3><i class="ti ti-photo"></i> Media <small>(Optional: Attach from Media Library)</small></h3>
-                    <button type="button" class="btn btn-secondary" onclick="loadMediaLibrary()" style="margin-bottom: 1rem;">
+                    <button type="button" class="btn btn-secondary" onclick="loadMediaLibrary()"
+                        style="margin-bottom: 1rem;">
                         <i class="ti ti-photo-plus"></i> Add Media from Library
                     </button>
                     <div id="mediaLibraryPicker" class="media-library-picker" style="display: none;"></div>
@@ -1302,7 +1313,8 @@
                 <div class="modal-section">
                     <div class="form-group">
                         <label>Hashtags <small>(comma-separated)</small></label>
-                        <input type="text" class="form-control" id="postHashtags" placeholder="marketing, socialmedia, digital">
+                        <input type="text" class="form-control" id="postHashtags"
+                            placeholder="marketing, socialmedia, digital">
                     </div>
                 </div>
 
