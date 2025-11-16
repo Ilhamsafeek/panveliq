@@ -4,14 +4,100 @@ File: app/api/v1/endpoints/finance.py
 """
 
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, date, timedelta
-from decimal import Decimal
+from jose import JWTError, jwt
 import pymysql
-from app.core.security import get_db_connection, require_admin
+from app.core.config import settings
 
 router = APIRouter()
+
+# OAuth2 scheme
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"/api/{settings.API_VERSION}/auth/login")
+
+
+# ============================================
+# DATABASE CONNECTION
+# ============================================
+
+def get_db_connection():
+    """Get MySQL database connection"""
+    try:
+        connection = pymysql.connect(
+            host=settings.DB_HOST,
+            port=settings.DB_PORT,
+            user=settings.DB_USER,
+            password=settings.DB_PASSWORD,
+            database=settings.DB_NAME,
+            cursorclass=pymysql.cursors.DictCursor
+        )
+        return connection
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database connection failed: {str(e)}"
+        )
+
+
+# ============================================
+# AUTHENTICATION
+# ============================================
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    """Get current authenticated user from token"""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    connection = None
+    cursor = None
+    
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email: str = payload.get("sub")
+        user_id: int = payload.get("user_id")
+        
+        if email is None or user_id is None:
+            raise credentials_exception
+        
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        cursor.execute(
+            "SELECT user_id, email, full_name, role, status FROM users WHERE user_id = %s",
+            (user_id,)
+        )
+        user = cursor.fetchone()
+        
+        if user is None:
+            raise credentials_exception
+        
+        if user['status'] == 'suspended':
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account is suspended"
+            )
+        
+        return user
+    
+    except JWTError:
+        raise credentials_exception
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Authentication error: {str(e)}"
+        )
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 
 # ============================================
@@ -24,12 +110,6 @@ class TransactionCreate(BaseModel):
     amount: float
     description: str
     transaction_date: date
-    category: Optional[str] = None
-
-
-class ExpenseCategoryCreate(BaseModel):
-    category_name: str
-    description: Optional[str] = None
 
 
 # ============================================
@@ -40,7 +120,7 @@ class ExpenseCategoryCreate(BaseModel):
 async def get_profit_loss(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    current_user: dict = Depends(require_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Generate comprehensive Profit & Loss statement
@@ -50,6 +130,13 @@ async def get_profit_loss(
     cursor = None
     
     try:
+        # Verify admin role
+        if current_user['role'] not in ['admin', 'employee']:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required"
+            )
+        
         connection = get_db_connection()
         cursor = connection.cursor()
         
@@ -216,6 +303,8 @@ async def get_profit_loss(
             ]
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error generating P&L: {str(e)}")
         raise HTTPException(
@@ -236,13 +325,20 @@ async def get_profit_loss(
 @router.post("/transactions", summary="Create financial transaction")
 async def create_transaction(
     transaction: TransactionCreate,
-    current_user: dict = Depends(require_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """Create a new financial transaction (revenue or expense)"""
     connection = None
     cursor = None
     
     try:
+        # Verify admin role
+        if current_user['role'] not in ['admin', 'employee']:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required"
+            )
+        
         connection = get_db_connection()
         cursor = connection.cursor()
         
@@ -276,6 +372,8 @@ async def create_transaction(
             "transaction_id": transaction_id
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         if connection:
             connection.rollback()
@@ -297,13 +395,20 @@ async def get_transactions(
     client_id: Optional[int] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    current_user: dict = Depends(require_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get transactions with optional filters"""
     connection = None
     cursor = None
     
     try:
+        # Verify admin role
+        if current_user['role'] not in ['admin', 'employee']:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required"
+            )
+        
         connection = get_db_connection()
         cursor = connection.cursor()
         
@@ -353,6 +458,8 @@ async def get_transactions(
             "total": len(transactions)
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error fetching transactions: {str(e)}")
         raise HTTPException(
@@ -369,13 +476,20 @@ async def get_transactions(
 @router.delete("/transactions/{transaction_id}", summary="Delete transaction")
 async def delete_transaction(
     transaction_id: int,
-    current_user: dict = Depends(require_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """Delete a financial transaction"""
     connection = None
     cursor = None
     
     try:
+        # Verify admin role
+        if current_user['role'] not in ['admin', 'employee']:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required"
+            )
+        
         connection = get_db_connection()
         cursor = connection.cursor()
         
@@ -406,87 +520,6 @@ async def delete_transaction(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete transaction: {str(e)}"
-        )
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
-
-# ============================================
-# DASHBOARD SUMMARY
-# ============================================
-
-@router.get("/dashboard-summary", summary="Get financial dashboard summary")
-async def get_dashboard_summary(
-    current_user: dict = Depends(require_admin)
-):
-    """Get quick financial summary for dashboard"""
-    connection = None
-    cursor = None
-    
-    try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        
-        # This month's metrics
-        first_day = date.today().replace(day=1)
-        
-        # Monthly Revenue
-        cursor.execute("""
-            SELECT 
-                SUM(CASE WHEN transaction_type = 'revenue' THEN amount ELSE 0 END) as revenue,
-                SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as expenses
-            FROM financial_transactions
-            WHERE transaction_date >= %s
-        """, (first_day,))
-        monthly_data = cursor.fetchone()
-        
-        # Active subscriptions revenue
-        cursor.execute("""
-            SELECT SUM(p.price) as subscription_revenue
-            FROM client_subscriptions cs
-            JOIN packages p ON cs.package_id = p.package_id
-            WHERE cs.status = 'active'
-        """)
-        sub_revenue = cursor.fetchone()
-        
-        monthly_revenue = float(monthly_data['revenue'] or 0) + float(sub_revenue['subscription_revenue'] or 0)
-        monthly_expenses = float(monthly_data['expenses'] or 0)
-        monthly_profit = monthly_revenue - monthly_expenses
-        
-        # Previous month comparison
-        last_month_start = (first_day - timedelta(days=1)).replace(day=1)
-        last_month_end = first_day - timedelta(days=1)
-        
-        cursor.execute("""
-            SELECT 
-                SUM(CASE WHEN transaction_type = 'revenue' THEN amount ELSE 0 END) as revenue,
-                SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as expenses
-            FROM financial_transactions
-            WHERE transaction_date BETWEEN %s AND %s
-        """, (last_month_start, last_month_end))
-        last_month_data = cursor.fetchone()
-        
-        last_month_revenue = float(last_month_data['revenue'] or 0)
-        revenue_growth = ((monthly_revenue - last_month_revenue) / last_month_revenue * 100) if last_month_revenue > 0 else 0
-        
-        return {
-            "success": True,
-            "current_month": {
-                "revenue": round(monthly_revenue, 2),
-                "expenses": round(monthly_expenses, 2),
-                "profit": round(monthly_profit, 2),
-                "revenue_growth": round(revenue_growth, 2)
-            }
-        }
-        
-    except Exception as e:
-        print(f"Error fetching dashboard summary: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch summary: {str(e)}"
         )
     finally:
         if cursor:

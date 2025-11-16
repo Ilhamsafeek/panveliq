@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+
+{% block title %}My Package - PanvelIQ{% endblock %}
+
+{% set show_sidebar = True %}
+
+{% block extra_css %}
+<style>
+    .package-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .page-header p {
+        color: var(--color-gray-600);
+    }
+
+    .package-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: var(--shadow-md);
+        margin-bottom: 2rem;
+    }
+
+    .package-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 2px solid var(--color-gray-100);
+    }
+
+    .package-title-section h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .package-tier-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .package-tier-badge.basic {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .package-tier-badge.professional {
+        background: #DDD6FE;
+        color: #6B21A8;
+    }
+
+    .package-tier-badge.enterprise {
+        background: #FCE7F3;
+        color: #9F1239;
+    }
+
+    .package-status {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .package-status.active {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .package-status.expired {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .package-details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .detail-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .detail-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+    }
+
+    .detail-value.highlight {
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .features-section {
+        margin-top: 2rem;
+    }
+
+    .features-section h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin-bottom: 1rem;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: var(--color-gray-50);
+        border-radius: 8px;
+    }
+
+    .feature-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--gradient-primary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .feature-text {
+        font-size: 0.875rem;
+        color: var(--color-gray-700);
+        font-weight: 500;
+    }
+
+    .actions-section {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 2px solid var(--color-gray-100);
+        display: flex;
+        gap: 1rem;
+    }
+
+    .btn-action {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        border: none;
+    }
+
+    .btn-primary {
+        background: var(--gradient-primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(153, 38, 243, 0.3);
+    }
+
+    .btn-secondary {
+        background: var(--color-gray-100);
+        color: var(--color-gray-700);
+    }
+
+    .btn-secondary:hover {
+        background: var(--color-gray-200);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--color-gray-500);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: var(--color-gray-300);
+    }
+
+    .empty-state h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--color-gray-700);
+        margin-bottom: 0.5rem;
+    }
+
+    .loading-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .spinner {
+        border: 3px solid var(--color-gray-200);
+        border-top: 3px solid var(--primary-purple);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="package-container">
+    <div class="page-header">
+        <h1><i class="ti ti-package"></i> My Package</h1>
+        <p>View your current subscription details and features</p>
+    </div>
+
+    <div id="packageContent">
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading package information...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const APP_CONFIG = {
+        apiBaseUrl: '/api/v1'
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadPackageInfo();
+    });
+
+    async function loadPackageInfo() {
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/client-pages/my-package`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                if (data.has_package) {
+                    renderPackage(data.package);
+                } else {
+                    renderNoPackage();
+                }
+            } else {
+                renderError();
+            }
+        } catch (error) {
+            console.error('Error loading package:', error);
+            renderError();
+        }
+    }
+
+    function renderPackage(pkg) {
+        const isActive = pkg.status === 'active';
+        const daysRemaining = pkg.days_remaining || 0;
+        
+        const content = `
+            <div class="package-card">
+                <div class="package-header">
+                    <div class="package-title-section">
+                        <h2>${pkg.package_name}</h2>
+                        <span class="package-tier-badge ${pkg.package_tier}">${pkg.package_tier}</span>
+                    </div>
+                    <span class="package-status ${pkg.status}">${pkg.status}</span>
+                </div>
+
+                <div class="package-details-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Monthly Price</span>
+                        <span class="detail-value highlight">$${parseFloat(pkg.price).toFixed(2)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Billing Cycle</span>
+                        <span class="detail-value">${pkg.billing_cycle}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Start Date</span>
+                        <span class="detail-value">${formatDate(pkg.start_date)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Expires On</span>
+                        <span class="detail-value">${formatDate(pkg.end_date)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Days Remaining</span>
+                        <span class="detail-value ${daysRemaining <= 7 ? 'text-warning' : ''}">${daysRemaining} days</span>
+                    </div>
+                </div>
+
+                <p style="color: var(--color-gray-600); margin-bottom: 1rem;">${pkg.description}</p>
+
+                <div class="features-section">
+                    <h3><i class="ti ti-stars"></i> Package Features</h3>
+                    <div class="features-grid">
+                        ${renderFeatures(pkg.features)}
+                    </div>
+                </div>
+
+                <div class="actions-section">
+                    <button class="btn-action btn-primary" onclick="upgradePackage()">
+                        <i class="ti ti-arrow-up"></i>
+                        Upgrade Package
+                    </button>
+                    <button class="btn-action btn-secondary" onclick="renewPackage()">
+                        <i class="ti ti-refresh"></i>
+                        Renew Package
+                    </button>
+                    <button class="btn-action btn-secondary" onclick="contactSupport()">
+                        <i class="ti ti-help"></i>
+                        Contact Support
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('packageContent').innerHTML = content;
+    }
+
+    function renderFeatures(features) {
+        if (!features || typeof features !== 'object') {
+            return '<div class="feature-item"><div class="feature-icon"><i class="ti ti-check"></i></div><div class="feature-text">Standard features included</div></div>';
+        }
+
+        return Object.values(features).map(feature => `
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="ti ti-check"></i>
+                </div>
+                <div class="feature-text">${feature}</div>
+            </div>
+        `).join('');
+    }
+
+    function renderNoPackage() {
+        const content = `
+            <div class="package-card">
+                <div class="empty-state">
+                    <i class="ti ti-package-off"></i>
+                    <h3>No Active Package</h3>
+                    <p>You don't have an active subscription package</p>
+                    <button class="btn-action btn-primary" onclick="browsePackages()" style="margin-top: 1rem;">
+                        <i class="ti ti-eye"></i>
+                        Browse Packages
+                    </button>
+                </div>
+            </div>
+        `;
+        document.getElementById('packageContent').innerHTML = content;
+    }
+
+    function renderError() {
+        const content = `
+            <div class="package-card">
+                <div class="empty-state">
+                    <i class="ti ti-alert-circle"></i>
+                    <h3>Error Loading Package</h3>
+                    <p>Failed to load package information</p>
+                    <button class="btn-action btn-primary" onclick="loadPackageInfo()" style="margin-top: 1rem;">
+                        <i class="ti ti-refresh"></i>
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        `;
+        document.getElementById('packageContent').innerHTML = content;
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function upgradePackage() {
+        alert('Upgrade package functionality - Contact your account manager');
+    }
+
+    function renewPackage() {
+        alert('Renew package functionality - Contact your account manager');
+    }
+
+    function contactSupport() {
+        window.location.href = '/messages';
+    }
+
+    function browsePackages() {
+        window.location.href = '/onboarding/select-package';
+    }
+</script>
+{% endblock %}

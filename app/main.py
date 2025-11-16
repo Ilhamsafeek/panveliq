@@ -895,6 +895,150 @@ async def financial_pl_page(request: Request):
         )
 
 
+"""
+ADD THESE ROUTES TO YOUR app/main.py FILE
+Place them in the appropriate sections
+"""
+
+# ========== ADMIN PAGES (ADD TO EXISTING ADMIN SECTION) ==========
+
+@app.get("/admin/packages", response_class=HTMLResponse)
+async def admin_packages_page(request: Request):
+    """
+    Admin packages management page
+    Only accessible by admin users
+    """
+    access_token: Optional[str] = request.cookies.get("access_token")
+    role = None
+    
+    if not access_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.split(" ")[1]
+    
+    try:
+        if access_token:
+            payload = jwt.decode(
+                access_token,
+                settings.SECRET_KEY,
+                algorithms=[settings.ALGORITHM]
+            )
+            role = payload.get("role")
+        
+        # Only admin can access
+        if role and role not in ["admin"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin role required."
+            )
+        
+        return templates.TemplateResponse(
+            "admin/packages.html",
+            {
+                "request": request,
+                "show_sidebar": True
+            }
+        )
+        
+    except JWTError:
+        return RedirectResponse(url="/auth/login")
+    except Exception as e:
+        print(f"Error accessing packages page: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load page"
+        )
+
+
+# ========== SETTINGS PAGES (ADD NEW SECTION) ==========
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    """
+    Admin packages management page
+    Only accessible by admin users
+    """
+    access_token: Optional[str] = request.cookies.get("access_token")
+    role = None
+    
+    if not access_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.split(" ")[1]
+    
+    try:
+        if access_token:
+            payload = jwt.decode(
+                access_token,
+                settings.SECRET_KEY,
+                algorithms=[settings.ALGORITHM]
+            )
+            role = payload.get("role")
+        
+        # Only admin can access
+        if role and role not in ["admin"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin role required."
+            )
+        
+        return templates.TemplateResponse(
+            "admin/settings.html",
+            {
+                "request": request,
+                "show_sidebar": True
+            }
+        )
+        
+    except JWTError:
+        return RedirectResponse(url="/auth/login")
+    except Exception as e:
+        print(f"Error accessing packages page: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load page"
+        )
+
+
+@app.get("/settings/profile", response_class=HTMLResponse)
+async def settings_profile_page(request: Request):
+    """
+    Profile settings page - redirect to main settings page
+    """
+    return RedirectResponse(url="/settings")
+
+
+
+# ========== CLIENT PAGES ==========
+
+@app.get("/my-package", response_class=HTMLResponse)
+async def my_package_page(request: Request):
+    return templates.TemplateResponse(
+        "client/my-package.html",
+        {"request": request, "show_sidebar": True}
+    )
+
+@app.get("/reports", response_class=HTMLResponse)
+async def reports_page(request: Request):
+    return templates.TemplateResponse(
+        "client/reports.html",
+        {"request": request, "show_sidebar": True}
+    )
+
+@app.get("/messages", response_class=HTMLResponse)
+async def messages_page(request: Request):
+    return templates.TemplateResponse(
+        "client/messages.html",
+        {"request": request, "show_sidebar": True}
+    )
+
+@app.get("/campaigns", response_class=HTMLResponse)
+async def campaigns_page(request: Request):
+    return templates.TemplateResponse(
+        "client/campaigns.html",
+        {"request": request, "show_sidebar": True}
+    )
+    
 # ========== HEALTH CHECK ==========
 
 @app.get("/health")

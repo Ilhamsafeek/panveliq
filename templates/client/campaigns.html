@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block title %}My Campaigns - PanvelIQ{% endblock %}
+{% set show_sidebar = True %}
+
+{% block extra_css %}
+<style>
+
+    .campaigns-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    .campaigns-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .filter-tab {
+        padding: 0.75rem 1.5rem;
+        background: white;
+        border: 2px solid var(--color-gray-200);
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .filter-tab.active {
+        background: var(--gradient-primary);
+        color: white;
+        border-color: transparent;
+    }
+
+    .campaigns-grid {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    .campaign-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .campaign-info h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .campaign-meta {
+        font-size: 0.875rem;
+        color: var(--color-gray-600);
+        margin-bottom: 0.75rem;
+    }
+
+    .campaign-stats {
+        display: flex;
+        gap: 2rem;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary-purple);
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--color-gray-600);
+        text-transform: uppercase;
+    }
+
+    .status-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-badge.active {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .status-badge.paused {
+        background: #FEF3C7;
+        color: #92400E;
+    }
+
+    .status-badge.completed {
+        background: #E0E7FF;
+        color: #3730A3;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="campaigns-container">
+    <div class="campaigns-header">
+        <div>
+            <h1 style="font-size: 1.75rem; font-weight: 700;"><i class="ti ti-ad"></i> My Campaigns</h1>
+            <p style="color: var(--color-gray-600);">Track your marketing campaigns performance</p>
+        </div>
+    </div>
+
+    <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterCampaigns('all')">All Campaigns</button>
+        <button class="filter-tab" onclick="filterCampaigns('active')">Active</button>
+        <button class="filter-tab" onclick="filterCampaigns('paused')">Paused</button>
+        <button class="filter-tab" onclick="filterCampaigns('completed')">Completed</button>
+    </div>
+
+    <div class="campaigns-grid" id="campaignsGrid">
+        <div style="text-align: center; padding: 4rem 2rem;">
+            <div
+                style="border: 3px solid var(--color-gray-200); border-top: 3px solid var(--primary-purple); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1rem;">
+            </div>
+            <p>Loading campaigns...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const APP_CONFIG = { apiBaseUrl: '/api/v1' };
+    let allCampaigns = [];
+    let currentFilter = 'all';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCampaigns();
+    });
+
+    async function loadCampaigns() {
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/client-pages/campaigns`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                allCampaigns = data.campaigns || [];
+                renderCampaigns(allCampaigns);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    function renderCampaigns(campaigns) {
+        const grid = document.getElementById('campaignsGrid');
+
+        if (campaigns.length === 0) {
+            grid.innerHTML = `
+            <div style="text-align: center; padding: 4rem 2rem; color: var(--color-gray-500);">
+                <i class="ti ti-ad-off" style="font-size: 4rem; color: var(--color-gray-300);"></i>
+                <h3 style="color: var(--color-gray-700); margin-top: 1rem;">No Campaigns Found</h3>
+                <p>Your campaigns will appear here</p>
+            </div>
+        `;
+            return;
+        }
+
+        grid.innerHTML = campaigns.map(campaign => `
+        <div class="campaign-card">
+            <div class="campaign-info">
+                <h3>${campaign.campaign_name}</h3>
+                <div class="campaign-meta">
+                    <i class="ti ti-calendar"></i> ${formatDate(campaign.start_date)} - ${formatDate(campaign.end_date)}
+                    | <i class="ti ti-brand-${campaign.platform.toLowerCase()}"></i> ${campaign.platform}
+                </div>
+                <span class="status-badge ${campaign.status}">${campaign.status}</span>
+            </div>
+            <div class="campaign-stats">
+                <div class="stat-item">
+                    <div class="stat-value">${formatNumber(campaign.total_impressions)}</div>
+                    <div class="stat-label">Impressions</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${formatNumber(campaign.total_clicks)}</div>
+                    <div class="stat-label">Clicks</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${campaign.ctr}%</div>
+                    <div class="stat-label">CTR</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">$${parseFloat(campaign.total_spend).toFixed(2)}</div>
+                    <div class="stat-label">Spend</div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    }
+
+    function filterCampaigns(status) {
+        currentFilter = status;
+
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        event.target.classList.add('active');
+
+        const filtered = status === 'all'
+            ? allCampaigns
+            : allCampaigns.filter(c => c.status === status);
+
+        renderCampaigns(filtered);
+    }
+
+    function formatNumber(num) {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toString();
+    }
+
+    function formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+</script>
+{% endblock %}

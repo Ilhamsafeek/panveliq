@@ -1,0 +1,799 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - PanvelIQ{% endblock %}
+
+{% set show_sidebar = True %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .settings-header {
+        margin-bottom: 2rem;
+    }
+
+    .settings-header h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .settings-header p {
+        color: var(--color-gray-600);
+        font-size: 0.9375rem;
+    }
+
+    .tabs {
+        display: flex;
+        gap: 0.5rem;
+        border-bottom: 2px solid var(--color-gray-200);
+        margin-bottom: 2rem;
+    }
+
+    .tab {
+        padding: 0.875rem 1.25rem;
+        background: none;
+        border: none;
+        color: var(--color-gray-600);
+        font-weight: 600;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .tab:hover {
+        color: var(--color-gray-900);
+        background: var(--color-gray-50);
+    }
+
+    .tab.active {
+        color: var(--primary-purple);
+        border-bottom-color: var(--primary-purple);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .settings-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+        margin-bottom: 1.5rem;
+    }
+
+    .settings-card-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--color-gray-200);
+    }
+
+    .settings-card-header h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0 0 0.375rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .settings-card-header p {
+        font-size: 0.875rem;
+        color: var(--color-gray-600);
+        margin: 0;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-gray-700);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid var(--color-gray-200);
+        border-radius: 8px;
+        font-size: 0.9375rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-purple);
+        box-shadow: 0 0 0 3px rgba(153, 38, 243, 0.1);
+    }
+
+    .form-control:disabled {
+        background: var(--color-gray-50);
+        cursor: not-allowed;
+    }
+
+    .btn-save {
+        padding: 0.75rem 1.5rem;
+        background: var(--gradient-primary);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(153, 38, 243, 0.3);
+    }
+
+    .btn-save:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .api-keys-grid {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .api-key-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: var(--color-gray-50);
+        border-radius: 8px;
+        border: 2px solid var(--color-gray-100);
+    }
+
+    .api-key-info {
+        flex: 1;
+    }
+
+    .api-key-name {
+        font-weight: 600;
+        color: var(--color-gray-900);
+        margin-bottom: 0.25rem;
+    }
+
+    .api-key-description {
+        font-size: 0.75rem;
+        color: var(--color-gray-600);
+    }
+
+    .api-key-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .api-key-status.configured {
+        background: #D1FAE5;
+        color: #065F46;
+    }
+
+    .api-key-status.not-configured {
+        background: #FEE2E2;
+        color: #991B1B;
+    }
+
+    .btn-configure {
+        padding: 0.5rem 1rem;
+        background: var(--primary-purple);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.875rem;
+        margin-left: 1rem;
+    }
+
+    .password-strength {
+        height: 4px;
+        background: var(--color-gray-200);
+        border-radius: 2px;
+        margin-top: 0.5rem;
+        overflow: hidden;
+    }
+
+    .password-strength-bar {
+        height: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .password-strength-bar.weak {
+        width: 33%;
+        background: #EF4444;
+    }
+
+    .password-strength-bar.medium {
+        width: 66%;
+        background: #F59E0B;
+    }
+
+    .password-strength-bar.strong {
+        width: 100%;
+        background: #10B981;
+    }
+
+    .alert {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        display: none;
+    }
+
+    .alert.success {
+        background: #D1FAE5;
+        color: #065F46;
+        border: 1px solid #10B981;
+    }
+
+    .alert.error {
+        background: #FEE2E2;
+        color: #991B1B;
+        border: 1px solid #EF4444;
+    }
+
+    .alert.show {
+        display: block;
+    }
+
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    /* Modal for API Key Input */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal {
+        background: white;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: var(--shadow-xl);
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--color-gray-200);
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1.5rem;
+        border-top: 1px solid var(--color-gray-200);
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+    }
+
+    .btn-cancel {
+        padding: 0.75rem 1.5rem;
+        background: var(--color-gray-100);
+        color: var(--color-gray-700);
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="settings-header">
+        <h1><i class="ti ti-settings"></i> Settings</h1>
+        <p>Manage your account and system configurations</p>
+    </div>
+
+    <div id="alertContainer"></div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('profile')">
+            <i class="ti ti-user"></i>
+            Profile
+        </button>
+        <button class="tab" onclick="switchTab('security')">
+            <i class="ti ti-shield-lock"></i>
+            Security
+        </button>
+        <button class="tab" onclick="switchTab('api-keys')" id="apiKeysTab" style="display: none;">
+            <i class="ti ti-key"></i>
+            API Keys
+        </button>
+    </div>
+
+    <!-- Profile Tab -->
+    <div id="profile-tab" class="tab-content active">
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <h3><i class="ti ti-user-circle"></i> Personal Information</h3>
+                <p>Update your personal details and contact information</p>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 2rem; margin-bottom: 2rem;">
+                <div class="profile-avatar" id="profileAvatar">A</div>
+                <div>
+                    <h4 id="profileName" style="margin: 0 0 0.25rem 0;">Loading...</h4>
+                    <p id="profileRole" style="margin: 0; color: var(--color-gray-600); font-size: 0.875rem;">Loading...</p>
+                </div>
+            </div>
+
+            <form id="profileForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" id="fullName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" id="email" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" id="phone" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Role</label>
+                        <input type="text" id="role" class="form-control" disabled>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-save">
+                    <i class="ti ti-check"></i>
+                    Save Changes
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Security Tab -->
+    <div id="security-tab" class="tab-content">
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <h3><i class="ti ti-lock"></i> Change Password</h3>
+                <p>Update your password to keep your account secure</p>
+            </div>
+
+            <form id="passwordForm">
+                <div class="form-group">
+                    <label class="form-label">Current Password</label>
+                    <input type="password" id="currentPassword" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">New Password</label>
+                    <input type="password" id="newPassword" class="form-control" required minlength="8" oninput="checkPasswordStrength()">
+                    <div class="password-strength">
+                        <div id="passwordStrengthBar" class="password-strength-bar"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Confirm New Password</label>
+                    <input type="password" id="confirmPassword" class="form-control" required minlength="8">
+                </div>
+
+                <button type="submit" class="btn-save">
+                    <i class="ti ti-shield-check"></i>
+                    Update Password
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- API Keys Tab (Admin Only) -->
+    <div id="api-keys-tab" class="tab-content">
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <h3><i class="ti ti-api"></i> API Integrations</h3>
+                <p>Configure API keys for external services</p>
+            </div>
+
+            <div class="api-keys-grid" id="apiKeysGrid">
+                <div style="text-align: center; padding: 2rem;">
+                    <div class="spinner" style="border: 3px solid var(--color-gray-200); border-top: 3px solid var(--primary-purple); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                    <p>Loading API keys...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- API Key Configuration Modal -->
+<div id="apiKeyModal" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modalApiKeyTitle">Configure API Key</h3>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label" id="modalApiKeyLabel">API Key</label>
+                <input type="password" id="modalApiKeyInput" class="form-control" placeholder="Enter your API key">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeApiKeyModal()">Cancel</button>
+            <button class="btn-save" onclick="saveApiKey()">Save</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const APP_CONFIG = {
+        apiBaseUrl: '/api/v1'
+    };
+
+    let currentUser = null;
+    let currentApiKey = null;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadProfile();
+        
+        // Show API Keys tab only for admin
+        if (currentUser && currentUser.role === 'admin') {
+            document.getElementById('apiKeysTab').style.display = 'inline-flex';
+            loadApiKeys();
+        }
+    });
+
+    // Load profile
+    async function loadProfile() {
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/settings/profile`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.profile) {
+                currentUser = data.profile;
+                displayProfile(data.profile);
+            } else {
+                showAlert('Failed to load profile', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading profile:', error);
+            showAlert('Failed to load profile', 'error');
+        }
+    }
+
+    // Display profile
+    function displayProfile(profile) {
+        document.getElementById('fullName').value = profile.full_name || '';
+        document.getElementById('email').value = profile.email || '';
+        document.getElementById('phone').value = profile.phone || '';
+        document.getElementById('role').value = profile.role || '';
+        
+        document.getElementById('profileName').textContent = profile.full_name;
+        document.getElementById('profileRole').textContent = profile.role.charAt(0).toUpperCase() + profile.role.slice(1);
+        
+        // Set avatar initial
+        const initial = profile.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U';
+        document.getElementById('profileAvatar').textContent = initial;
+    }
+
+    // Update profile
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const profileData = {
+            full_name: document.getElementById('fullName').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value || null
+        };
+
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/settings/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                },
+                body: JSON.stringify(profileData)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showAlert(data.message || 'Profile updated successfully', 'success');
+                loadProfile();
+            } else {
+                showAlert(data.detail || 'Failed to update profile', 'error');
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            showAlert('Failed to update profile', 'error');
+        }
+    });
+
+    // Change password
+    document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        if (newPassword !== confirmPassword) {
+            showAlert('Passwords do not match', 'error');
+            return;
+        }
+
+        const passwordData = {
+            current_password: document.getElementById('currentPassword').value,
+            new_password: newPassword
+        };
+
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/settings/profile/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                },
+                body: JSON.stringify(passwordData)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showAlert(data.message || 'Password changed successfully', 'success');
+                document.getElementById('passwordForm').reset();
+                document.getElementById('passwordStrengthBar').className = 'password-strength-bar';
+            } else {
+                showAlert(data.detail || 'Failed to change password', 'error');
+            }
+        } catch (error) {
+            console.error('Error changing password:', error);
+            showAlert('Failed to change password', 'error');
+        }
+    });
+
+    // Password strength checker
+    function checkPasswordStrength() {
+        const password = document.getElementById('newPassword').value;
+        const strengthBar = document.getElementById('passwordStrengthBar');
+        
+        let strength = 0;
+        if (password.length >= 8) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+        
+        strengthBar.className = 'password-strength-bar';
+        if (strength <= 1) {
+            strengthBar.classList.add('weak');
+        } else if (strength === 2 || strength === 3) {
+            strengthBar.classList.add('medium');
+        } else {
+            strengthBar.classList.add('strong');
+        }
+    }
+
+    // Load API keys (Admin only)
+    async function loadApiKeys() {
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/settings/api-keys`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.api_keys) {
+                renderApiKeys(data.api_keys);
+            }
+        } catch (error) {
+            console.error('Error loading API keys:', error);
+        }
+    }
+
+    // Render API keys
+    function renderApiKeys(apiKeys) {
+        const grid = document.getElementById('apiKeysGrid');
+        
+        const apiKeyLabels = {
+            'openai_api_key': 'OpenAI API Key',
+            'meta_app_id': 'Meta App ID',
+            'meta_app_secret': 'Meta App Secret',
+            'meta_access_token': 'Meta Access Token',
+            'google_client_id': 'Google Client ID',
+            'google_client_secret': 'Google Client Secret',
+            'mailchimp_api_key': 'Mailchimp API Key',
+            'whatsapp_business_api_key': 'WhatsApp Business API Key',
+            'synthesia_api_key': 'Synthesia API Key',
+            'canva_api_key': 'Canva API Key',
+            'dalle_api_key': 'DALL-E API Key',
+            'linkedin_client_id': 'LinkedIn Client ID',
+            'linkedin_client_secret': 'LinkedIn Client Secret',
+            'moz_access_id': 'Moz Access ID',
+            'moz_secret_key': 'Moz Secret Key'
+        };
+
+        grid.innerHTML = apiKeys.map(key => `
+            <div class="api-key-item">
+                <div class="api-key-info">
+                    <div class="api-key-name">${apiKeyLabels[key.setting_key] || key.setting_key}</div>
+                </div>
+                <span class="api-key-status ${key.is_configured ? 'configured' : 'not-configured'}">
+                    <i class="ti ti-circle-filled"></i>
+                    ${key.is_configured ? 'Configured' : 'Not Configured'}
+                </span>
+                <button class="btn-configure" onclick="openApiKeyModal('${key.setting_key}', '${apiKeyLabels[key.setting_key]}')">
+                    Configure
+                </button>
+            </div>
+        `).join('');
+    }
+
+    // Open API key modal
+    function openApiKeyModal(settingKey, label) {
+        currentApiKey = settingKey;
+        document.getElementById('modalApiKeyTitle').textContent = `Configure ${label}`;
+        document.getElementById('modalApiKeyLabel').textContent = label;
+        document.getElementById('modalApiKeyInput').value = '';
+        document.getElementById('apiKeyModal').classList.add('active');
+    }
+
+    // Close API key modal
+    function closeApiKeyModal() {
+        document.getElementById('apiKeyModal').classList.remove('active');
+        currentApiKey = null;
+    }
+
+    // Save API key
+    async function saveApiKey() {
+        const value = document.getElementById('modalApiKeyInput').value;
+
+        if (!value.trim()) {
+            showAlert('Please enter a valid API key', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/settings/system`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                },
+                body: JSON.stringify({
+                    setting_key: currentApiKey,
+                    setting_value: value
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showAlert(data.message || 'API key saved successfully', 'success');
+                closeApiKeyModal();
+                loadApiKeys();
+            } else {
+                showAlert(data.detail || 'Failed to save API key', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving API key:', error);
+            showAlert('Failed to save API key', 'error');
+        }
+    }
+
+    // Switch tabs
+    function switchTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        event.target.closest('.tab').classList.add('active');
+
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+    }
+
+    // Show alert
+    function showAlert(message, type = 'success') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert ${type} show`;
+        alertDiv.textContent = message;
+        
+        const container = document.getElementById('alertContainer');
+        container.innerHTML = '';
+        container.appendChild(alertDiv);
+
+        setTimeout(() => {
+            alertDiv.classList.remove('show');
+            setTimeout(() => alertDiv.remove(), 300);
+        }, 5000);
+    }
+
+    // Close modal on outside click
+    document.getElementById('apiKeyModal').addEventListener('click', (e) => {
+        if (e.target.id === 'apiKeyModal') {
+            closeApiKeyModal();
+        }
+    });
+
+    // Spinner animation
+    const style = document.createElement('style');
+    style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+    document.head.appendChild(style);
+</script>
+{% endblock %}

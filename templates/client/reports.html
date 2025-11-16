@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Reports - PanvelIQ{% endblock %}
+{% set show_sidebar = True %}
+
+{% block extra_css %}
+<style>
+      .reports-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .reports-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .report-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+    }
+
+    .report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .report-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+    }
+
+    .report-date {
+        font-size: 0.875rem;
+        color: var(--color-gray-600);
+    }
+
+    .report-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+
+    .metric-item {
+        text-align: center;
+        padding: 0.75rem;
+        background: var(--color-gray-50);
+        border-radius: 8px;
+    }
+
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-purple);
+    }
+
+    .metric-label {
+        font-size: 0.75rem;
+        color: var(--color-gray-600);
+        text-transform: uppercase;
+    }
+
+    .btn-download {
+        padding: 0.5rem 1rem;
+        background: var(--gradient-primary);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reports-container">
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem;"><i class="ti ti-file-text"></i>
+            Performance Reports</h1>
+        <p style="color: var(--color-gray-600);">View detailed campaign performance and analytics</p>
+    </div>
+
+    <div class="reports-grid" id="reportsGrid">
+        <div style="text-align: center; padding: 4rem 2rem;">
+            <div
+                style="border: 3px solid var(--color-gray-200); border-top: 3px solid var(--primary-purple); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1rem;">
+            </div>
+            <p>Loading reports...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const APP_CONFIG = { apiBaseUrl: '/api/v1' };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadReports();
+    });
+
+    async function loadReports() {
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/client-pages/reports`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.reports && data.reports.length > 0) {
+                renderReports(data.reports);
+            } else {
+                document.getElementById('reportsGrid').innerHTML = `
+                <div style="text-align: center; padding: 4rem 2rem; grid-column: 1 / -1;">
+                    <i class="ti ti-file-off" style="font-size: 4rem; color: var(--color-gray-300);"></i>
+                    <h3 style="color: var(--color-gray-700); margin-top: 1rem;">No Reports Available</h3>
+                    <p style="color: var(--color-gray-500);">Reports will appear here once campaigns are running</p>
+                </div>
+            `;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    function renderReports(reports) {
+        const grid = document.getElementById('reportsGrid');
+        grid.innerHTML = reports.map(report => `
+        <div class="report-card">
+            <div class="report-header">
+                <h3 class="report-title">${report.title}</h3>
+                <span class="report-date">${formatDate(report.report_date)}</span>
+            </div>
+            <div class="report-metrics">
+                <div class="metric-item">
+                    <div class="metric-value">${formatNumber(report.metrics.impressions || 0)}</div>
+                    <div class="metric-label">Impressions</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">${formatNumber(report.metrics.clicks || 0)}</div>
+                    <div class="metric-label">Clicks</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">${formatNumber(report.metrics.conversions || 0)}</div>
+                    <div class="metric-label">Conversions</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">$${parseFloat(report.metrics.spend || 0).toFixed(2)}</div>
+                    <div class="metric-label">Spend</div>
+                </div>
+            </div>
+            <button class="btn-download" onclick="downloadReport(${report.reference_id})">
+                <i class="ti ti-download"></i> Download PDF
+            </button>
+        </div>
+    `).join('');
+    }
+
+    function downloadReport(id) {
+        alert('PDF download functionality - Report ID: ' + id);
+    }
+
+    function formatNumber(num) {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toString();
+    }
+
+    function formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+</script>
+{% endblock %}

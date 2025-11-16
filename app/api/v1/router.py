@@ -15,7 +15,7 @@ from app.api.v1.endpoints import (
     employees,
 #     dashboard,
     tasks,
-#     messages,
+    # messages,
     communication,
     content,
     social_media,
@@ -26,7 +26,9 @@ from app.api.v1.endpoints import (
     chatbot,
     user_management,
     finance,
-#     settings as settings_endpoint
+    packages,    
+    settings,
+    client_pages
 )
 
 api_router = APIRouter()
@@ -54,7 +56,9 @@ api_router.include_router(ads.router, prefix="/ad-strategy", tags=["Ads"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 api_router.include_router(chatbot.router, prefix="/chatbot", tags=["Chatbot"])
 api_router.include_router(finance.router, prefix="/finance", tags=["Finance"])
-# api_router.include_router(settings_endpoint.router, prefix="/settings", tags=["Settings"])
+api_router.include_router(packages.router, prefix="/packages", tags=["Packages"])
+api_router.include_router(settings.router, prefix="/settings", tags=["Settings"])
+api_router.include_router(client_pages.router, prefix="/client-pages", tags=["Client Pages"])
 
 
 # Test endpoint

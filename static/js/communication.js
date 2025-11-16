@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function initializePage() {
     try {
         // Get current user
-        await getCurrentUser();
+        // await getCurrentUser();
         
         // Load clients for dropdowns
         await loadClients();

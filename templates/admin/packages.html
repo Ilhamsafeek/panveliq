@@ -1,0 +1,807 @@
+{% extends "base.html" %}
+
+{% block title %}Packages Management - PanvelIQ{% endblock %}
+
+{% set show_sidebar = True %}
+
+{% block extra_css %}
+<style>
+    .packages-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .packages-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .packages-header h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0;
+    }
+
+    .btn-create-package {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-create-package:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(153, 38, 243, 0.3);
+    }
+
+    .packages-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .package-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+    .package-card:hover {
+        border-color: var(--primary-purple);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .package-card.inactive {
+        opacity: 0.6;
+        background: var(--color-gray-50);
+    }
+
+    .package-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .package-tier-badge {
+        padding: 0.375rem 0.875rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .package-tier-badge.basic {
+        background: #DBEAFE;
+        color: #1E40AF;
+    }
+
+    .package-tier-badge.professional {
+        background: #DDD6FE;
+        color: #6B21A8;
+    }
+
+    .package-tier-badge.enterprise {
+        background: #FCE7F3;
+        color: #9F1239;
+    }
+
+    .package-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .package-status.active {
+        color: var(--color-success);
+    }
+
+    .package-status.inactive {
+        color: var(--color-gray-500);
+    }
+
+    .package-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0.5rem 0;
+    }
+
+    .package-description {
+        font-size: 0.875rem;
+        color: var(--color-gray-600);
+        line-height: 1.5;
+        margin-bottom: 1rem;
+    }
+
+    .package-price {
+        display: flex;
+        align-items: baseline;
+        gap: 0.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .price-amount {
+        font-size: 2rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .price-period {
+        font-size: 0.875rem;
+        color: var(--color-gray-600);
+    }
+
+    .package-features {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 1rem 0;
+    }
+
+    .package-features li {
+        font-size: 0.875rem;
+        color: var(--color-gray-700);
+        padding: 0.375rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .package-features li i {
+        color: var(--color-success);
+        font-size: 1rem;
+    }
+
+    .package-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-action {
+        flex: 1;
+        padding: 0.625rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.375rem;
+        transition: all 0.2s ease;
+    }
+
+    .btn-edit {
+        background: var(--color-gray-100);
+        color: var(--color-gray-700);
+    }
+
+    .btn-edit:hover {
+        background: var(--color-gray-200);
+    }
+
+    .btn-delete {
+        background: #FEE2E2;
+        color: #DC2626;
+    }
+
+    .btn-delete:hover {
+        background: #FCA5A5;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal {
+        background: white;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-xl);
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--color-gray-200);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0;
+    }
+
+    .btn-close-modal {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--color-gray-500);
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-close-modal:hover {
+        background: var(--color-gray-100);
+        color: var(--color-gray-900);
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-gray-700);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid var(--color-gray-200);
+        border-radius: 8px;
+        font-size: 0.9375rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-purple);
+        box-shadow: 0 0 0 3px rgba(153, 38, 243, 0.1);
+    }
+
+    .form-control-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .form-select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid var(--color-gray-200);
+        border-radius: 8px;
+        font-size: 0.9375rem;
+        background: white;
+        cursor: pointer;
+    }
+
+    .features-builder {
+        border: 2px solid var(--color-gray-200);
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .feature-item {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .feature-item input {
+        flex: 1;
+    }
+
+    .btn-remove-feature {
+        padding: 0.5rem 0.75rem;
+        background: #FEE2E2;
+        color: #DC2626;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .btn-add-feature {
+        padding: 0.5rem 1rem;
+        background: var(--color-gray-100);
+        color: var(--color-gray-700);
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        margin-top: 0.5rem;
+    }
+
+    .modal-footer {
+        padding: 1.5rem;
+        border-top: 1px solid var(--color-gray-200);
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+    }
+
+    .btn-cancel {
+        padding: 0.75rem 1.5rem;
+        background: var(--color-gray-100);
+        color: var(--color-gray-700);
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-submit {
+        padding: 0.75rem 1.5rem;
+        background: var(--gradient-primary);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-submit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--color-gray-500);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: var(--color-gray-300);
+    }
+
+    .loading-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .spinner {
+        border: 3px solid var(--color-gray-200);
+        border-top: 3px solid var(--primary-purple);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="packages-container">
+    <div class="packages-header">
+        <h1><i class="ti ti-package"></i> Packages Management</h1>
+        <button class="btn-create-package" onclick="openCreateModal()">
+            <i class="ti ti-plus"></i>
+            Create New Package
+        </button>
+    </div>
+
+    <div id="packagesGrid" class="packages-grid">
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading packages...</p>
+        </div>
+    </div>
+
+    <!-- Create/Edit Package Modal -->
+    <div id="packageModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Create New Package</h2>
+                <button class="btn-close-modal" onclick="closeModal()">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="packageForm">
+                    <input type="hidden" id="packageId">
+
+                    <div class="form-group">
+                        <label class="form-label">Package Name</label>
+                        <input type="text" id="packageName" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Package Tier</label>
+                        <select id="packageTier" class="form-select" required>
+                            <option value="basic">Basic</option>
+                            <option value="professional">Professional</option>
+                            <option value="enterprise">Enterprise</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea id="packageDescription" class="form-control form-control-textarea"
+                            required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Price ($)</label>
+                        <input type="number" id="packagePrice" class="form-control" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Billing Cycle</label>
+                        <select id="billingCycle" class="form-select" required>
+                            <option value="monthly">Monthly</option>
+                            <option value="quarterly">Quarterly</option>
+                            <option value="yearly">Yearly</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Features</label>
+                        <div class="features-builder" id="featuresContainer">
+                            <!-- Features will be added here -->
+                        </div>
+                        <button type="button" class="btn-add-feature" onclick="addFeature()">
+                            <i class="ti ti-plus"></i>
+                            Add Feature
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select id="packageStatus" class="form-select">
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-submit" id="btnSubmit" onclick="submitPackage()">Create Package</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const APP_CONFIG = {
+        apiBaseUrl: '/api/v1'
+    };
+
+    let currentPackage = null;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        loadPackages();
+    });
+
+    // Load all packages
+    async function loadPackages() {
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/packages/all`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.packages) {
+                renderPackages(data.packages);
+            } else {
+                document.getElementById('packagesGrid').innerHTML = `
+                    <div class="empty-state">
+                        <i class="ti ti-package-off"></i>
+                        <h3>No packages found</h3>
+                        <p>Create your first package to get started</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading packages:', error);
+            alert('Failed to load packages');
+        }
+    }
+
+    // Render packages
+    function renderPackages(packages) {
+        const grid = document.getElementById('packagesGrid');
+
+        if (packages.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <i class="ti ti-package-off"></i>
+                    <h3>No packages found</h3>
+                    <p>Create your first package to get started</p>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = packages.map(pkg => `
+            <div class="package-card ${!pkg.is_active ? 'inactive' : ''}">
+                <div class="package-header">
+                    <span class="package-tier-badge ${pkg.package_tier}">${pkg.package_tier}</span>
+                    <span class="package-status ${pkg.is_active ? 'active' : 'inactive'}">
+                        <i class="ti ti-circle-filled"></i>
+                        ${pkg.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                </div>
+                
+                <h3 class="package-name">${pkg.package_name}</h3>
+                <p class="package-description">${pkg.description}</p>
+                
+                <div class="package-price">
+                    <span class="price-amount">$${parseFloat(pkg.price).toFixed(0)}</span>
+                    <span class="price-period">/${pkg.billing_cycle}</span>
+                </div>
+                
+                <ul class="package-features">
+                    ${renderFeatures(pkg.features)}
+                </ul>
+                
+                <div class="package-actions">
+                    <button class="btn-action btn-edit" onclick="editPackage(${pkg.package_id})">
+                        <i class="ti ti-edit"></i>
+                        Edit
+                    </button>
+                    <button class="btn-action btn-delete" onclick="deletePackage(${pkg.package_id})">
+                        <i class="ti ti-trash"></i>
+                        Delete
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Render features
+    function renderFeatures(features) {
+        if (!features || typeof features !== 'object') {
+            return '<li><i class="ti ti-check"></i>No features listed</li>';
+        }
+
+        const featuresList = Object.values(features);
+        if (featuresList.length === 0) {
+            return '<li><i class="ti ti-check"></i>No features listed</li>';
+        }
+
+        return featuresList.slice(0, 4).map(feature =>
+            `<li><i class="ti ti-check"></i>${feature}</li>`
+        ).join('') + (featuresList.length > 4 ? `<li><i class="ti ti-dots"></i>+${featuresList.length - 4} more</li>` : '');
+    }
+
+    // Open create modal
+    function openCreateModal() {
+        currentPackage = null;
+        document.getElementById('modalTitle').textContent = 'Create New Package';
+        document.getElementById('btnSubmit').textContent = 'Create Package';
+        document.getElementById('packageForm').reset();
+        document.getElementById('packageId').value = '';
+
+        // Add initial feature
+        document.getElementById('featuresContainer').innerHTML = '';
+        addFeature();
+
+        document.getElementById('packageModal').classList.add('active');
+    }
+
+    // Edit package
+    async function editPackage(packageId) {
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/packages/${packageId}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.package) {
+                currentPackage = data.package;
+
+                document.getElementById('modalTitle').textContent = 'Edit Package';
+                document.getElementById('btnSubmit').textContent = 'Update Package';
+                document.getElementById('packageId').value = packageId;
+                document.getElementById('packageName').value = data.package.package_name;
+                document.getElementById('packageTier').value = data.package.package_tier;
+                document.getElementById('packageDescription').value = data.package.description;
+                document.getElementById('packagePrice').value = data.package.price;
+                document.getElementById('billingCycle').value = data.package.billing_cycle;
+                document.getElementById('packageStatus').value = data.package.is_active;
+
+                // Load features
+                document.getElementById('featuresContainer').innerHTML = '';
+                if (data.package.features) {
+                    Object.values(data.package.features).forEach(feature => {
+                        addFeature(feature);
+                    });
+                } else {
+                    addFeature();
+                }
+
+                document.getElementById('packageModal').classList.add('active');
+            }
+        } catch (error) {
+            console.error('Error loading package:', error);
+            alert('Failed to load package details');
+        }
+    }
+
+    // Close modal
+    function closeModal() {
+        document.getElementById('packageModal').classList.remove('active');
+        document.getElementById('packageForm').reset();
+        currentPackage = null;
+    }
+
+    // Add feature input
+    function addFeature(value = '') {
+        const container = document.getElementById('featuresContainer');
+        const featureDiv = document.createElement('div');
+        featureDiv.className = 'feature-item';
+        featureDiv.innerHTML = `
+            <input type="text" class="form-control" value="${value}" placeholder="Enter feature">
+            <button type="button" class="btn-remove-feature" onclick="this.parentElement.remove()">
+                <i class="ti ti-x"></i>
+            </button>
+        `;
+        container.appendChild(featureDiv);
+    }
+
+    // Submit package
+    async function submitPackage() {
+        const packageId = document.getElementById('packageId').value;
+        const isEdit = !!packageId;
+
+        // Collect features
+        const featureInputs = document.querySelectorAll('#featuresContainer input');
+        const features = {};
+        featureInputs.forEach((input, index) => {
+            if (input.value.trim()) {
+                features[`feature_${index + 1}`] = input.value.trim();
+            }
+        });
+
+        const packageData = {
+            package_name: document.getElementById('packageName').value,
+            package_tier: document.getElementById('packageTier').value,
+            description: document.getElementById('packageDescription').value,
+            price: parseFloat(document.getElementById('packagePrice').value),
+            billing_cycle: document.getElementById('billingCycle').value,
+            features: features,
+            is_active: document.getElementById('packageStatus').value === 'true'
+        };
+
+        try {
+            document.getElementById('btnSubmit').disabled = true;
+
+            const url = isEdit
+                ? `${APP_CONFIG.apiBaseUrl}/packages/${packageId}`
+                : `${APP_CONFIG.apiBaseUrl}/packages/create`;
+
+            const method = isEdit ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                },
+                body: JSON.stringify(packageData)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(data.message || `Package ${isEdit ? 'updated' : 'created'} successfully`);
+                closeModal();
+                loadPackages();
+            } else {
+                alert(data.detail || 'Failed to save package');
+            }
+        } catch (error) {
+            console.error('Error saving package:', error);
+            alert('Failed to save package');
+        } finally {
+            document.getElementById('btnSubmit').disabled = false;
+        }
+    }
+
+    // Delete package
+    async function deletePackage(packageId) {
+        if (!confirm('Are you sure you want to deactivate this package?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/packages/${packageId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(data.message || 'Package deactivated successfully');
+                loadPackages();
+            } else {
+                alert(data.detail || 'Failed to delete package');
+            }
+        } catch (error) {
+            console.error('Error deleting package:', error);
+            alert('Failed to delete package');
+        }
+    }
+
+    // Close modal on outside click
+    document.getElementById('packageModal').addEventListener('click', (e) => {
+        if (e.target.id === 'packageModal') {
+            closeModal();
+        }
+    });
+</script>
+{% endblock %}
