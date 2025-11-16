@@ -1,0 +1,731 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - PanvelIQ{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --color-primary: #9926F3;
+        --color-secondary: #1DD8FC;
+        --gradient-primary: linear-gradient(135deg, #9926F3 0%, #1DD8FC 100%);
+    }
+
+    .user-management-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+
+    .tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .tab {
+        padding: 0.75rem 1.5rem;
+        background: none;
+        border: none;
+        font-weight: 600;
+        color: #6b7280;
+        cursor: pointer;
+        position: relative;
+        transition: color 0.2s;
+    }
+
+    .tab.active {
+        color: var(--color-primary);
+    }
+
+    .tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--gradient-primary);
+    }
+
+    .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .search-filters {
+        display: flex;
+        gap: 0.75rem;
+        flex: 1;
+        min-width: 300px;
+    }
+
+    .search-input {
+        flex: 1;
+        max-width: 400px;
+        padding: 0.625rem 1rem;
+        padding-left: 2.5rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='%236b7280'%3E%3Cpath d='M9 2a7 7 0 1 0 4.39 12.45l4.08 4.08 1.41-1.41-4.08-4.08A7 7 0 0 0 9 2zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10z'/%3E%3C/svg%3E") no-repeat 0.75rem center;
+    }
+
+    .filter-select {
+        padding: 0.625rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: white;
+        cursor: pointer;
+    }
+
+    .btn {
+        padding: 0.625rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: var(--gradient-primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+    }
+
+    .users-table {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    thead {
+        background: #f9fafb;
+    }
+
+    th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    td {
+        padding: 1rem;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    tbody tr:hover {
+        background: #f9fafb;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .user-details h4 {
+        font-weight: 600;
+        color: #111827;
+        margin: 0;
+    }
+
+    .user-details p {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin: 0.25rem 0 0 0;
+    }
+
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+
+    .badge-admin {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .badge-employee {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .badge-client {
+        background: #f3e8ff;
+        color: #6b21a8;
+    }
+
+    .badge-active {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .badge-suspended {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .badge-inactive {
+        background: #f3f4f6;
+        color: #4b5563;
+    }
+
+    .actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+        background: #f9fafb;
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1.5rem;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.625rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(153, 38, 243, 0.1);
+    }
+
+    .permission-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .permission-card {
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f9fafb;
+    }
+
+    .permission-card h5 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #111827;
+        margin: 0 0 0.5rem 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .permission-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0;
+    }
+
+    .permission-item input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .permission-item label {
+        font-size: 0.875rem;
+        cursor: pointer;
+        flex: 1;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+
+    .page-btn {
+        padding: 0.5rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        background: white;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    .page-btn.active {
+        background: var(--gradient-primary);
+        color: white;
+        border-color: transparent;
+    }
+
+    .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .loading {
+        display: flex;
+        justify-content: center;
+        padding: 3rem;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #e5e7eb;
+        border-top-color: var(--color-primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6b7280;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .audit-log-item {
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
+        background: white;
+    }
+
+    .audit-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 0.5rem;
+    }
+
+    .audit-action {
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .audit-time {
+        font-size: 0.75rem;
+        color: #6b7280;
+    }
+
+    .audit-details {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="user-management-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1>User Management & Access Control</h1>
+        <p>Manage users, roles, and permissions</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('users')">Users</button>
+        <button class="tab" onclick="switchTab('permissions')">Permissions</button>
+        <button class="tab" onclick="switchTab('audit')">Audit Log</button>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value" id="totalUsers">0</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="adminCount">0</div>
+            <div class="stat-label">Administrators</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="employeeCount">0</div>
+            <div class="stat-label">Employees</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="clientCount">0</div>
+            <div class="stat-label">Clients</div>
+        </div>
+    </div>
+
+    <!-- Users Tab -->
+    <div id="users-tab" class="tab-content active">
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="search-filters">
+                <input type="text" class="search-input" id="searchUsers" placeholder="Search users...">
+                <select class="filter-select" id="filterRole" onchange="loadUsers()">
+                    <option value="">All Roles</option>
+                    <option value="admin">Admin</option>
+                    <option value="employee">Employee</option>
+                    <option value="client">Client</option>
+                </select>
+                <select class="filter-select" id="filterStatus" onchange="loadUsers()">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="openCreateUserModal()">
+                <i class="ti ti-plus"></i> Add User
+            </button>
+        </div>
+
+        <!-- Users Table -->
+        <div class="users-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Last Login</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr>
+                        <td colspan="6">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="usersPagination"></div>
+    </div>
+
+    <!-- Permissions Tab -->
+    <div id="permissions-tab" class="tab-content">
+        <div class="toolbar">
+            <select class="filter-select" id="filterModule" onchange="loadPermissions()">
+                <option value="">All Modules</option>
+                <option value="user_management">User Management</option>
+                <option value="access_control">Access Control</option>
+                <option value="client_management">Client Management</option>
+                <option value="task_management">Task Management</option>
+                <option value="project_planner">Project Planner</option>
+                <option value="communication">Communication</option>
+                <option value="content">Content</option>
+                <option value="social_media">Social Media</option>
+                <option value="seo">SEO</option>
+                <option value="media_studio">Media Studio</option>
+                <option value="ad_strategy">Ad Strategy</option>
+                <option value="analytics">Analytics</option>
+                <option value="finance">Finance</option>
+                <option value="packages">Packages</option>
+            </select>
+        </div>
+
+        <div id="permissionsContent"></div>
+    </div>
+
+    <!-- Audit Log Tab -->
+    <div id="audit-tab" class="tab-content">
+        <div class="toolbar">
+            <select class="filter-select" id="filterAuditAction" onchange="loadAuditLog()">
+                <option value="">All Actions</option>
+                <option value="user_created">User Created</option>
+                <option value="user_updated">User Updated</option>
+                <option value="user_deleted">User Deleted</option>
+                <option value="user_suspended">User Suspended</option>
+                <option value="user_unsuspended">User Unsuspended</option>
+                <option value="permission_assigned">Permission Assigned</option>
+                <option value="permission_revoked">Permission Revoked</option>
+                <option value="password_changed">Password Changed</option>
+            </select>
+        </div>
+
+        <div id="auditLogContent"></div>
+        <div class="pagination" id="auditPagination"></div>
+    </div>
+</div>
+
+<!-- Create/Edit User Modal -->
+<div class="modal" id="userModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="userModalTitle">Add New User</h3>
+            <button class="btn-icon" onclick="closeModal('userModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="userForm">
+                <input type="hidden" id="userId">
+                <div class="form-group">
+                    <label class="form-label">Email Address *</label>
+                    <input type="email" class="form-control" id="userEmail" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Full Name *</label>
+                    <input type="text" class="form-control" id="userFullName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" class="form-control" id="userPhone">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role *</label>
+                    <select class="form-control" id="userRole" required>
+                        <option value="">Select Role</option>
+                        <option value="admin">Admin</option>
+                        <option value="employee">Employee</option>
+                        <option value="client">Client</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status *</label>
+                    <select class="form-control" id="userStatus" required>
+                        <option value="active">Active</option>
+                        <option value="suspended">Suspended</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="form-group" id="passwordGroup">
+                    <label class="form-label">Password *</label>
+                    <input type="password" class="form-control" id="userPassword" minlength="8">
+                    <small style="color: #6b7280;">Minimum 8 characters</small>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeModal('userModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="saveUser()">Save User</button>
+        </div>
+    </div>
+</div>
+
+<!-- Manage Permissions Modal -->
+<div class="modal" id="permissionsModal">
+    <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-header">
+            <h3>Manage Permissions</h3>
+            <button class="btn-icon" onclick="closeModal('permissionsModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="permUserId">
+            <div id="permissionsGrid" class="permission-grid"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeModal('permissionsModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="savePermissions()">Save Permissions</button>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal" id="passwordModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Change Password</h3>
+            <button class="btn-icon" onclick="closeModal('passwordModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="pwdUserId">
+            <div class="form-group">
+                <label class="form-label">New Password</label>
+                <input type="password" class="form-control" id="newPassword" minlength="8">
+                <small style="color: #6b7280;">Minimum 8 characters</small>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeModal('passwordModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="changePassword()">Change Password</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/user-management.js"></script>
+{% endblock %}

@@ -25,10 +25,6 @@
 
         <!-- Sidebar Footer -->
         <div class="sidebar-footer">
-            <a href="/admin/chatbot" class="sidebar-footer-link">
-                <i class="ti ti-help-circle"></i>
-                <span>AI Assistant</span>
-            </a>
             <a href="#" class="sidebar-footer-link" id="sidebarLogout">
                 <i class="ti ti-logout"></i>
                 <span>Logout</span>
@@ -419,7 +415,7 @@
         if (role === 'admin') {
             return `
             <div class="nav-section">
-                <div class="nav-section-title">Dashboard</div>
+               
                 <a href="/dashboard/admin" class="nav-item" data-path="/dashboard/admin">
                     <i class="ti ti-dashboard"></i>
                     <span>Overview</span>
@@ -441,6 +437,11 @@
                 <a href="/clients" class="nav-item" data-path="/clients">
                     <i class="ti ti-briefcase"></i>
                     <span>Clients</span>
+                </a>
+
+                <a href="/admin/chatbot" class="nav-item" data-path="/admin/chatbot">
+                    <i class="ti ti-help-circle"></i>
+                    <span>AI Assistant</span>
                 </a>
                 <a href="/admin/packages" class="nav-item" data-path="/admin/packages">
                     <i class="ti ti-package"></i>
@@ -478,7 +479,7 @@
         } else if (role === 'employee') {
             return `
             <div class="nav-section">
-                <div class="nav-section-title">Dashboard</div>
+                
                 <a href="/dashboard/employee" class="nav-item" data-path="/dashboard/employee">
                     <i class="ti ti-dashboard"></i>
                     <span>Overview</span>
@@ -494,6 +495,10 @@
                 <a href="/clients" class="nav-item" data-path="/clients">
                     <i class="ti ti-briefcase"></i>
                     <span>My Clients</span>
+                </a>
+                <a href="/admin/chatbot" class="nav-item" data-path="/admin/chatbot">
+                    <i class="ti ti-help-circle"></i>
+                    <span>AI Assistant</span>
                 </a>
             </div>
             <div class="nav-section">
@@ -516,7 +521,7 @@
             // Client navigation - NO AI Project Planner
             return `
             <div class="nav-section">
-                <div class="nav-section-title">Dashboard</div>
+                
                 <a href="/dashboard/client" class="nav-item" data-path="/dashboard/client">
                     <i class="ti ti-dashboard"></i>
                     <span>Overview</span>

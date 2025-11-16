@@ -24,6 +24,7 @@ from app.api.v1.endpoints import (
     ads,
     analytics,
     chatbot,
+    user_management,
 #     finance,
 #     settings as settings_endpoint
 )
@@ -33,6 +34,8 @@ api_router = APIRouter()
 # Include all endpoint routers
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(users.router, prefix="/users", tags=["Users"])
+api_router.include_router(user_management.router, prefix="/user-management", tags=["Users"])
+
 api_router.include_router(project_planner.router, prefix="/project-planner", tags=["Project Planner"])
 api_router.include_router(onboarding.router, prefix="/onboarding", tags=["Onboarding"])
 api_router.include_router(clients.router, prefix="/clients", tags=["Clients"])
