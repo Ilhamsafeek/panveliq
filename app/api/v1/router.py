@@ -25,7 +25,7 @@ from app.api.v1.endpoints import (
     analytics,
     chatbot,
     user_management,
-#     finance,
+    finance,
 #     settings as settings_endpoint
 )
 
@@ -53,7 +53,7 @@ api_router.include_router(media_studio.router, prefix="/media-studio", tags=["Me
 api_router.include_router(ads.router, prefix="/ad-strategy", tags=["Ads"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 api_router.include_router(chatbot.router, prefix="/chatbot", tags=["Chatbot"])
-# api_router.include_router(finance.router, prefix="/finance", tags=["Finance"])
+api_router.include_router(finance.router, prefix="/finance", tags=["Finance"])
 # api_router.include_router(settings_endpoint.router, prefix="/settings", tags=["Settings"])
 
 

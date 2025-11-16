@@ -1,0 +1,802 @@
+{% extends "base.html" %}
+
+{% block title %}My Tasks{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tasks-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .page-header {
+        margin-bottom: 2rem;
+    }
+    
+    .page-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .page-header p {
+        color: var(--color-gray-600);
+    }
+    
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        border: 1px solid var(--color-gray-200);
+        transition: all 0.2s;
+    }
+    
+    .stat-card:hover {
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .stat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+    
+    .stat-icon.orange { background: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
+    .stat-icon.cyan { background: rgba(29, 216, 252, 0.1); color: var(--primary-cyan); }
+    .stat-icon.green { background: rgba(16, 185, 129, 0.1); color: var(--color-success); }
+    .stat-icon.purple { background: rgba(153, 38, 243, 0.1); color: var(--primary-purple); }
+    
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-label {
+        color: var(--color-gray-600);
+        font-size: 14px;
+    }
+    
+    /* Filters */
+    .filters {
+        background: white;
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--color-gray-200);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .search-box {
+        position: relative;
+        flex: 1;
+        min-width: 250px;
+    }
+    
+    .search-box i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--color-gray-400);
+    }
+    
+    .search-box input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 2.75rem;
+        border: 1px solid var(--color-gray-300);
+        border-radius: var(--radius-md);
+        font-size: 14px;
+    }
+    
+    .filter-select {
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--color-gray-300);
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        min-width: 150px;
+    }
+    
+    /* Tasks Grid */
+    .tasks-grid {
+        display: grid;
+        gap: 1rem;
+    }
+    
+    .task-card {
+        background: white;
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        border: 1px solid var(--color-gray-200);
+        border-left: 4px solid;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    
+    .task-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+    
+    .task-card.priority-low { border-left-color: var(--color-success); }
+    .task-card.priority-medium { border-left-color: var(--color-warning); }
+    .task-card.priority-high { border-left-color: var(--color-error); }
+    .task-card.priority-urgent { border-left-color: #dc2626; }
+    
+    .task-card.completed {
+        opacity: 0.7;
+    }
+    
+    .task-header {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+    
+    .task-content {
+        flex: 1;
+    }
+    
+    .task-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--color-gray-900);
+        margin-bottom: 0.5rem;
+    }
+    
+    .task-description {
+        font-size: 14px;
+        color: var(--color-gray-600);
+        line-height: 1.5;
+    }
+    
+    .task-status-dropdown {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--color-gray-300);
+        border-radius: var(--radius-md);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .task-status-dropdown.pending {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--color-warning);
+        border-color: var(--color-warning);
+    }
+    
+    .task-status-dropdown.in_progress {
+        background: rgba(29, 216, 252, 0.1);
+        color: var(--primary-cyan);
+        border-color: var(--primary-cyan);
+    }
+    
+    .task-status-dropdown.completed {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--color-success);
+        border-color: var(--color-success);
+    }
+    
+    .task-meta {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-top: 1rem;
+        font-size: 13px;
+        color: var(--color-gray-600);
+        flex-wrap: wrap;
+    }
+    
+    .task-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-md);
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .badge.low { background: rgba(16, 185, 129, 0.1); color: var(--color-success); }
+    .badge.medium { background: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
+    .badge.high { background: rgba(239, 68, 68, 0.1); color: var(--color-error); }
+    .badge.urgent { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--color-gray-400);
+        background: white;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--color-gray-200);
+    }
+    
+    .empty-state i {
+        font-size: 64px;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state h3 {
+        font-size: 18px;
+        color: var(--color-gray-600);
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state p {
+        font-size: 14px;
+    }
+    
+    /* Task Detail Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal.active {
+        display: flex;
+    }
+    
+    .modal-content {
+        background: white;
+        border-radius: var(--radius-lg);
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--color-gray-200);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .modal-title {
+        font-size: 20px;
+        font-weight: 700;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .modal-footer {
+        padding: 1.5rem;
+        border-top: 1px solid var(--color-gray-200);
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+    
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-gray-300);
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-icon:hover {
+        background: var(--color-gray-50);
+    }
+    
+    .btn-primary {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--radius-md);
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .btn-secondary {
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-gray-300);
+        background: white;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    
+    .detail-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--color-gray-500);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .detail-value {
+        font-size: 15px;
+        color: var(--color-gray-900);
+    }
+    
+    .form-select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--color-gray-300);
+        border-radius: var(--radius-md);
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tasks-container">
+    
+    <div class="page-header">
+        <h1><i class="ti ti-checklist"></i> My Tasks</h1>
+        <p>View and manage your assigned tasks</p>
+    </div>
+    
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon orange">
+                    <i class="ti ti-clock"></i>
+                </div>
+            </div>
+            <div class="stat-value" id="pendingTasks">0</div>
+            <div class="stat-label">Pending</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon cyan">
+                    <i class="ti ti-progress"></i>
+                </div>
+            </div>
+            <div class="stat-value" id="inProgressTasks">0</div>
+            <div class="stat-label">In Progress</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon green">
+                    <i class="ti ti-circle-check"></i>
+                </div>
+            </div>
+            <div class="stat-value" id="completedTasks">0</div>
+            <div class="stat-label">Completed</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon purple">
+                    <i class="ti ti-calendar-event"></i>
+                </div>
+            </div>
+            <div class="stat-value" id="upcomingDeadlines">0</div>
+            <div class="stat-label">Due This Week</div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filters">
+        <div class="search-box">
+            <i class="ti ti-search"></i>
+            <input type="text" id="searchInput" placeholder="Search tasks..." oninput="filterTasks()">
+        </div>
+        
+        <select class="filter-select" id="statusFilter" onchange="filterTasks()">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+        </select>
+        
+        <select class="filter-select" id="priorityFilter" onchange="filterTasks()">
+            <option value="">All Priority</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="urgent">Urgent</option>
+        </select>
+    </div>
+    
+    <!-- Tasks Grid -->
+    <div class="tasks-grid" id="tasksGrid">
+        <div class="empty-state">
+            <i class="ti ti-clipboard-off"></i>
+            <h3>No tasks assigned</h3>
+            <p>You don't have any tasks yet</p>
+        </div>
+    </div>
+</div>
+
+<!-- Task Detail Modal -->
+<div class="modal" id="taskDetailModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Task Details</h3>
+            <button class="btn-icon" onclick="closeTaskDetailModal()">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="taskDetailContent">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeTaskDetailModal()">Close</button>
+            <button class="btn-primary" onclick="saveTaskStatus()">
+                <i class="ti ti-check"></i>
+                Update Status
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+window.APP_CONFIG = window.APP_CONFIG || { apiBaseUrl: '/api/v1' };
+
+let allTasks = [];
+let currentTask = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('access_token') || getCookie('access_token');
+    
+    if (!token) {
+        window.location.href = '/auth/login';
+        return;
+    }
+    
+    await loadTasks(token);
+});
+
+async function loadTasks(token) {
+    try {
+        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/tasks/my-tasks`, {
+            headers: { 'Authorization': `Bearer ${token || localStorage.getItem('access_token')}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            allTasks = data.tasks || [];
+            updateStats();
+            renderTasks(allTasks);
+        } else if (response.status === 401) {
+            window.location.href = '/auth/login';
+        }
+    } catch (error) {
+        console.error('Error loading tasks:', error);
+    }
+}
+
+function updateStats() {
+    const pending = allTasks.filter(t => t.status === 'pending').length;
+    const inProgress = allTasks.filter(t => t.status === 'in_progress').length;
+    const completed = allTasks.filter(t => t.status === 'completed').length;
+    
+    // Calculate upcoming deadlines (tasks due within 7 days)
+    const today = new Date();
+    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const upcoming = allTasks.filter(t => {
+        if (!t.due_date) return false;
+        const dueDate = new Date(t.due_date);
+        return dueDate >= today && dueDate <= nextWeek && t.status !== 'completed';
+    }).length;
+    
+    document.getElementById('pendingTasks').textContent = pending;
+    document.getElementById('inProgressTasks').textContent = inProgress;
+    document.getElementById('completedTasks').textContent = completed;
+    document.getElementById('upcomingDeadlines').textContent = upcoming;
+}
+
+function renderTasks(tasks) {
+    const grid = document.getElementById('tasksGrid');
+    
+    if (tasks.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <i class="ti ti-clipboard-off"></i>
+                <h3>No tasks found</h3>
+                <p>You don't have any tasks matching your filters</p>
+            </div>
+        `;
+        return;
+    }
+    
+    grid.innerHTML = tasks.map(task => {
+        const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed';
+        
+        return `
+        <div class="task-card priority-${task.priority} ${task.status === 'completed' ? 'completed' : ''}" onclick="openTaskDetail(${task.task_id})">
+            <div class="task-header">
+                <div class="task-content">
+                    <div class="task-title">${task.title}</div>
+                    <div class="task-description">${task.description || 'No description'}</div>
+                </div>
+                <select class="task-status-dropdown ${task.status}" onclick="event.stopPropagation()" onchange="quickUpdateStatus(${task.task_id}, this.value)">
+                    <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>Pending</option>
+                    <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                    <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>Completed</option>
+                </select>
+            </div>
+            <div class="task-meta">
+                <div class="task-meta-item">
+                    <i class="ti ti-user"></i>
+                    ${task.client_name || 'No client'}
+                </div>
+                <div class="task-meta-item">
+                    <i class="ti ti-calendar"></i>
+                    ${task.due_date ? formatDate(task.due_date) : 'No due date'}
+                    ${isOverdue ? '<span style="color: var(--color-error); font-weight: 600; margin-left: 0.5rem;">OVERDUE</span>' : ''}
+                </div>
+                <span class="badge ${task.priority}">${task.priority.toUpperCase()}</span>
+            </div>
+        </div>
+    `}).join('');
+}
+
+function filterTasks() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const status = document.getElementById('statusFilter').value;
+    const priority = document.getElementById('priorityFilter').value;
+    
+    const filtered = allTasks.filter(task => {
+        const matchSearch = task.title.toLowerCase().includes(search) || 
+                          (task.description && task.description.toLowerCase().includes(search));
+        const matchStatus = !status || task.status === status;
+        const matchPriority = !priority || task.priority === priority;
+        
+        return matchSearch && matchStatus && matchPriority;
+    });
+    
+    renderTasks(filtered);
+}
+
+async function quickUpdateStatus(taskId, newStatus) {
+    const token = localStorage.getItem('access_token');
+    
+    try {
+        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/tasks/${taskId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        
+        if (response.ok) {
+            // Update local task
+            const task = allTasks.find(t => t.task_id === taskId);
+            if (task) {
+                task.status = newStatus;
+                updateStats();
+                filterTasks();
+            }
+            
+            // Show success message
+            showToast('Task status updated successfully!');
+        } else {
+            alert('Failed to update task status');
+            // Reload tasks to revert the dropdown
+            await loadTasks(token);
+        }
+    } catch (error) {
+        console.error('Error updating task status:', error);
+        alert('Failed to update task status');
+        await loadTasks(token);
+    }
+}
+
+function openTaskDetail(taskId) {
+    currentTask = allTasks.find(t => t.task_id === taskId);
+    if (!currentTask) return;
+    
+    const isOverdue = currentTask.due_date && new Date(currentTask.due_date) < new Date() && currentTask.status !== 'completed';
+    
+    const content = `
+        <div class="detail-group">
+            <div class="detail-label">Task Title</div>
+            <div class="detail-value">${currentTask.title}</div>
+        </div>
+        
+        <div class="detail-group">
+            <div class="detail-label">Description</div>
+            <div class="detail-value">${currentTask.description || 'No description provided'}</div>
+        </div>
+        
+        <div class="detail-group">
+            <div class="detail-label">Client</div>
+            <div class="detail-value">${currentTask.client_name || 'Not assigned'}</div>
+        </div>
+        
+        <div class="detail-group">
+            <div class="detail-label">Priority</div>
+            <div class="detail-value">
+                <span class="badge ${currentTask.priority}">${currentTask.priority.toUpperCase()}</span>
+            </div>
+        </div>
+        
+        <div class="detail-group">
+            <div class="detail-label">Due Date</div>
+            <div class="detail-value">
+                ${currentTask.due_date ? formatDate(currentTask.due_date) : 'No due date'}
+                ${isOverdue ? '<span style="color: var(--color-error); font-weight: 600; margin-left: 0.5rem;">OVERDUE</span>' : ''}
+            </div>
+        </div>
+        
+        <div class="detail-group">
+            <div class="detail-label">Current Status</div>
+            <select class="form-select" id="taskStatusSelect">
+                <option value="pending" ${currentTask.status === 'pending' ? 'selected' : ''}>Pending</option>
+                <option value="in_progress" ${currentTask.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                <option value="completed" ${currentTask.status === 'completed' ? 'selected' : ''}>Completed</option>
+            </select>
+        </div>
+    `;
+    
+    document.getElementById('taskDetailContent').innerHTML = content;
+    document.getElementById('taskDetailModal').classList.add('active');
+}
+
+function closeTaskDetailModal() {
+    document.getElementById('taskDetailModal').classList.remove('active');
+    currentTask = null;
+}
+
+async function saveTaskStatus() {
+    if (!currentTask) return;
+    
+    const newStatus = document.getElementById('taskStatusSelect').value;
+    const token = localStorage.getItem('access_token');
+    
+    try {
+        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/tasks/${currentTask.task_id}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        
+        if (response.ok) {
+            alert('Task status updated successfully!');
+            closeTaskDetailModal();
+            await loadTasks(token);
+        } else {
+            alert('Failed to update task status');
+        }
+    } catch (error) {
+        console.error('Error updating task:', error);
+        alert('Failed to update task status');
+    }
+}
+
+function showToast(message) {
+    // Simple toast notification
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: var(--color-success);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+    });
+}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+// Add animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

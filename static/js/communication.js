@@ -8,7 +8,6 @@ let emailEditor = null;
 let currentTab = 'whatsapp';
 let clientsList = [];
 let segmentsList = [];
-let currentUser = null;
 let csvData = null;
 
 // =====================================================
@@ -25,32 +24,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 // GET CURRENT USER
 // =====================================================
 
-async function getCurrentUser() {
-    if (currentUser) return currentUser;
-    
-    try {
-        const token = localStorage.getItem('access_token');
-        if (!token) {
-            window.location.href = '/login';
-            return null;
-        }
-        
-        // Decode JWT to get user info (simple decode, not validation)
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        currentUser = {
-            user_id: payload.sub,
-            email: payload.email,
-            role: payload.role,
-            full_name: payload.full_name
-        };
-        
-        return currentUser;
-    } catch (error) {
-        console.error('Error getting current user:', error);
-        window.location.href = '/login';
-        return null;
-    }
-}
 
 async function initializePage() {
     try {

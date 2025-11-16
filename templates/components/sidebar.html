@@ -280,6 +280,8 @@
 </style>
 
 <script>
+
+    
     document.addEventListener('DOMContentLoaded', function () {
         // Load user data
         loadSidebarUser();
@@ -462,10 +464,7 @@
                     <i class="ti ti-coin"></i>
                     <span>Finance & P&L</span>
                 </a>
-                <a href="/admin/access-control" class="nav-item" data-path="/admin/access-control">
-                    <i class="ti ti-shield-lock"></i>
-                    <span>Access Control</span>
-                </a>
+               
             </div>
             ${commonModules}
             <div class="nav-section">
@@ -584,6 +583,9 @@
         window.location.href = '/auth/login';
     }
 
+
+    
+
     document.addEventListener('DOMContentLoaded', async () => {
         const token = localStorage.getItem('access_token') || getCookie('access_token');
         const currentUser = getCurrentUser(); // Implement this function to get current user
@@ -611,4 +613,7 @@
             }
         }
     });
+
+
+
 </script>
