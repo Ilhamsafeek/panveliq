@@ -639,7 +639,54 @@ async def analytics_page(request: Request):
             "show_sidebar": True
         }
     )
+
+
+@app.get("/admin/chatbot", response_class=HTMLResponse)
+async def chatbot_admin_page(request: Request):
+    """
+    Chatbot management admin page
+    Only accessible by admin users
+    """
+    access_token: Optional[str] = request.cookies.get("access_token")
+    role = None
     
+    if not access_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.split(" ")[1]
+    
+    try:
+        if access_token:
+            payload = jwt.decode(
+                access_token,
+                settings.SECRET_KEY,
+                algorithms=[settings.ALGORITHM]
+            )
+            role = payload.get("role")
+        
+        # Only admin can access
+        if role and role not in ["admin", "employee"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin role required."
+            )
+        
+        return templates.TemplateResponse(
+            "admin/chatbot-admin.html",
+            {
+                "request": request,
+                "show_sidebar": True
+            }
+        )
+        
+    except JWTError:
+        return RedirectResponse(url="/auth/login")
+    except Exception as e:
+        print(f"Error accessing chatbot admin page: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load page"
+        )
 
 # ========== HEALTH CHECK ==========
 

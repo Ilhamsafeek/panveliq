@@ -1,0 +1,398 @@
+{% extends "base.html" %}
+
+{% block title %}Chatbot Management - PanvelIQ{% endblock %}
+
+{% set show_sidebar = True %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/chatbot-admin.css">
+{% endblock %}
+
+{% block content %}
+    <div class="main-container">
+        <div class="page-header">
+            <div>
+                <h1><i class="ti ti-message-chatbot"></i> AI Assistant Management</h1>
+                <p class="page-description">Monitor and manage chatbot conversations</p>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #9926F3, #1DD8FC);">
+                    <i class="ti ti-messages"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Total Conversations</div>
+                    <div class="stat-value" id="totalConversations">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
+                    <i class="ti ti-check"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Qualified Leads</div>
+                    <div class="stat-value" id="qualifiedLeads">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+                    <i class="ti ti-circle-dot"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Active Chats</div>
+                    <div class="stat-value" id="activeConversations">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                    <i class="ti ti-mood-happy"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Avg. Sentiment</div>
+                    <div class="stat-value" id="avgSentiment">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters & Actions -->
+        <div class="card" style="margin-top: 2rem;">
+            <div class="card-header">
+                <h3>Conversation History</h3>
+                <div style="display: flex; gap: 1rem;">
+                    <select id="statusFilter" class="form-control" style="width: 150px;">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                    <button class="btn btn-primary" id="filterQualifiedBtn">
+                        <i class="ti ti-filter"></i> Show Qualified Only
+                    </button>
+                    <button class="btn btn-secondary" id="refreshBtn">
+                        <i class="ti ti-refresh"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div id="conversationsLoading" class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p>Loading conversations...</p>
+                </div>
+
+                <div id="conversationsTable" style="display: none;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Platform</th>
+                                <th>Status</th>
+                                <th>Messages</th>
+                                <th>Qualified</th>
+                                <th>Last Message</th>
+                                <th>Started</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="conversationsBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="conversationsEmpty" style="display: none;" class="empty-state">
+                    <i class="ti ti-message-off"></i>
+                    <p>No conversations found</p>
+                </div>
+            </div>
+        </div>
+</div>
+
+<!-- Conversation Details Modal -->
+    <div id="conversationModal" class="modal">
+        <div class="modal-overlay" onclick="closeConversationModal()"></div>
+        <div class="modal-container" style="max-width: 800px; max-height: 90vh;">
+            <div class="modal-header">
+                <h2><i class="ti ti-message-chatbot"></i> Conversation Details</h2>
+                <button class="modal-close" onclick="closeConversationModal()">
+                    <i class="ti ti-x"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="conversationDetails" style="max-height: 70vh; overflow-y: auto;">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/v1/chatbot';
+        const token = localStorage.getItem('access_token');
+        let qualifiedFilterActive = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            loadConversations();
+
+            // Event listeners
+            document.getElementById('refreshBtn').addEventListener('click', loadConversations);
+            document.getElementById('filterQualifiedBtn').addEventListener('click', toggleQualifiedFilter);
+            document.getElementById('statusFilter').addEventListener('change', loadConversations);
+        });
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('totalConversations').textContent = data.stats.total_conversations;
+                    document.getElementById('qualifiedLeads').textContent = data.stats.qualified_leads;
+                    document.getElementById('activeConversations').textContent = data.stats.active_conversations;
+                    document.getElementById('avgSentiment').textContent = data.stats.average_sentiment_score + '%';
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadConversations() {
+            const loading = document.getElementById('conversationsLoading');
+            const table = document.getElementById('conversationsTable');
+            const empty = document.getElementById('conversationsEmpty');
+
+            loading.style.display = 'block';
+            table.style.display = 'none';
+            empty.style.display = 'none';
+
+            try {
+                const statusFilter = document.getElementById('statusFilter').value;
+                let url = `${API_BASE}/admin/conversations?limit=100`;
+                
+                if (statusFilter) {
+                    url += `&status_filter=${statusFilter}`;
+                }
+                
+                if (qualifiedFilterActive) {
+                    url += '&qualified_only=true';
+                }
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                loading.style.display = 'none';
+
+                if (data.success && data.conversations.length > 0) {
+                    renderConversations(data.conversations);
+                    table.style.display = 'block';
+                } else {
+                    empty.style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+                loading.style.display = 'none';
+                empty.style.display = 'flex';
+            }
+        }
+
+        function renderConversations(conversations) {
+            const tbody = document.getElementById('conversationsBody');
+            tbody.innerHTML = '';
+
+            conversations.forEach(conv => {
+                const row = document.createElement('tr');
+                
+                const userName = conv.user_name || 'Anonymous';
+                const userEmail = conv.user_email || 'N/A';
+                const platform = conv.platform;
+                const status = conv.status;
+                const messageCount = conv.message_count || 0;
+                const isQualified = conv.lead_qualified;
+                const lastMessage = conv.last_message ? truncate(conv.last_message, 50) : 'N/A';
+                const startedAt = new Date(conv.started_at).toLocaleString();
+
+                row.innerHTML = `
+                    <td>
+                        <div style="display: flex; flex-direction: column;">
+                            <strong>${userName}</strong>
+                            <small style="color: #999;">${userEmail}</small>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge badge-${platform === 'web' ? 'primary' : 'success'}">
+                            <i class="ti ti-${platform === 'web' ? 'world' : 'brand-whatsapp'}"></i>
+                            ${platform}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-${status === 'active' ? 'success' : 'secondary'}">
+                            ${status}
+                        </span>
+                    </td>
+                    <td>${messageCount}</td>
+                    <td>
+                        ${isQualified ? 
+                            '<span class="badge badge-success"><i class="ti ti-check"></i> Yes</span>' : 
+                            '<span class="badge badge-secondary">No</span>'
+                        }
+                    </td>
+                    <td>${lastMessage}</td>
+                    <td>${startedAt}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="viewConversation('${conv.session_id}')">
+                            <i class="ti ti-eye"></i> View
+                        </button>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        async function viewConversation(sessionId) {
+            try {
+                const response = await fetch(`${API_BASE}/conversation/${sessionId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayConversationDetails(data.conversation, data.messages);
+                    document.getElementById('conversationModal').classList.add('active');
+                }
+            } catch (error) {
+                console.error('Error loading conversation:', error);
+                alert('Failed to load conversation details');
+            }
+        }
+
+        function displayConversationDetails(conversation, messages) {
+            const details = document.getElementById('conversationDetails');
+            
+            const userName = conversation.user_name || 'Anonymous User';
+            const userEmail = conversation.user_email || 'N/A';
+            const platform = conversation.platform;
+            const isQualified = conversation.lead_qualified;
+            const qualificationData = conversation.qualification_data;
+
+            let html = `
+                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                        <div>
+                            <strong>User:</strong> ${userName}<br>
+                            <strong>Email:</strong> ${userEmail}<br>
+                            <strong>Platform:</strong> <span class="badge badge-${platform === 'web' ? 'primary' : 'success'}">${platform}</span>
+                        </div>
+                        <div>
+                            <strong>Status:</strong> <span class="badge badge-${conversation.status === 'active' ? 'success' : 'secondary'}">${conversation.status}</span><br>
+                            <strong>Lead Qualified:</strong> ${isQualified ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-secondary">No</span>'}<br>
+                            <strong>Started:</strong> ${new Date(conversation.started_at).toLocaleString()}
+                        </div>
+                    </div>
+            `;
+
+            if (isQualified && qualificationData) {
+                html += `
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #dee2e6;">
+                        <strong>Lead Qualification Details:</strong><br>
+                        <div style="margin-top: 0.5rem;">
+                            Score: <strong>${qualificationData.score}/100</strong><br>
+                            Intent: <strong>${qualificationData.intent}</strong><br>
+                            Suggested Action: <em>${qualificationData.suggested_action}</em>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `</div>`;
+
+            // Messages
+            html += '<div style="border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto;">';
+            
+            messages.forEach(msg => {
+                const isBot = msg.sender_type === 'bot';
+                const sentimentIcon = getSentimentIcon(msg.sentiment);
+                
+                html += `
+                    <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem; ${!isBot ? 'flex-direction: row-reverse;' : ''}">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: ${isBot ? 'linear-gradient(135deg, #9926F3, #1DD8FC)' : '#e9ecef'}; color: ${isBot ? 'white' : '#495057'}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i class="ti ti-${isBot ? 'robot' : 'user'}"></i>
+                        </div>
+                        <div style="max-width: 70%;">
+                            <div style="background: ${isBot ? '#f8f9fa' : 'linear-gradient(135deg, #9926F3, #1DD8FC)'}; color: ${isBot ? '#2d3748' : 'white'}; padding: 0.75rem 1rem; border-radius: 12px; ${isBot ? 'border-bottom-left-radius: 4px;' : 'border-bottom-right-radius: 4px;'}">
+                                ${msg.message_text}
+                            </div>
+                            <div style="font-size: 11px; color: #999; padding: 0.25rem 0.5rem;">
+                                ${new Date(msg.created_at).toLocaleTimeString()} 
+                                ${msg.sentiment ? `<i class="ti ti-${sentimentIcon}" style="color: ${getSentimentColor(msg.sentiment)};"></i>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+
+            details.innerHTML = html;
+        }
+
+        function closeConversationModal() {
+            document.getElementById('conversationModal').classList.remove('active');
+        }
+
+        function toggleQualifiedFilter() {
+            qualifiedFilterActive = !qualifiedFilterActive;
+            const btn = document.getElementById('filterQualifiedBtn');
+            
+            if (qualifiedFilterActive) {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-success');
+                btn.innerHTML = '<i class="ti ti-filter-filled"></i> Showing Qualified';
+            } else {
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-primary');
+                btn.innerHTML = '<i class="ti ti-filter"></i> Show Qualified Only';
+            }
+            
+            loadConversations();
+        }
+
+        function getSentimentIcon(sentiment) {
+            switch(sentiment) {
+                case 'positive': return 'mood-happy';
+                case 'negative': return 'mood-sad';
+                default: return 'mood-neutral';
+            }
+        }
+
+        function getSentimentColor(sentiment) {
+            switch(sentiment) {
+                case 'positive': return '#2ecc71';
+                case 'negative': return '#e74c3c';
+                default: return '#95a5a6';
+            }
+        }
+
+        function truncate(str, length) {
+            return str.length > length ? str.substring(0, length) + '...' : str;
+        }
+    </script>
+{% endblock %}

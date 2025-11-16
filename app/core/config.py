@@ -78,6 +78,10 @@ class Settings(BaseSettings):
     GOOGLE_ADS_CLIENT_ID: Optional[str] = None
     GOOGLE_ADS_CLIENT_SECRET: Optional[str] = None
     GOOGLE_ADS_REFRESH_TOKEN: Optional[str] = None
+
+    WHATSAPP_API_KEY: str = ""
+    WHATSAPP_PHONE_NUMBER_ID: str = ""
+    WHATSAPP_VERIFY_TOKEN: str = "panveliq_webhook_verify_token"
     
     # Google PageSpeed
     PAGESPEED_API_KEY: Optional[str] = None
