@@ -443,6 +443,11 @@
             <h1><i class="ti ti-photo"></i> Creative Media Studio</h1>
             <p>AI-powered visual content creation with DALL-E, Synthesia, and Canva</p>
         </div>
+
+        <button onclick="authorizeCanva()" class="btn btn-primary">
+            <i class="ti ti-brand-canva"></i>
+            Authorize Canva
+        </button>
     </div>
 
     <!-- Creation Tools -->
@@ -846,5 +851,22 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+    // Add this JavaScript function
+async function authorizeCanva() {
+    try {
+        const response = await fetch('/api/v1/media-studio/canva/authorize');
+        const data = await response.json();
+        
+        if (data.authorization_url) {
+            // Open Canva authorization in new window
+            window.open(data.authorization_url, 'canva_auth', 'width=600,height=700');
+        }
+    } catch (error) {
+        console.error('Authorization error:', error);
+        alert('Failed to start Canva authorization');
+    }
+}
+</script>
 <script src="/static/js/media-studio.js"></script>
 {% endblock %}

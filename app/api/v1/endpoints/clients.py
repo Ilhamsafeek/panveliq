@@ -240,6 +240,88 @@ async def get_all_clients(
             connection.close()
 
 
+# ========== EMPLOYEE ENDPOINTS ==========
+
+@router.get("/my-clients")
+async def get_my_clients(current_user: dict = Depends(require_admin_or_employee)):
+    """Get employee's assigned clients"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        if current_user['role'] == 'admin':
+            cursor.execute("""
+                SELECT 
+                    u.user_id as client_id,
+                    u.full_name,
+                    u.email,
+                    u.status,
+                    u.created_at,
+                    cp.business_name,
+                    cp.business_type,
+                    p.package_name,
+                    p.package_tier,
+                    cs.status as subscription_status,
+                    cs.end_date as subscription_end_date
+                FROM users u
+                LEFT JOIN client_profiles cp ON u.user_id = cp.client_id
+                LEFT JOIN client_subscriptions cs ON u.user_id = cs.client_id AND cs.status = 'active'
+                LEFT JOIN packages p ON cs.package_id = p.package_id
+                WHERE u.role = 'client' AND u.status = 'active'
+                ORDER BY u.created_at DESC
+            """)
+        else:
+            cursor.execute("""
+                SELECT 
+                    u.user_id as client_id,
+                    u.full_name,
+                    u.email,
+                    u.status,
+                    u.created_at,
+                    cp.business_name,
+                    cp.business_type,
+                    p.package_name,
+                    p.package_tier,
+                    cs.status as subscription_status,
+                    cs.end_date as subscription_end_date,
+                    ea.assigned_at
+                FROM employee_assignments ea
+                JOIN users u ON ea.client_id = u.user_id
+                LEFT JOIN client_profiles cp ON u.user_id = cp.client_id
+                LEFT JOIN client_subscriptions cs ON u.user_id = cs.client_id AND cs.status = 'active'
+                LEFT JOIN packages p ON cs.package_id = p.package_id
+                WHERE ea.employee_id = %s AND u.status = 'active'
+                ORDER BY ea.assigned_at DESC
+            """, (current_user['user_id'],))
+        
+        clients = cursor.fetchall()
+        
+        for client in clients:
+            if client.get('created_at'):
+                client['created_at'] = client['created_at'].isoformat()
+            if client.get('assigned_at'):
+                client['assigned_at'] = client['assigned_at'].isoformat()
+            if client.get('subscription_end_date'):
+                client['subscription_end_date'] = client['subscription_end_date'].isoformat()
+        
+        return {"success": True, "clients": clients, "total": len(clients)}
+        
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+
 @router.get("/{client_id}", summary="Get client details")
 async def get_client_details(
     client_id: int,
@@ -351,98 +433,6 @@ async def get_client_details(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch client details: {str(e)}"
-        )
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
-
-# ========== EMPLOYEE ENDPOINTS ==========
-
-@router.get("/my-clients", summary="Get employee's assigned clients")
-async def get_my_clients(
-    current_user: dict = Depends(get_current_user)
-):
-    """
-    Get all clients assigned to the current employee
-    Admin sees all active clients, Employee sees only assigned clients
-    """
-    connection = None
-    cursor = None
-    
-    try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        
-        # If admin, return all clients
-        if current_user['role'] == 'admin':
-            cursor.execute("""
-                SELECT 
-                    u.user_id as client_id,
-                    u.full_name,
-                    u.email,
-                    u.status,
-                    cp.business_name,
-                    cp.business_type,
-                    p.package_name,
-                    p.package_tier,
-                    cs.status as subscription_status,
-                    cs.end_date as subscription_end_date
-                FROM users u
-                LEFT JOIN client_profiles cp ON u.user_id = cp.client_id
-                LEFT JOIN client_subscriptions cs ON u.user_id = cs.client_id 
-                    AND cs.status = 'active'
-                LEFT JOIN packages p ON cs.package_id = p.package_id
-                WHERE u.role = 'client' AND u.status = 'active'
-                ORDER BY u.created_at DESC
-            """)
-        else:
-            # Employee: only assigned clients
-            cursor.execute("""
-                SELECT 
-                    u.user_id as client_id,
-                    u.full_name,
-                    u.email,
-                    u.status,
-                    cp.business_name,
-                    cp.business_type,
-                    p.package_name,
-                    p.package_tier,
-                    cs.status as subscription_status,
-                    cs.end_date as subscription_end_date,
-                    ea.assigned_at
-                FROM employee_assignments ea
-                JOIN users u ON ea.client_id = u.user_id
-                LEFT JOIN client_profiles cp ON u.user_id = cp.client_id
-                LEFT JOIN client_subscriptions cs ON u.user_id = cs.client_id 
-                    AND cs.status = 'active'
-                LEFT JOIN packages p ON cs.package_id = p.package_id
-                WHERE ea.employee_id = %s AND u.status = 'active'
-                ORDER BY ea.assigned_at DESC
-            """, (current_user['user_id'],))
-        
-        clients = cursor.fetchall()
-        
-        # Convert datetime
-        for client in clients:
-            if client.get('assigned_at'):
-                client['assigned_at'] = client['assigned_at'].isoformat()
-            if client.get('subscription_end_date'):
-                client['subscription_end_date'] = client['subscription_end_date'].isoformat()
-        
-        return {
-            "success": True,
-            "clients": clients,
-            "total": len(clients)
-        }
-        
-    except Exception as e:
-        print(f"Error fetching assigned clients: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch assigned clients: {str(e)}"
         )
     finally:
         if cursor:

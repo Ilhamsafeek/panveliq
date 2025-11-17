@@ -1,7 +1,7 @@
 """
-Client Pages API
+Client Pages API - Complete Implementation
 File: app/api/v1/endpoints/client_pages.py
-CREATE THIS NEW FILE
+Handles client dashboard endpoints: package, reports, messages, campaigns
 """
 
 from fastapi import APIRouter, HTTPException, status, Depends
@@ -169,11 +169,11 @@ async def get_client_reports(current_user: dict = Depends(get_current_user)):
             connection.close()
 
 
-# ========== MESSAGES ENDPOINTS ==========
+# ========== MESSAGES ENDPOINTS (CORRECTED) ==========
 
 @router.get("/messages", summary="Get client messages")
 async def get_client_messages(current_user: dict = Depends(get_current_user)):
-    """Get all messages for current client"""
+    """Get all messages for current client (sent and received)"""
     connection = None
     cursor = None
     
@@ -181,32 +181,45 @@ async def get_client_messages(current_user: dict = Depends(get_current_user)):
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        # Get messages (sent and received)
+        # Get messages where client is sender OR receiver
         query = """
             SELECT 
-                n.notification_id as message_id,
-                n.notification_type as message_type,
-                n.title as subject,
-                n.message,
-                n.is_read,
-                n.created_at,
-                u.full_name as sender_name,
-                u.user_id as sender_id
-            FROM notifications n
-            LEFT JOIN users u ON n.user_id = u.user_id
-            WHERE n.user_id = %s
-            ORDER BY n.created_at DESC
+                m.message_id,
+                m.subject,
+                m.message_body as message,
+                m.is_read,
+                m.created_at,
+                CASE 
+                    WHEN m.sender_id = %s THEN 'sent'
+                    ELSE 'received'
+                END as message_direction,
+                CASE 
+                    WHEN m.sender_id = %s THEN receiver.full_name
+                    ELSE sender.full_name
+                END as other_party_name,
+                sender.user_id as sender_id,
+                sender.full_name as sender_name
+            FROM messages m
+            JOIN users sender ON m.sender_id = sender.user_id
+            JOIN users receiver ON m.receiver_id = receiver.user_id
+            WHERE m.sender_id = %s OR m.receiver_id = %s
+            ORDER BY m.created_at DESC
             LIMIT 50
         """
         
-        cursor.execute(query, (current_user['user_id'],))
+        cursor.execute(query, (
+            current_user['user_id'], 
+            current_user['user_id'],
+            current_user['user_id'],
+            current_user['user_id']
+        ))
         messages = cursor.fetchall()
         
         return {
             "status": "success",
             "messages": messages,
             "total": len(messages),
-            "unread_count": sum(1 for m in messages if not m['is_read'])
+            "unread_count": sum(1 for m in messages if not m['is_read'] and m['message_direction'] == 'received')
         }
     
     except Exception as e:
@@ -236,25 +249,29 @@ async def send_message(
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        # Insert notification
+        # Insert into messages table (not notifications)
         query = """
-            INSERT INTO notifications 
-            (user_id, notification_type, title, message)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO messages 
+            (sender_id, receiver_id, subject, message_body, is_read, created_at)
+            VALUES (%s, %s, %s, %s, FALSE, NOW())
         """
         
         cursor.execute(query, (
-            message.recipient_id,
-            'client_message',
+            current_user['user_id'],  # sender is current user (client)
+            message.recipient_id,      # receiver is selected team member
             message.subject,
             message.message_body
         ))
         
+        message_id = cursor.lastrowid
         connection.commit()
+        
+        print(f"✅ Message sent: ID={message_id}, From={current_user['user_id']}, To={message.recipient_id}")
         
         return {
             "status": "success",
-            "message": "Message sent successfully"
+            "message": "Message sent successfully",
+            "message_id": message_id
         }
     
     except Exception as e:
@@ -287,9 +304,9 @@ async def mark_message_read(
         cursor = connection.cursor()
         
         query = """
-            UPDATE notifications 
+            UPDATE messages 
             SET is_read = TRUE 
-            WHERE notification_id = %s AND user_id = %s
+            WHERE message_id = %s AND receiver_id = %s
         """
         
         cursor.execute(query, (message_id, current_user['user_id']))
@@ -307,6 +324,68 @@ async def mark_message_read(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update message: {str(e)}"
+        )
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@router.get("/team-members", summary="Get team members for messaging")
+async def get_team_members(current_user: dict = Depends(get_current_user)):
+    """Get all team members (assigned employees + admins) that client can message"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        team_members = []
+        
+        # Get all admins
+        cursor.execute("""
+            SELECT 
+                user_id,
+                full_name,
+                email,
+                role
+            FROM users
+            WHERE role = 'admin' AND status = 'active'
+            ORDER BY full_name
+        """)
+        
+        admins = cursor.fetchall()
+        team_members.extend(admins)
+        
+        # Get assigned employees for this client
+        cursor.execute("""
+            SELECT 
+                u.user_id,
+                u.full_name,
+                u.email,
+                u.role
+            FROM employee_assignments ea
+            JOIN users u ON ea.employee_id = u.user_id
+            WHERE ea.client_id = %s AND u.status = 'active'
+            ORDER BY u.full_name
+        """, (current_user['user_id'],))
+        
+        employees = cursor.fetchall()
+        team_members.extend(employees)
+        
+        return {
+            "status": "success",
+            "team_members": team_members
+        }
+    
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch team members: {str(e)}"
         )
     
     finally:
@@ -358,41 +437,18 @@ async def get_client_campaigns(current_user: dict = Depends(get_current_user)):
         for campaign in campaigns:
             impressions = int(campaign['total_impressions'])
             clicks = int(campaign['total_clicks'])
-            conversions = int(campaign['total_conversions'])
             spend = float(campaign['total_spend'])
             
             # Calculate CTR
-            if impressions > 0:
-                campaign['ctr'] = round((clicks / impressions) * 100, 2)
-            else:
-                campaign['ctr'] = 0
+            campaign['ctr'] = round((clicks / impressions * 100), 2) if impressions > 0 else 0
             
-            # Calculate conversion rate
-            if clicks > 0:
-                campaign['conversion_rate'] = round((conversions / clicks) * 100, 2)
-            else:
-                campaign['conversion_rate'] = 0
-            
-            # Calculate cost per conversion
-            if spend > 0 and conversions > 0:
-                campaign['cost_per_conversion'] = round(spend / conversions, 2)
-            else:
-                campaign['cost_per_conversion'] = 0
-        
-        # Get counts by status
-        active_count = sum(1 for c in campaigns if c['status'] == 'active')
-        paused_count = sum(1 for c in campaigns if c['status'] == 'paused')
-        completed_count = sum(1 for c in campaigns if c['status'] == 'completed')
+            # Calculate CPC
+            campaign['cpc'] = round((spend / clicks), 2) if clicks > 0 else 0
         
         return {
             "status": "success",
             "campaigns": campaigns,
-            "total": len(campaigns),
-            "counts": {
-                "active": active_count,
-                "paused": paused_count,
-                "completed": completed_count
-            }
+            "total": len(campaigns)
         }
     
     except Exception as e:
@@ -400,65 +456,6 @@ async def get_client_campaigns(current_user: dict = Depends(get_current_user)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch campaigns: {str(e)}"
-        )
-    
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
-
-@router.get("/campaigns/{campaign_id}", summary="Get campaign details")
-async def get_campaign_details(
-    campaign_id: int,
-    current_user: dict = Depends(get_current_user)
-):
-    """Get detailed information for a specific campaign"""
-    connection = None
-    cursor = None
-    
-    try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        
-        query = """
-            SELECT 
-                ac.*,
-                u.full_name as created_by_name
-            FROM ad_campaigns ac
-            LEFT JOIN users u ON ac.created_by = u.user_id
-            WHERE ac.campaign_id = %s AND ac.client_id = %s
-        """
-        
-        cursor.execute(query, (campaign_id, current_user['user_id']))
-        campaign = cursor.fetchone()
-        
-        if not campaign:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Campaign not found"
-            )
-        
-        # Parse JSON fields
-        if campaign.get('target_audience') and isinstance(campaign['target_audience'], str):
-            campaign['target_audience'] = json.loads(campaign['target_audience'])
-        
-        if campaign.get('placement_settings') and isinstance(campaign['placement_settings'], str):
-            campaign['placement_settings'] = json.loads(campaign['placement_settings'])
-        
-        return {
-            "status": "success",
-            "campaign": campaign
-        }
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch campaign details: {str(e)}"
         )
     
     finally:

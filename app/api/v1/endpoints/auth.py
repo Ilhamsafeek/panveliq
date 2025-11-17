@@ -174,7 +174,7 @@ async def register(user: UserCreate):
             user.full_name,
             user.phone,
             'client',
-            'pending'
+            'active'
         ))
         
         connection.commit()

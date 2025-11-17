@@ -98,8 +98,11 @@ class Settings(BaseSettings):
     MOZ_SECRET_KEY: Optional[str] = None
     
     # Canva
-    CANVA_API_KEY: Optional[str] = None
-    CANVA_TEAM_ID: Optional[str] = None
+    CANVA_CLIENT_ID: str = ""
+    CANVA_CLIENT_SECRET: str = ""
+    CANVA_BRAND_KIT_ID: str = ""
+    CANVA_REDIRECT_URI: str = "http://localhost:8000/api/canva/callback"
+    CANVA_ACCESS_TOKEN: Optional[str] = None  # Will be set after OAuth
 
     # Ideogram
     IDEOGRAM_API_KEY: str

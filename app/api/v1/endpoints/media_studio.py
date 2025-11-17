@@ -415,10 +415,15 @@ async def convert_image_to_animation(image_data: str, animation_effect: str, ani
 
 async def create_canva_design(design_type: str, title: str, content_elements: Dict[str, Any]) -> Dict[str, Any]:
     """Create design using Canva API"""
-    
     try:
-        print(f"[CANVA] Creating {design_type} design: {title}")
+        # Check if we have a valid access token
+        if not settings.CANVA_ACCESS_TOKEN:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Canva not authorized. Please complete OAuth authorization first."
+            )
         
+        print(f"[CANVA] Creating {design_type} design: {title}")
         api_url = "https://api.canva.com/rest/v1/designs"
         
         design_type_mapping = {
@@ -441,8 +446,9 @@ async def create_canva_design(design_type: str, title: str, content_elements: Di
             "title": title
         }
         
+        # CHANGED: Use OAuth access token instead of API key
         headers = {
-            "Authorization": f"Bearer {settings.CANVA_API_KEY}",
+            "Authorization": f"Bearer {settings.CANVA_ACCESS_TOKEN}",
             "Content-Type": "application/json"
         }
         
@@ -452,8 +458,8 @@ async def create_canva_design(design_type: str, title: str, content_elements: Di
             result = response.json()
             design_id = result.get("design", {}).get("id")
             edit_url = result.get("design", {}).get("urls", {}).get("edit_url")
-            
             print(f"[CANVA] Design created: {design_id}")
+            
             return {
                 "success": True,
                 "design_id": design_id,
@@ -478,7 +484,60 @@ async def create_canva_design(design_type: str, title: str, content_elements: Di
             detail=f"Canva design creation failed: {str(e)}"
         )
 
+@router.get("/canva/authorize")
+async def canva_authorize():
+    """Redirect user to Canva OAuth authorization"""
+    auth_url = (
+        f"https://www.canva.com/api/oauth/authorize?"
+        f"client_id={settings.CANVA_CLIENT_ID}&"
+        f"redirect_uri={settings.CANVA_REDIRECT_URI}&"
+        f"response_type=code&"
+        f"scope=design:content:read design:content:write"
+    )
+    return {"authorization_url": auth_url}
 
+
+@router.get("/canva/callback")
+async def canva_callback(code: str):
+    """Handle Canva OAuth callback and exchange code for access token"""
+    try:
+        token_url = "https://api.canva.com/rest/v1/oauth/token"
+        
+        payload = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "client_id": settings.CANVA_CLIENT_ID,
+            "client_secret": settings.CANVA_CLIENT_SECRET,
+            "redirect_uri": settings.CANVA_REDIRECT_URI
+        }
+        
+        response = requests.post(token_url, data=payload, timeout=30)
+        
+        if response.status_code == 200:
+            token_data = response.json()
+            access_token = token_data.get("access_token")
+            
+            # Store the access token (in production, store in database)
+            settings.CANVA_ACCESS_TOKEN = access_token
+            
+            return {
+                "success": True,
+                "message": "Canva authorization successful",
+                "access_token": access_token
+            }
+        else:
+            raise HTTPException(
+                status_code=response.status_code,
+                detail="Failed to exchange authorization code for token"
+            )
+            
+    except Exception as e:
+        print(f"[CANVA OAUTH] Error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"OAuth callback failed: {str(e)}"
+        )
+        
 # ========== API ENDPOINTS ==========
 
 @router.post("/generate/image")

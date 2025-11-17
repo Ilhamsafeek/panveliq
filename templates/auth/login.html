@@ -28,15 +28,11 @@
     .auth-logo {
         width: 70px;
         height: 70px;
-        background: var(--gradient-primary);
-        border-radius: var(--radius-lg);
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0 auto 1.5rem;
-        font-size: 32px;
-        font-weight: 700;
-        color: white;
+       
     }
 
     .auth-header h1 {
@@ -279,7 +275,7 @@
 {% block content %}
 <div class="auth-wrapper">
     <div class="auth-container">
-        <div class="auth-logo">P</div>
+        <div class="auth-logo"><img src="{{ url_for('static', path='images/panvel-logo.webp') }}" alt="PanvelIQ" width="40px"></div>
 
         <div class="auth-header">
             <h1 class="gradient-text">Welcome Back</h1>
