@@ -393,7 +393,7 @@ function renderClientDetails(client) {
                     </div>
                     <div class="info-row">
                         <span class="info-label">Current Budget</span>
-                        <span class="info-value">${client.current_budget ? '$' + client.current_budget.toFixed(2) : 'Not provided'}</span>
+                        <span class="info-value">${client.current_budget ? '₹' + client.current_budget.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'Not provided'}</span>
                     </div>
                 </div>
 
@@ -413,7 +413,7 @@ function renderClientDetails(client) {
                         </div>
                         <div class="info-row">
                             <span class="info-label">Price</span>
-                            <span class="info-value">$${client.package_price} / ${client.billing_cycle}</span>
+                            <span class="info-value">₹${parseFloat(client.package_price).toLocaleString('en-IN')} / ${client.billing_cycle}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Start Date</span>

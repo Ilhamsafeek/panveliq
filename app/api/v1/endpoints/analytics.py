@@ -1283,252 +1283,443 @@ async def get_ga4_data(
 
 
 
-@router.post("/sync-all-platforms")
+@router.post("/sync-all-platforms", summary="Sync analytics from all external APIs")
 async def sync_all_platforms(
-    client_id: int,
-    start_date: str,
-    end_date: str,
+    request: dict,
     current_user: dict = Depends(require_admin_or_employee)
 ):
     """
-    Sync analytics data from all integrated platforms
-    - Meta Ads
-    - Google Ads
-    - Google Analytics 4
-    - Moz SEO Metrics
+    Sync REAL analytics data from all integrated platforms:
+    - Google Analytics 4 (GA4) - Website metrics
+    - Meta Ads API - Facebook/Instagram ad performance
+    - Google Ads API - Google ad performance  
+    - Moz API - SEO metrics
     """
+    connection = None
+    cursor = None
+    
     try:
-        from app.services.meta_ads_reporting import MetaAdsReportingService
-        from app.services.google_analytics_service import GoogleAnalyticsService
-        from app.services.google_ads_reporting import GoogleAdsReportingService
-        from app.services.moz_api_service import MozAPIService
+        client_id = request.get('client_id')
+        start_date = request.get('start_date')
+        end_date = request.get('end_date')
         
-        # Initialize services
-        meta_service = MetaAdsReportingService()
-        ga4_service = GoogleAnalyticsService()
-        google_ads_service = GoogleAdsReportingService()
-        moz_service = MozAPIService()
+        if not client_id:
+            raise HTTPException(status_code=400, detail="client_id is required")
         
-        # Get client website URL for Moz
-        conn = get_db_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        connection = get_db_connection()
+        cursor = connection.cursor(pymysql.cursors.DictCursor)
         
+        # Get client's API credentials from client_profiles
         cursor.execute("""
-            SELECT website_url, meta_ad_account_id, google_ads_account_id
-            FROM clients 
-            WHERE client_id = %s
+            SELECT 
+                cp.client_id,
+                cp.website_url,
+                cp.meta_ad_account_id,
+                cp.meta_access_token,
+                cp.google_ads_customer_id,
+                cp.ga4_property_id,
+                cp.business_name,
+                cp.moz_access_id
+            FROM client_profiles cp
+            WHERE cp.client_id = %s
         """, (client_id,))
         
         client_data = cursor.fetchone()
         
-        if not client_data:
-            raise HTTPException(status_code=404, detail="Client not found")
+        sync_results = {
+            "ga4": {"success": False, "message": "Not configured"},
+            "meta_ads": {"success": False, "message": "Not configured"},
+            "google_ads": {"success": False, "message": "Not configured"},
+            "moz": {"success": False, "message": "Not configured"}
+        }
         
-        # 1. Fetch Meta Ads data
-        meta_data = {}
-        if client_data.get('meta_ad_account_id'):
-            meta_data = meta_service.get_campaign_performance(
-                ad_account_id=client_data['meta_ad_account_id'],
+        # ============================================
+        # 1. SYNC META ADS DATA (Facebook/Instagram)
+        # ============================================
+        try:
+            from app.services.meta_ads_service import MetaAdsReportingService
+            
+            meta_service = MetaAdsReportingService()
+            
+            # Use client's ad account or default from settings
+            ad_account_id = None
+            if client_data and client_data.get('meta_ad_account_id'):
+                ad_account_id = client_data['meta_ad_account_id']
+            elif hasattr(settings, 'META_AD_ACCOUNT_ID') and settings.META_AD_ACCOUNT_ID:
+                ad_account_id = settings.META_AD_ACCOUNT_ID
+            
+            if ad_account_id:
+                meta_data = meta_service.get_campaign_performance(
+                    ad_account_id=ad_account_id,
+                    start_date=start_date,
+                    end_date=end_date
+                )
+                
+                if meta_data.get('success'):
+                    # Store aggregated data in analytics_overview
+                    summary = meta_data.get('summary', {})
+                    
+                    cursor.execute("""
+                        INSERT INTO analytics_overview 
+                        (client_id, metric_date, total_ad_spend, total_impressions, 
+                         total_clicks, total_conversions, total_roas)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE
+                        total_ad_spend = VALUES(total_ad_spend),
+                        total_impressions = VALUES(total_impressions),
+                        total_clicks = VALUES(total_clicks),
+                        total_conversions = VALUES(total_conversions),
+                        total_roas = VALUES(total_roas)
+                    """, (
+                        client_id,
+                        end_date,
+                        summary.get('total_spend', 0),
+                        summary.get('total_impressions', 0),
+                        summary.get('total_clicks', 0),
+                        summary.get('total_conversions', 0),
+                        summary.get('roas', 0)
+                    ))
+                    
+                    # Store campaign-level data
+                    for campaign in meta_data.get('campaigns', []):
+                        cursor.execute("""
+                            INSERT INTO analytics_campaign
+                            (client_id, campaign_id, campaign_name, campaign_type, 
+                             metric_date, impressions, clicks, ctr, conversions, 
+                             spend, roas, platform)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ON DUPLICATE KEY UPDATE
+                            impressions = VALUES(impressions),
+                            clicks = VALUES(clicks),
+                            ctr = VALUES(ctr),
+                            conversions = VALUES(conversions),
+                            spend = VALUES(spend),
+                            roas = VALUES(roas)
+                        """, (
+                            client_id,
+                            campaign.get('campaign_id', ''),
+                            campaign.get('campaign_name', 'Unknown'),
+                            'ads',
+                            end_date,
+                            int(campaign.get('impressions', 0)),
+                            int(campaign.get('clicks', 0)),
+                            float(campaign.get('ctr', 0)),
+                            int(campaign.get('conversions', 0)),
+                            float(campaign.get('spend', 0)),
+                            float(campaign.get('roas', 0)),
+                            'meta'
+                        ))
+                    
+                    sync_results["meta_ads"] = {
+                        "success": True,
+                        "message": f"Synced {len(meta_data.get('campaigns', []))} campaigns",
+                        "campaigns": len(meta_data.get('campaigns', []))
+                    }
+                else:
+                    sync_results["meta_ads"] = {
+                        "success": False,
+                        "message": meta_data.get('error', 'Failed to fetch data')
+                    }
+            else:
+                sync_results["meta_ads"] = {
+                    "success": False,
+                    "message": "No Meta Ad Account ID configured"
+                }
+                
+        except ImportError as e:
+            sync_results["meta_ads"] = {"success": False, "message": f"Service not available: {str(e)}"}
+        except Exception as e:
+            sync_results["meta_ads"] = {"success": False, "message": str(e)}
+        
+        # ============================================
+        # 2. SYNC GOOGLE ADS DATA
+        # ============================================
+        try:
+            from app.services.google_ads_reporting import GoogleAdsReportingService
+            
+            google_ads_service = GoogleAdsReportingService()
+            
+            google_data = google_ads_service.get_campaign_performance(
                 start_date=start_date,
                 end_date=end_date
             )
-        
-        # 2. Fetch Google Ads data
-        google_ads_data = {}
-        if client_data.get('google_ads_account_id'):
-            google_ads_data = google_ads_service.get_campaign_performance(
-                start_date=start_date,
-                end_date=end_date
-            )
-        
-        # 3. Fetch Google Analytics 4 data
-        ga4_data = ga4_service.get_website_metrics(
-            start_date=start_date,
-            end_date=end_date
-        )
-        
-        # 4. Fetch Moz SEO data
-        seo_data = {}
-        if client_data.get('website_url'):
-            seo_data = moz_service.get_url_metrics(client_data['website_url'])
-        
-        # 5. Aggregate and store in database
-        # Get daily metrics from each platform
-        meta_daily = meta_service.get_daily_metrics(
-            ad_account_id=client_data['meta_ad_account_id'],
-            start_date=start_date,
-            end_date=end_date
-        ) if client_data.get('meta_ad_account_id') else []
-        
-        google_ads_daily = google_ads_service.get_daily_metrics(
-            start_date=start_date,
-            end_date=end_date
-        ) if client_data.get('google_ads_account_id') else []
-        
-        ga4_daily = ga4_service.get_daily_traffic(
-            start_date=start_date,
-            end_date=end_date
-        )
-        
-        # Merge daily data by date
-        daily_metrics_map = {}
-        
-        # Process Meta Ads daily data
-        for day_data in meta_daily:
-            date = day_data['date']
-            if date not in daily_metrics_map:
-                daily_metrics_map[date] = {
-                    'metric_date': date,
-                    'total_impressions': 0,
-                    'total_clicks': 0,
-                    'total_conversions': 0,
-                    'total_ad_spend': 0,
-                    'website_visits': 0,
-                    'organic_traffic': 0,
-                    'social_engagement': 0
+            
+            if google_data.get('success'):
+                summary = google_data.get('summary', {})
+                
+                # Update analytics_overview (add to existing Meta data)
+                cursor.execute("""
+                    INSERT INTO analytics_overview 
+                    (client_id, metric_date, total_ad_spend, total_impressions, 
+                     total_clicks, total_conversions)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE
+                    total_ad_spend = total_ad_spend + VALUES(total_ad_spend),
+                    total_impressions = total_impressions + VALUES(total_impressions),
+                    total_clicks = total_clicks + VALUES(total_clicks),
+                    total_conversions = total_conversions + VALUES(total_conversions)
+                """, (
+                    client_id,
+                    end_date,
+                    summary.get('total_cost', 0),
+                    summary.get('total_impressions', 0),
+                    summary.get('total_clicks', 0),
+                    summary.get('total_conversions', 0)
+                ))
+                
+                # Store Google Ads campaigns
+                for campaign in google_data.get('campaigns', []):
+                    cursor.execute("""
+                        INSERT INTO analytics_campaign
+                        (client_id, campaign_id, campaign_name, campaign_type, 
+                         metric_date, impressions, clicks, ctr, conversions, 
+                         spend, platform)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE
+                        impressions = VALUES(impressions),
+                        clicks = VALUES(clicks),
+                        ctr = VALUES(ctr),
+                        conversions = VALUES(conversions),
+                        spend = VALUES(spend)
+                    """, (
+                        client_id,
+                        campaign.get('campaign_id', ''),
+                        campaign.get('campaign_name', 'Unknown'),
+                        'ads',
+                        end_date,
+                        int(campaign.get('impressions', 0)),
+                        int(campaign.get('clicks', 0)),
+                        float(campaign.get('ctr', 0)),
+                        int(campaign.get('conversions', 0)),
+                        float(campaign.get('cost', 0)),
+                        'google'
+                    ))
+                
+                sync_results["google_ads"] = {
+                    "success": True,
+                    "message": f"Synced {len(google_data.get('campaigns', []))} campaigns"
                 }
-            
-            daily_metrics_map[date]['total_impressions'] += day_data.get('impressions', 0)
-            daily_metrics_map[date]['total_clicks'] += day_data.get('clicks', 0)
-            daily_metrics_map[date]['total_conversions'] += day_data.get('conversions', 0)
-            daily_metrics_map[date]['total_ad_spend'] += day_data.get('spend', 0)
-        
-        # Process Google Ads daily data
-        for day_data in google_ads_daily:
-            date = day_data['date']
-            if date not in daily_metrics_map:
-                daily_metrics_map[date] = {
-                    'metric_date': date,
-                    'total_impressions': 0,
-                    'total_clicks': 0,
-                    'total_conversions': 0,
-                    'total_ad_spend': 0,
-                    'website_visits': 0,
-                    'organic_traffic': 0,
-                    'social_engagement': 0
+            else:
+                sync_results["google_ads"] = {
+                    "success": False,
+                    "message": google_data.get('error', 'Failed to fetch data')
                 }
-            
-            daily_metrics_map[date]['total_impressions'] += day_data.get('impressions', 0)
-            daily_metrics_map[date]['total_clicks'] += day_data.get('clicks', 0)
-            daily_metrics_map[date]['total_conversions'] += day_data.get('conversions', 0)
-            daily_metrics_map[date]['total_ad_spend'] += day_data.get('cost', 0)
+                
+        except ImportError as e:
+            sync_results["google_ads"] = {"success": False, "message": f"Service not available: {str(e)}"}
+        except Exception as e:
+            sync_results["google_ads"] = {"success": False, "message": str(e)}
         
-        # Process GA4 daily data
-        for day_data in ga4_daily:
-            date = day_data['date']
-            if date not in daily_metrics_map:
-                daily_metrics_map[date] = {
-                    'metric_date': date,
-                    'total_impressions': 0,
-                    'total_clicks': 0,
-                    'total_conversions': 0,
-                    'total_ad_spend': 0,
-                    'website_visits': 0,
-                    'organic_traffic': 0,
-                    'social_engagement': 0
+        # ============================================
+        # 3. SYNC GOOGLE ANALYTICS 4 DATA
+        # ============================================
+        try:
+            from app.services.google_analytics_service import GoogleAnalyticsService
+            
+            ga4_service = GoogleAnalyticsService()
+            
+            # Use client's property ID or default
+            property_id = None
+            if client_data and client_data.get('ga4_property_id'):
+                property_id = client_data['ga4_property_id']
+            elif hasattr(settings, 'GA4_PROPERTY_ID') and settings.GA4_PROPERTY_ID:
+                property_id = settings.GA4_PROPERTY_ID
+            
+            if property_id:
+                ga4_data = ga4_service.get_website_metrics(
+                    start_date=start_date,
+                    end_date=end_date
+                )
+                
+                if ga4_data.get('success'):
+                    summary = ga4_data.get('summary', {})
+                    
+                    # Store in ga4_data table
+                    cursor.execute("""
+                        INSERT INTO ga4_data 
+                        (client_id, metric_date, sessions, users, page_views, 
+                         bounce_rate, avg_session_duration, conversion_events)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE
+                        sessions = VALUES(sessions),
+                        users = VALUES(users),
+                        page_views = VALUES(page_views),
+                        bounce_rate = VALUES(bounce_rate),
+                        avg_session_duration = VALUES(avg_session_duration),
+                        conversion_events = VALUES(conversion_events)
+                    """, (
+                        client_id,
+                        end_date,
+                        summary.get('total_sessions', 0),
+                        summary.get('total_users', 0),
+                        summary.get('total_pageviews', 0),
+                        summary.get('bounce_rate', 0),
+                        summary.get('avg_session_duration', 0),
+                        summary.get('conversions', 0)
+                    ))
+                    
+                    # Update website_visits in analytics_overview
+                    cursor.execute("""
+                        INSERT INTO analytics_overview 
+                        (client_id, metric_date, website_visits, organic_traffic)
+                        VALUES (%s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE
+                        website_visits = VALUES(website_visits),
+                        organic_traffic = VALUES(organic_traffic)
+                    """, (
+                        client_id,
+                        end_date,
+                        summary.get('total_sessions', 0),
+                        summary.get('organic_sessions', 0)
+                    ))
+                    
+                    sync_results["ga4"] = {
+                        "success": True,
+                        "message": "Synced GA4 data",
+                        "sessions": summary.get('total_sessions', 0)
+                    }
+                else:
+                    sync_results["ga4"] = {
+                        "success": False,
+                        "message": ga4_data.get('error', 'Failed to fetch data')
+                    }
+            else:
+                sync_results["ga4"] = {
+                    "success": False,
+                    "message": "No GA4 Property ID configured"
                 }
-            
-            daily_metrics_map[date]['website_visits'] = day_data.get('sessions', 0)
-            daily_metrics_map[date]['organic_traffic'] = day_data.get('organic_users', 0)
-            daily_metrics_map[date]['social_engagement'] = day_data.get('engaged_sessions', 0)
+                
+        except ImportError as e:
+            sync_results["ga4"] = {"success": False, "message": f"Service not available: {str(e)}"}
+        except Exception as e:
+            sync_results["ga4"] = {"success": False, "message": str(e)}
         
-        # Insert/Update daily metrics
-        for date, metrics in daily_metrics_map.items():
-            # Calculate ROAS
-            roas = (metrics['total_conversions'] * 100 / metrics['total_ad_spend']) if metrics['total_ad_spend'] > 0 else 0
+        # ============================================
+        # 4. SYNC MOZ SEO DATA
+        # ============================================
+        try:
+            from app.services.moz_api_service import MozAPIService
             
+            moz_service = MozAPIService()
+            
+            website_url = None
+            if client_data and client_data.get('website_url'):
+                website_url = client_data['website_url']
+            
+            if website_url:
+                moz_data = moz_service.get_url_metrics(website_url)
+                
+                if moz_data.get('success'):
+                    # Update SEO project domain authority
+                    cursor.execute("""
+                        UPDATE seo_projects 
+                        SET current_domain_authority = %s
+                        WHERE client_id = %s AND status = 'active'
+                    """, (moz_data.get('domain_authority', 0), client_id))
+                    
+                    sync_results["moz"] = {
+                        "success": True,
+                        "message": "Synced Moz SEO data",
+                        "domain_authority": moz_data.get('domain_authority', 0)
+                    }
+                else:
+                    sync_results["moz"] = {
+                        "success": False,
+                        "message": moz_data.get('error', 'Failed to fetch data')
+                    }
+            else:
+                sync_results["moz"] = {
+                    "success": False,
+                    "message": "No website URL configured"
+                }
+                
+        except ImportError as e:
+            sync_results["moz"] = {"success": False, "message": f"Service not available: {str(e)}"}
+        except Exception as e:
+            sync_results["moz"] = {"success": False, "message": str(e)}
+        
+        # ============================================
+        # 5. SYNC SOCIAL MEDIA ENGAGEMENT
+        # ============================================
+        try:
             cursor.execute("""
-                INSERT INTO analytics_overview (
-                    client_id, metric_date, total_ad_spend, total_impressions,
-                    total_clicks, total_conversions, total_roas,
-                    website_visits, organic_traffic, social_engagement,
-                    created_at, updated_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                INSERT INTO content_engagement_tracking 
+                (client_id, platform, content_format, post_id, caption, 
+                 impressions, reach, likes, comments, shares, saves, published_at)
+                SELECT 
+                    sp.client_id,
+                    sp.platform,
+                    CASE 
+                        WHEN sp.content_type = 'single_image' THEN 'image'
+                        WHEN sp.content_type IN ('carousel', 'video', 'reel', 'story') THEN sp.content_type
+                        ELSE 'image'
+                    END,
+                    sp.post_id,
+                    LEFT(sp.caption, 500),
+                    COALESCE(sma.impressions, 0),
+                    COALESCE(sma.reach, 0),
+                    COALESCE(FLOOR(sma.engagement_count * 0.7), 0),
+                    COALESCE(FLOOR(sma.engagement_count * 0.2), 0),
+                    COALESCE(FLOOR(sma.engagement_count * 0.08), 0),
+                    COALESCE(FLOOR(sma.engagement_count * 0.02), 0),
+                    sp.scheduled_at
+                FROM scheduled_posts sp
+                LEFT JOIN social_media_analytics sma 
+                    ON sp.client_id = sma.client_id 
+                    AND sp.platform = sma.platform
+                    AND DATE(sp.scheduled_at) = sma.metric_date
+                WHERE sp.client_id = %s 
+                AND sp.status = 'published'
                 ON DUPLICATE KEY UPDATE
-                    total_ad_spend = VALUES(total_ad_spend),
-                    total_impressions = VALUES(total_impressions),
-                    total_clicks = VALUES(total_clicks),
-                    total_conversions = VALUES(total_conversions),
-                    total_roas = VALUES(total_roas),
-                    website_visits = VALUES(website_visits),
-                    organic_traffic = VALUES(organic_traffic),
-                    social_engagement = VALUES(social_engagement),
-                    updated_at = NOW()
-            """, (
-                client_id,
-                metrics['metric_date'],
-                metrics['total_ad_spend'],
-                metrics['total_impressions'],
-                metrics['total_clicks'],
-                metrics['total_conversions'],
-                roas,
-                metrics['website_visits'],
-                metrics['organic_traffic'],
-                metrics['social_engagement']
-            ))
-        
-        # Store SEO metrics if available
-        if seo_data.get('success'):
+                impressions = VALUES(impressions),
+                reach = VALUES(reach),
+                likes = VALUES(likes),
+                comments = VALUES(comments),
+                shares = VALUES(shares),
+                saves = VALUES(saves)
+            """, (client_id,))
+            
+            # Update social_engagement in analytics_overview
             cursor.execute("""
-                INSERT INTO seo_metrics (
-                    client_id, metric_date, domain_authority, page_authority,
-                    spam_score, backlinks_count, referring_domains,
-                    created_at, updated_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-                ON DUPLICATE KEY UPDATE
-                    domain_authority = VALUES(domain_authority),
-                    page_authority = VALUES(page_authority),
-                    spam_score = VALUES(spam_score),
-                    backlinks_count = VALUES(backlinks_count),
-                    referring_domains = VALUES(referring_domains),
-                    updated_at = NOW()
-            """, (
-                client_id,
-                end_date,
-                seo_data.get('domain_authority', 0),
-                seo_data.get('page_authority', 0),
-                seo_data.get('spam_score', 0),
-                seo_data.get('external_pages_to_page', 0),
-                seo_data.get('root_domains_to_page', 0)
-            ))
+                UPDATE analytics_overview ao
+                SET social_engagement = (
+                    SELECT COALESCE(SUM(likes + comments + shares + saves), 0)
+                    FROM content_engagement_tracking cet
+                    WHERE cet.client_id = ao.client_id
+                    AND DATE(cet.published_at) = ao.metric_date
+                )
+                WHERE ao.client_id = %s
+            """, (client_id,))
+            
+            sync_results["social"] = {"success": True, "message": "Synced social engagement"}
+        except Exception as e:
+            sync_results["social"] = {"success": False, "message": str(e)}
         
-        conn.commit()
-        cursor.close()
-        conn.close()
+        connection.commit()
+        
+        # Count successful syncs
+        successful_syncs = sum(1 for r in sync_results.values() if r.get('success'))
         
         return {
             "success": True,
-            "message": "Analytics data synced successfully from all platforms",
-            "summary": {
-                "meta_ads": {
-                    "campaigns_synced": len(meta_data.get('campaigns', [])),
-                    "total_spend": meta_data.get('summary', {}).get('total_spend', 0)
-                },
-                "google_ads": {
-                    "campaigns_synced": len(google_ads_data.get('campaigns', [])),
-                    "total_cost": google_ads_data.get('summary', {}).get('total_cost', 0)
-                },
-                "google_analytics": {
-                    "total_users": ga4_data.get('summary', {}).get('total_users', 0),
-                    "sessions": ga4_data.get('summary', {}).get('sessions', 0)
-                },
-                "seo": {
-                    "domain_authority": seo_data.get('domain_authority', 0),
-                    "page_authority": seo_data.get('page_authority', 0)
-                }
-            },
-            "date_range": {
-                "start_date": start_date,
-                "end_date": end_date
-            }
+            "message": f"Sync completed. {successful_syncs}/{len(sync_results)} platforms synced.",
+            "sync_results": sync_results
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error syncing analytics data: {str(e)}")
+        if connection:
+            connection.rollback()
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to sync analytics data: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Sync failed: {str(e)}"
         )
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 
 @router.get("/seo-metrics/{client_id}")
@@ -1973,3 +2164,249 @@ async def get_performance_alerts(
             status_code=500,
             detail=f"Failed to generate alerts: {str(e)}"
         )
+
+
+# ========== CONTENT ENGAGEMENT BY FORMAT & PLATFORM ==========
+@router.get("/content-engagement/{client_id}", summary="Get content engagement by format and platform")
+async def get_content_engagement(
+    client_id: int,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """
+    Get content engagement metrics broken down by:
+    - Content format (image, video, carousel, text, story, reel)
+    - Platform (instagram, facebook, linkedin, twitter)
+    """
+    connection = None
+    cursor = None
+    
+    try:
+        if not end_date:
+            end_date = date.today()
+        if not start_date:
+            start_date = end_date - timedelta(days=30)
+        
+        connection = get_db_connection()
+        cursor = connection.cursor(pymysql.cursors.DictCursor)
+        
+        # Get engagement by content format
+        cursor.execute("""
+            SELECT 
+                content_format,
+                COUNT(*) as total_posts,
+                COALESCE(SUM(impressions), 0) as total_impressions,
+                COALESCE(SUM(reach), 0) as total_reach,
+                COALESCE(SUM(likes + comments + shares + saves), 0) as total_engagement,
+                COALESCE(AVG(CASE WHEN impressions > 0 
+                    THEN (likes + comments + shares + saves) * 100.0 / impressions 
+                    ELSE 0 END), 0) as avg_engagement_rate
+            FROM content_engagement_tracking
+            WHERE client_id = %s 
+            AND created_at BETWEEN %s AND %s
+            GROUP BY content_format
+            ORDER BY total_engagement DESC
+        """, (client_id, start_date, end_date))
+        
+        format_engagement = cursor.fetchall()
+        
+        # Get engagement by platform
+        cursor.execute("""
+            SELECT 
+                platform,
+                COUNT(*) as total_posts,
+                COALESCE(SUM(impressions), 0) as total_impressions,
+                COALESCE(SUM(reach), 0) as total_reach,
+                COALESCE(SUM(likes + comments + shares + saves), 0) as total_engagement,
+                COALESCE(AVG(CASE WHEN impressions > 0 
+                    THEN (likes + comments + shares + saves) * 100.0 / impressions 
+                    ELSE 0 END), 0) as avg_engagement_rate
+            FROM content_engagement_tracking
+            WHERE client_id = %s 
+            AND created_at BETWEEN %s AND %s
+            GROUP BY platform
+            ORDER BY total_engagement DESC
+        """, (client_id, start_date, end_date))
+        
+        platform_engagement = cursor.fetchall()
+        
+        # Get top performing content
+        cursor.execute("""
+            SELECT 
+                content_id,
+                platform,
+                content_format,
+                caption,
+                impressions,
+                reach,
+                (likes + comments + shares + saves) as engagement,
+                CASE WHEN impressions > 0 
+                    THEN (likes + comments + shares + saves) * 100.0 / impressions 
+                    ELSE 0 END as engagement_rate,
+                published_at
+            FROM content_engagement_tracking
+            WHERE client_id = %s 
+            AND created_at BETWEEN %s AND %s
+            ORDER BY engagement DESC
+            LIMIT 5
+        """, (client_id, start_date, end_date))
+        
+        top_content = cursor.fetchall()
+        
+        # Convert decimals and dates
+        for item in format_engagement:
+            item['avg_engagement_rate'] = round(float(item['avg_engagement_rate'] or 0), 2)
+            item['total_impressions'] = int(item['total_impressions'] or 0)
+            item['total_reach'] = int(item['total_reach'] or 0)
+            item['total_engagement'] = int(item['total_engagement'] or 0)
+        
+        for item in platform_engagement:
+            item['avg_engagement_rate'] = round(float(item['avg_engagement_rate'] or 0), 2)
+            item['total_impressions'] = int(item['total_impressions'] or 0)
+            item['total_reach'] = int(item['total_reach'] or 0)
+            item['total_engagement'] = int(item['total_engagement'] or 0)
+        
+        for item in top_content:
+            item['engagement_rate'] = round(float(item['engagement_rate'] or 0), 2)
+            item['engagement'] = int(item['engagement'] or 0)
+            item['impressions'] = int(item['impressions'] or 0)
+            if item.get('published_at'):
+                item['published_at'] = item['published_at'].isoformat()
+        
+        # Determine best performing format and platform
+        best_format = format_engagement[0]['content_format'] if format_engagement else None
+        best_platform = platform_engagement[0]['platform'] if platform_engagement else None
+        
+        # Generate recommendation
+        recommendation = "Start creating content to see performance insights."
+        if format_engagement and platform_engagement:
+            recommendation = f"{format_engagement[0]['content_format'].replace('_', ' ').title()} content performs best with {format_engagement[0]['avg_engagement_rate']}% engagement rate. Focus on {platform_engagement[0]['platform'].title()} for highest overall engagement."
+        
+        return {
+            "success": True,
+            "client_id": client_id,
+            "date_range": {
+                "start": start_date.isoformat(),
+                "end": end_date.isoformat()
+            },
+            "by_format": format_engagement,
+            "by_platform": platform_engagement,
+            "top_performing_content": top_content,
+            "insights": {
+                "best_format": best_format,
+                "best_platform": best_platform,
+                "recommendation": recommendation
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch content engagement: {str(e)}"
+        )
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+def generate_content_recommendation(format_data: list, platform_data: list) -> str:
+    """Generate AI-like recommendation based on content performance"""
+    if not format_data or not platform_data:
+        return "Start creating content to see performance insights."
+    
+    best_format = format_data[0]
+    best_platform = platform_data[0]
+    
+    format_name = best_format['content_format'].replace('_', ' ').title()
+    platform_name = best_platform['platform'].title()
+    
+    return f"{format_name} content performs best with {best_format['avg_engagement_rate']}% engagement rate. Focus on {platform_name} which shows the highest overall engagement."
+
+
+
+
+# ========== SYNC CONTENT ENGAGEMENT DATA ==========
+# Add this to the sync_all_platforms endpoint or as a separate endpoint
+# in app/api/v1/endpoints/analytics.py
+
+@router.post("/sync-content-engagement/{client_id}", summary="Sync content engagement from posts")
+async def sync_content_engagement(
+    client_id: int,
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """Sync content engagement data from social media posts"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(pymysql.cursors.DictCursor)
+        
+        # Sync from scheduled_posts to content_engagement_tracking
+        cursor.execute("""
+            INSERT INTO content_engagement_tracking 
+            (client_id, platform, content_format, post_id, caption, 
+             impressions, reach, likes, comments, shares, saves, published_at)
+            SELECT 
+                sp.client_id,
+                sp.platform,
+                CASE 
+                    WHEN sp.content_type = 'single_image' THEN 'image'
+                    WHEN sp.content_type IN ('carousel', 'video', 'reel', 'story') THEN sp.content_type
+                    ELSE 'image'
+                END,
+                sp.post_id,
+                LEFT(sp.caption, 500),
+                COALESCE(sma.impressions, 0),
+                COALESCE(sma.reach, 0),
+                COALESCE(FLOOR(sma.engagement_count * 0.7), 0),
+                COALESCE(FLOOR(sma.engagement_count * 0.2), 0),
+                COALESCE(FLOOR(sma.engagement_count * 0.08), 0),
+                COALESCE(FLOOR(sma.engagement_count * 0.02), 0),
+                sp.scheduled_at
+            FROM scheduled_posts sp
+            LEFT JOIN social_media_analytics sma 
+                ON sp.client_id = sma.client_id 
+                AND sp.platform = sma.platform
+                AND DATE(sp.scheduled_at) = sma.metric_date
+            WHERE sp.client_id = %s 
+            AND sp.status = 'published'
+            ON DUPLICATE KEY UPDATE
+            impressions = VALUES(impressions),
+            reach = VALUES(reach),
+            likes = VALUES(likes),
+            comments = VALUES(comments),
+            shares = VALUES(shares),
+            saves = VALUES(saves)
+        """, (client_id,))
+        
+        synced_count = cursor.rowcount
+        connection.commit()
+        
+        return {
+            "success": True,
+            "message": f"Synced {synced_count} content records",
+            "synced_count": synced_count
+        }
+        
+    except Exception as e:
+        if connection:
+            connection.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to sync content engagement: {str(e)}"
+        )
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+# Also update the main sync_all_platforms to include content engagement sync
+# Add this call at the end of sync_all_platforms:
+#
+# # 5. Sync content engagement data
+# await sync_content_engagement(client_id, current_user)

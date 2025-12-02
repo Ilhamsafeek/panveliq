@@ -57,13 +57,13 @@
 
     <!-- Loading State -->
     <div class="loading-state" id="loadingState">
-        <div class="loader-spinner"></div>
-        <p>Loading analytics data...</p>
+        <div class="loader-spinner">
+        </div>
     </div>
 
     <!-- Main Content -->
     <div class="analytics-content" id="analyticsContent" style="display: none;">
-        
+
         <!-- Key Metrics Overview -->
         <div class="metrics-overview">
             <div class="metric-card">
@@ -103,9 +103,19 @@
                     <i class="ti ti-currency-dollar"></i>
                 </div>
                 <div class="metric-details">
-                    <div class="metric-value" id="totalSpend">$0</div>
+                    <div class="metric-value" id="totalSpend">₹0</div>
                     <div class="metric-label">Total Ad Spend</div>
                     <div class="metric-sublabel">ROAS: <span id="roas">0</span></div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon yellow">
+                    <i class="ti ti-coin"></i>
+                </div>
+                <div class="metric-details">
+                    <div class="metric-value" id="avgCpc">₹0.00</div>
+                    <div class="metric-label">Avg. CPC</div>
                 </div>
             </div>
 
@@ -174,6 +184,59 @@
                 <!-- Will be populated dynamically -->
             </div>
         </div>
+
+
+        <!-- Content Engagement by Format & Platform Section -->
+        <div class="content-engagement-section">
+            <div class="section-header">
+                <h3><i class="ti ti-photo-video"></i> Content Engagement by Format & Platform</h3>
+                <button class="btn-text" onclick="loadContentEngagement()">
+                    <i class="ti ti-refresh"></i> Refresh
+                </button>
+            </div>
+
+            <!-- Format Engagement Cards -->
+            <div class="engagement-subsection">
+                <h4><i class="ti ti-file-type"></i> By Content Format</h4>
+                <div class="format-engagement-grid" id="formatEngagementGrid">
+                    <div class="empty-state">
+                        <i class="ti ti-chart-dots"></i>
+                        <p>Loading content format data...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Platform Engagement Cards -->
+            <div class="engagement-subsection">
+                <h4><i class="ti ti-brand-instagram"></i> By Platform</h4>
+                <div class="platform-engagement-grid" id="platformEngagementGrid">
+                    <div class="empty-state">
+                        <i class="ti ti-chart-dots"></i>
+                        <p>Loading platform data...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Performing Content -->
+            <div class="engagement-subsection">
+                <h4><i class="ti ti-trophy"></i> Top Performing Content</h4>
+                <div class="top-content-list" id="topContentList">
+                    <div class="empty-state">
+                        <i class="ti ti-trophy-off"></i>
+                        <p>No content data available</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Recommendation -->
+            <div class="content-recommendation" id="contentRecommendation" style="display: none;">
+                <div class="recommendation-icon">
+                    <i class="ti ti-bulb"></i>
+                </div>
+                <div class="recommendation-text" id="recommendationText"></div>
+            </div>
+        </div>
+
 
         <!-- Campaign Performance Table -->
         <div class="campaign-section" id="campaignSection" style="display: none;">

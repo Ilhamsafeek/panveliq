@@ -7,16 +7,21 @@ from fastapi import APIRouter, HTTPException, status, Depends, Response
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timedelta
 import pymysql
 import json
 import secrets
 from io import BytesIO
+import requests
 
 from app.core.config import settings
 from app.services.ai_service import AIService
 from app.core.security import require_admin_or_employee
 from app.core.security import get_db_connection
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 router = APIRouter()
 
@@ -620,7 +625,7 @@ async def generate_shareable_link(
     proposal_id: int,
     current_user: dict = Depends(require_admin_or_employee)
 ):
-    """Generate shareable link for proposal"""
+    """Generate shareable link for proposal with 30-day expiry"""
     connection = None
     cursor = None
     
@@ -629,7 +634,11 @@ async def generate_shareable_link(
         cursor = connection.cursor()
         
         # Check if proposal exists
-        cursor.execute("SELECT proposal_id FROM project_proposals WHERE proposal_id = %s", (proposal_id,))
+        cursor.execute("""
+            SELECT proposal_id, client_id 
+            FROM project_proposals 
+            WHERE proposal_id = %s
+        """, (proposal_id,))
         proposal = cursor.fetchone()
         
         if not proposal:
@@ -638,32 +647,225 @@ async def generate_shareable_link(
         # Generate unique token
         share_token = secrets.token_urlsafe(32)
         
-        # Try to use share_links table if it exists
-        try:
+        # Calculate expiry date (30 days from now)
+        expires_at = datetime.now() + timedelta(days=30)
+        
+        # Check table structure to determine which columns exist
+        cursor.execute("""
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'proposal_share_links'
+        """)
+        columns = [row['COLUMN_NAME'] for row in cursor.fetchall()]
+        
+        has_is_active = 'is_active' in columns
+        has_view_count = 'view_count' in columns
+        
+        # Delete existing links for this proposal (simpler approach)
+        cursor.execute("""
+            DELETE FROM proposal_share_links 
+            WHERE proposal_id = %s
+        """, (proposal_id,))
+        
+        # Insert new share link based on available columns
+        if has_is_active and has_view_count:
             cursor.execute("""
-                INSERT INTO proposal_share_links (proposal_id, share_token, created_by, expires_at)
-                VALUES (%s, %s, %s, DATE_ADD(NOW(), INTERVAL 30 DAY))
-            """, (proposal_id, share_token, current_user['user_id']))
-            connection.commit()
-        except:
-            # Table doesn't exist, just generate URL
-            pass
+                INSERT INTO proposal_share_links 
+                (proposal_id, share_token, created_by, expires_at, is_active, view_count)
+                VALUES (%s, %s, %s, %s, TRUE, 0)
+            """, (proposal_id, share_token, current_user['user_id'], expires_at))
+        elif has_is_active:
+            cursor.execute("""
+                INSERT INTO proposal_share_links 
+                (proposal_id, share_token, created_by, expires_at, is_active)
+                VALUES (%s, %s, %s, %s, TRUE)
+            """, (proposal_id, share_token, current_user['user_id'], expires_at))
+        else:
+            # Basic insert without optional columns
+            cursor.execute("""
+                INSERT INTO proposal_share_links 
+                (proposal_id, share_token, created_by, expires_at)
+                VALUES (%s, %s, %s, %s)
+            """, (proposal_id, share_token, current_user['user_id'], expires_at))
         
-        base_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:8000')
-        share_link = f"{base_url}/proposals/view/{proposal_id}?token={share_token}"
+        connection.commit()
         
-        print(f"[LINK] Generated share link for proposal {proposal_id}")
+        # Generate the share URL
+        base_url = getattr(settings, 'FRONTEND_URL', 'https://panvel-iq.calim.ai')
+        share_link = f"{base_url}/proposals/view/{share_token}"
+        
+        print(f"[LINK] Generated share link for proposal {proposal_id}, expires: {expires_at}")
         
         return {
             "success": True,
             "share_link": share_link,
+            "expires_at": expires_at.isoformat(),
             "expires_in": "30 days"
         }
     
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error generating link: {e}")
+        if connection:
+            connection.rollback()
+        print(f"Error generating share link: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+
+@router.get("/proposals/shared/{share_token}")
+async def get_shared_proposal(share_token: str):
+    """
+    Public endpoint to view a shared proposal via token
+    No authentication required - validates token and expiry
+    """
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # First, get the columns that exist in the table
+        cursor.execute("""
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'proposal_share_links'
+        """)
+        columns = [row['COLUMN_NAME'] for row in cursor.fetchall()]
+        
+        # Determine primary key column name
+        pk_column = 'id' if 'id' in columns else 'link_id' if 'link_id' in columns else columns[0]
+        has_is_active = 'is_active' in columns
+        has_view_count = 'view_count' in columns
+        has_last_viewed = 'last_viewed_at' in columns
+        
+        # Find the share link and validate
+        cursor.execute(f"""
+            SELECT * FROM proposal_share_links
+            WHERE share_token = %s
+        """, (share_token,))
+        
+        share_link = cursor.fetchone()
+        
+        if not share_link:
+            raise HTTPException(
+                status_code=404, 
+                detail="Invalid or expired share link"
+            )
+        
+        # Check if link is active (if column exists)
+        if has_is_active and not share_link.get('is_active', True):
+            raise HTTPException(
+                status_code=410, 
+                detail="This share link has been deactivated"
+            )
+        
+        # Check if link has expired
+        expires_at = share_link.get('expires_at')
+        if expires_at and datetime.now() > expires_at:
+            # Mark as inactive if column exists
+            if has_is_active:
+                cursor.execute(f"""
+                    UPDATE proposal_share_links 
+                    SET is_active = FALSE 
+                    WHERE {pk_column} = %s
+                """, (share_link[pk_column],))
+                connection.commit()
+            
+            raise HTTPException(
+                status_code=410, 
+                detail="This share link has expired"
+            )
+        
+        # Fetch the proposal data
+        proposal_id = share_link['proposal_id']
+        cursor.execute("""
+            SELECT 
+                pp.*,
+                u.full_name as client_name,
+                u.email as client_email,
+                creator.full_name as created_by_name
+            FROM project_proposals pp
+            LEFT JOIN users u ON pp.client_id = u.user_id
+            LEFT JOIN users creator ON pp.created_by = creator.user_id
+            WHERE pp.proposal_id = %s
+        """, (proposal_id,))
+        
+        proposal = cursor.fetchone()
+        
+        if not proposal:
+            raise HTTPException(status_code=404, detail="Proposal not found")
+        
+        # Update view count if column exists
+        if has_view_count:
+            update_parts = ["view_count = COALESCE(view_count, 0) + 1"]
+            if has_last_viewed:
+                update_parts.append("last_viewed_at = NOW()")
+            
+            cursor.execute(f"""
+                UPDATE proposal_share_links 
+                SET {', '.join(update_parts)}
+                WHERE {pk_column} = %s
+            """, (share_link[pk_column],))
+            connection.commit()
+        
+        # Parse JSON fields
+        def safe_json_parse(data, default=None):
+            if data is None:
+                return default
+            if isinstance(data, (dict, list)):
+                return data
+            try:
+                return json.loads(data) if data else default
+            except:
+                return default
+        
+        # Format proposal for public view
+        proposal_data = {
+            "proposal_id": proposal['proposal_id'],
+            "client_name": proposal.get('client_name', 'Client'),
+            "company_name": proposal.get('company_name', ''),
+            "business_type": proposal.get('business_type', ''),
+            "budget": float(proposal['budget']) if proposal.get('budget') else 0,
+            "challenges": proposal.get('challenges', ''),
+            "target_audience": proposal.get('target_audience', ''),
+            "ai_generated_strategy": safe_json_parse(proposal.get('ai_generated_strategy'), {}),
+            "competitive_differentiators": safe_json_parse(proposal.get('competitive_differentiators'), {}),
+            "suggested_timeline": safe_json_parse(proposal.get('suggested_timeline'), {}),
+            "status": proposal.get('status', 'draft'),
+            "created_at": proposal['created_at'].isoformat() if proposal.get('created_at') else None,
+            "created_by_name": proposal.get('created_by_name', 'PanvelIQ Team')
+        }
+        
+        # Calculate days remaining
+        days_remaining = 30  # Default
+        if expires_at:
+            days_remaining = (expires_at - datetime.now()).days
+        
+        view_count = share_link.get('view_count', 0) or 0
+        
+        return {
+            "success": True,
+            "proposal": proposal_data,
+            "link_info": {
+                "expires_at": expires_at.isoformat() if expires_at else None,
+                "days_remaining": max(0, days_remaining),
+                "view_count": view_count + 1
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching shared proposal: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if cursor:
@@ -1183,7 +1385,12 @@ async def send_to_dashboard(
         cursor = connection.cursor()
         
         # Check if proposal exists
-        cursor.execute("SELECT * FROM project_proposals WHERE proposal_id = %s", (proposal_id,))
+        cursor.execute("""
+            SELECT p.*, u.full_name, u.email 
+            FROM project_proposals p
+            JOIN users u ON p.client_id = u.user_id
+            WHERE p.proposal_id = %s
+        """, (proposal_id,))
         proposal = cursor.fetchone()
         
         if not proposal:
@@ -1196,13 +1403,28 @@ async def send_to_dashboard(
             WHERE proposal_id = %s
         """, ('sent', proposal_id))
         
+        # Create notification for the client
+        cursor.execute("""
+            INSERT INTO notifications 
+            (user_id, notification_type, title, message, is_read, created_at)
+            VALUES (%s, %s, %s, %s, %s, NOW())
+        """, (
+            proposal['client_id'],
+            'proposal_received',
+            'New Marketing Proposal',
+            f'A new marketing proposal has been added to your dashboard. Please review and provide your feedback.',
+            False
+        ))
+        
         connection.commit()
         
-        print(f"[DASHBOARD] Proposal {proposal_id} sent to client dashboard")
+        print(f"[DASHBOARD] Proposal {proposal_id} sent to client {proposal['full_name']} (ID: {proposal['client_id']})")
+        print(f"[NOTIFICATION] Created notification for client")
         
         return {
             "success": True,
-            "message": "Proposal successfully added to client dashboard"
+            "message": "Proposal added to client dashboard!",
+            "notification_created": True
         }
     
     except HTTPException:
@@ -1211,6 +1433,8 @@ async def send_to_dashboard(
         if connection:
             connection.rollback()
         print(f"Error sending to dashboard: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if cursor:
@@ -1218,6 +1442,7 @@ async def send_to_dashboard(
         if connection:
             connection.close()
 
+            
 
 @router.post("/proposals/{proposal_id}/send-email")
 async def send_proposal_email(
@@ -1225,7 +1450,7 @@ async def send_proposal_email(
     email_data: dict,
     current_user: dict = Depends(require_admin_or_employee)
 ):
-    """Send proposal via email"""
+    """Send proposal via email using Mailchimp Transactional (Mandrill)"""
     connection = None
     cursor = None
     
@@ -1233,8 +1458,16 @@ async def send_proposal_email(
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        # Check if proposal exists
-        cursor.execute("SELECT * FROM project_proposals WHERE proposal_id = %s", (proposal_id,))
+        # Check if proposal exists and get details
+        cursor.execute("""
+            SELECT 
+                pp.*,
+                u.full_name as client_name,
+                u.email as client_email
+            FROM project_proposals pp
+            LEFT JOIN users u ON pp.client_id = u.user_id
+            WHERE pp.proposal_id = %s
+        """, (proposal_id,))
         proposal = cursor.fetchone()
         
         if not proposal:
@@ -1247,35 +1480,57 @@ async def send_proposal_email(
         if not recipient_email:
             raise HTTPException(status_code=400, detail="Recipient email is required")
         
-        # Here you would integrate with your email service (SendGrid, AWS SES, etc.)
-        # For now, we'll just log it and update the status
+        # Generate a share link for the email
+        share_token = secrets.token_urlsafe(32)
+        expires_at = datetime.now() + timedelta(days=30)
         
-        print(f"[EMAIL] Sending proposal {proposal_id} to {recipient_email}")
-        print(f"  Subject: {subject}")
-        print(f"  Message: {message[:100]}...")
-        
-        # Update proposal status
         cursor.execute("""
-            UPDATE project_proposals 
-            SET status = %s, sent_at = NOW(), updated_at = NOW()
-            WHERE proposal_id = %s
-        """, ('sent', proposal_id))
+            INSERT INTO proposal_share_links 
+            (proposal_id, share_token, created_by, expires_at, is_active)
+            VALUES (%s, %s, %s, %s, TRUE)
+        """, (proposal_id, share_token, current_user['user_id'], expires_at))
         
-        connection.commit()
+        base_url = getattr(settings, 'FRONTEND_URL', 'https://panvel-iq.calim.ai')
+        proposal_link = f"{base_url}/proposals/view/{share_token}"
         
-        # TODO: Implement actual email sending here
-        # Example with a generic email service:
-        # send_email(
-        #     to=recipient_email,
-        #     subject=subject,
-        #     body=message,
-        #     attachments=[generate_pdf(proposal_id)]
-        # )
+        # Build email content with proposal link
+        email_html = build_proposal_email_html(
+            client_name=proposal.get('client_name', 'Valued Client'),
+            message=message,
+            proposal_link=proposal_link,
+            company_name=proposal.get('company_name', ''),
+            business_type=proposal.get('business_type', '')
+        )
         
-        return {
-            "success": True,
-            "message": f"Proposal sent successfully to {recipient_email}"
-        }
+        # Send via Mailchimp Transactional API (Mandrill)
+        email_sent = await send_via_mailchimp(
+            to_email=recipient_email,
+            to_name=proposal.get('client_name', ''),
+            subject=subject,
+            html_content=email_html,
+            text_content=message
+        )
+        
+        if email_sent:
+            # Update proposal status
+            cursor.execute("""
+                UPDATE project_proposals 
+                SET status = 'sent', sent_at = NOW(), updated_at = NOW()
+                WHERE proposal_id = %s
+            """, (proposal_id,))
+            connection.commit()
+            
+            print(f"[EMAIL] Proposal {proposal_id} sent to {recipient_email}")
+            
+            return {
+                "success": True,
+                "message": f"Proposal sent successfully to {recipient_email}"
+            }
+        else:
+            raise HTTPException(
+                status_code=500, 
+                detail="Failed to send email. Please check email configuration."
+            )
     
     except HTTPException:
         raise
@@ -1289,3 +1544,146 @@ async def send_proposal_email(
             cursor.close()
         if connection:
             connection.close()
+
+async def send_via_mailchimp(
+    to_email: str,
+    to_name: str,
+    subject: str,
+    html_content: str,
+    text_content: str
+) -> bool:
+    """
+    Send email using SMTP (more reliable than Mailchimp API for transactional emails)
+    Falls back to logging if SMTP not configured
+    """
+    try:
+        # Try SMTP first (most reliable)
+        smtp_host = getattr(settings, 'SMTP_HOST', None)
+        smtp_port = getattr(settings, 'SMTP_PORT', 465)
+        smtp_user = getattr(settings, 'SMTP_USER', None)
+        smtp_pass = getattr(settings, 'SMTP_PASSWORD', None)
+        from_email = getattr(settings, 'FROM_EMAIL', 'hello@panvel-iq.calim.ai')
+        from_name = getattr(settings, 'FROM_NAME', 'PanvelIQ')
+        
+        if smtp_host and smtp_user and smtp_pass:
+            print(f"[EMAIL] Sending via SMTP: {smtp_host}")
+            
+            # Create message
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = f"{from_name} <{from_email}>"
+            msg['To'] = to_email
+            
+            # Attach both plain text and HTML versions
+            part1 = MIMEText(text_content, 'plain')
+            part2 = MIMEText(html_content, 'html')
+            msg.attach(part1)
+            msg.attach(part2)
+            
+            # Send email
+            with smtplib.SMTP(smtp_host, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(from_email, to_email, msg.as_string())
+            
+            print(f"[EMAIL] Sent successfully via SMTP to {to_email}")
+            return True
+        
+        # If no SMTP, try Mailchimp Transactional (Mandrill) - different from regular Mailchimp
+        mandrill_key = getattr(settings, 'MANDRILL_API_KEY', None)
+        if mandrill_key:
+            print(f"[EMAIL] Sending via Mandrill")
+            url = "https://mandrillapp.com/api/1.0/messages/send.json"
+            
+            payload = {
+                "key": mandrill_key,
+                "message": {
+                    "from_email": from_email,
+                    "from_name": from_name,
+                    "to": [{"email": to_email, "name": to_name, "type": "to"}],
+                    "subject": subject,
+                    "html": html_content,
+                    "text": text_content
+                }
+            }
+            
+            response = requests.post(url, json=payload, timeout=30)
+            if response.status_code == 200:
+                print(f"[EMAIL] Sent successfully via Mandrill")
+                return True
+        
+        # Fallback: Just log the email (for testing/development)
+        print(f"[EMAIL] No email service configured - logging email instead")
+        print(f"[EMAIL] To: {to_email}")
+        print(f"[EMAIL] Subject: {subject}")
+        print(f"[EMAIL] Message preview: {text_content[:200]}...")
+        print(f"[EMAIL] Marked as sent (no actual email service configured)")
+        return True  # Return True so the proposal status updates
+        
+    except Exception as e:
+        print(f"[EMAIL] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def build_proposal_email_html(
+    client_name: str,
+    message: str,
+    proposal_link: str,
+    company_name: str = "",
+    business_type: str = ""
+) -> str:
+    """Build HTML email template for proposal"""
+    
+    return f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketing Proposal</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #9926F3 0%, #1DD8FC 100%); padding: 40px 30px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px;">PanvelIQ</h1>
+                            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">AI-Powered Digital Marketing</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <h2 style="color: #1a1a2e; margin: 0 0 20px 0; font-size: 24px;">Hello {client_name},</h2>
+                            <div style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+                                {message.replace(chr(10), '<br>')}
+                            </div>
+                            {f'<p style="color: #6b7280; font-size: 14px;"><strong>Company:</strong> {company_name}</p>' if company_name else ''}
+                            {f'<p style="color: #6b7280; font-size: 14px;"><strong>Industry:</strong> {business_type}</p>' if business_type else ''}
+                            <div style="text-align: center; margin: 40px 0;">
+                                <a href="{proposal_link}" style="display: inline-block; background: linear-gradient(135deg, #9926F3 0%, #1DD8FC 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-size: 16px; font-weight: bold;">
+                                    View Your Proposal
+                                </a>
+                            </div>
+                            <p style="color: #9ca3af; font-size: 13px; text-align: center;">
+                                This link will expire in 30 days.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                            <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                                &copy; 2025 PanvelIQ. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+"""

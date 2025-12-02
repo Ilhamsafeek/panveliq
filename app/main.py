@@ -6,13 +6,17 @@ PanvelIQ - AI-powered Digital Marketing Intelligence Platform
 Main FastAPI Application Entry Point
 """
 
-from fastapi import FastAPI, Request, HTTPException, status, Cookie
+from fastapi import FastAPI, Request, HTTPException, status, Cookie, APIRouter, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Optional
 from jose import JWTError, jwt
+from fastapi.responses import FileResponse
+import os
+
+from app.core.security import get_current_user, require_admin, get_db_connection
 
 from app.core.config import settings
 from app.api.v1.router import api_router
@@ -44,6 +48,23 @@ templates = Jinja2Templates(directory="templates")
 
 # Include API routes
 app.include_router(api_router, prefix=f"/api/{settings.API_VERSION}")
+
+
+
+# Custom StaticFiles class that disables caching
+class NoCacheStaticFiles(StaticFiles):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
+# Use the custom class instead of StaticFiles
+app.mount("/static", NoCacheStaticFiles(directory="static"), name="static")
 
 
 # ========== ROOT & LANDING PAGE ==========
@@ -895,6 +916,23 @@ async def financial_pl_page(request: Request):
         )
 
 
+@app.get("/proposals/view/{share_token}", response_class=HTMLResponse)
+async def public_proposal_view(request: Request, share_token: str):
+    """
+    Public proposal view page - accessed via shareable link
+    No authentication required - token validation happens in API
+    """
+    return templates.TemplateResponse(
+        "modules/proposal-public-view.html",
+        {
+            "request": request,
+            "share_token": share_token,
+            "show_sidebar": False  # No sidebar for public view
+        }
+    )
+
+    
+
 """
 ADD THESE ROUTES TO YOUR app/main.py FILE
 Place them in the appropriate sections
@@ -1038,7 +1076,240 @@ async def campaigns_page(request: Request):
         "client/campaigns.html",
         {"request": request, "show_sidebar": True}
     )
+
+
+
+@app.get("/api/v1/admin/dashboard-stats")
+async def get_dashboard_stats(current_user: dict = Depends(require_admin)):
+    """Get statistics for admin dashboard"""
+    connection = None
+    cursor = None
     
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(pymysql.cursors.DictCursor)
+        
+        # Total users
+        cursor.execute("SELECT COUNT(*) as count FROM users")
+        total_users = cursor.fetchone()['count']
+        
+        # Active clients
+        cursor.execute("""
+            SELECT COUNT(*) as count FROM users 
+            WHERE role = 'client' AND status = 'active'
+        """)
+        active_clients = cursor.fetchone()['count']
+        
+        # Total revenue
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0) as total 
+            FROM financial_transactions 
+            WHERE transaction_type = 'revenue'
+        """)
+        total_revenue = float(cursor.fetchone()['total'] or 0)
+        
+        # Pending tasks
+        cursor.execute("""
+            SELECT COUNT(*) as count FROM tasks 
+            WHERE status = 'pending'
+        """)
+        pending_tasks = cursor.fetchone()['count']
+        
+        return {
+            "success": True,
+            "stats": {
+                "total_users": total_users,
+                "active_clients": active_clients,
+                "total_revenue": total_revenue,
+                "pending_tasks": pending_tasks
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@app.get("/api/v1/admin/recent-activity")
+async def get_recent_activity(
+    limit: int = 10,
+    current_user: dict = Depends(require_admin)
+):
+    """Get recent platform activity"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(pymysql.cursors.DictCursor)
+        
+        all_activities = []
+        
+        # Recent user registrations
+        cursor.execute("""
+            SELECT 
+                user_id,
+                full_name as user_name,
+                'user_created' as activity_type,
+                CONCAT('New user registered: ', full_name) as activity_description,
+                created_at
+            FROM users
+            ORDER BY created_at DESC
+            LIMIT 5
+        """)
+        all_activities.extend(cursor.fetchall())
+        
+        # Recent tasks
+        cursor.execute("""
+            SELECT 
+                t.task_id,
+                u.full_name as user_name,
+                'task_created' as activity_type,
+                CONCAT('Task created: ', t.task_title) as activity_description,
+                t.created_at
+            FROM tasks t
+            LEFT JOIN users u ON t.assigned_by = u.user_id
+            ORDER BY t.created_at DESC
+            LIMIT 5
+        """)
+        all_activities.extend(cursor.fetchall())
+        
+        # Recent content
+        cursor.execute("""
+            SELECT 
+                c.content_id,
+                u.full_name as user_name,
+                'content_created' as activity_type,
+                CONCAT('Content created: ', COALESCE(c.title, 'Untitled')) as activity_description,
+                c.created_at
+            FROM content_library c
+            LEFT JOIN users u ON c.created_by = u.user_id
+            ORDER BY c.created_at DESC
+            LIMIT 5
+        """)
+        all_activities.extend(cursor.fetchall())
+        
+        # Recent scheduled posts
+        cursor.execute("""
+            SELECT 
+                sp.post_id,
+                u.full_name as user_name,
+                'content_published' as activity_type,
+                CONCAT('Post scheduled on ', sp.platform) as activity_description,
+                sp.created_at
+            FROM scheduled_posts sp
+            LEFT JOIN users u ON sp.created_by = u.user_id
+            ORDER BY sp.created_at DESC
+            LIMIT 5
+        """)
+        all_activities.extend(cursor.fetchall())
+        
+        # Recent email campaigns
+        cursor.execute("""
+            SELECT 
+                ec.email_campaign_id,
+                u.full_name as user_name,
+                'campaign_created' as activity_type,
+                CONCAT('Email campaign: ', ec.campaign_name) as activity_description,
+                ec.created_at
+            FROM email_campaigns ec
+            LEFT JOIN users u ON ec.created_by = u.user_id
+            ORDER BY ec.created_at DESC
+            LIMIT 5
+        """)
+        all_activities.extend(cursor.fetchall())
+        
+        # Sort all by created_at descending
+        all_activities.sort(
+            key=lambda x: x['created_at'] if x.get('created_at') else datetime.min, 
+            reverse=True
+        )
+        
+        # Limit and convert dates
+        activities = all_activities[:limit]
+        for activity in activities:
+            if activity.get('created_at'):
+                activity['created_at'] = activity['created_at'].isoformat()
+        
+        return {
+            "success": True,
+            "activities": activities
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@app.get("/api/v1/tasks/pending")
+async def get_pending_tasks(
+    limit: int = 5,
+    current_user: dict = Depends(require_admin)
+):
+    """Get pending tasks for dashboard"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(pymysql.cursors.DictCursor)
+        
+        cursor.execute("""
+            SELECT 
+                t.task_id,
+                t.task_title,
+                t.task_description,
+                t.priority,
+                t.status,
+                t.due_date,
+                t.created_at,
+                u.full_name as assigned_to_name,
+                c.full_name as client_name
+            FROM tasks t
+            LEFT JOIN users u ON t.assigned_to = u.user_id
+            LEFT JOIN users c ON t.client_id = c.user_id
+            WHERE t.status IN ('pending', 'in_progress')
+            ORDER BY 
+                CASE t.priority 
+                    WHEN 'urgent' THEN 1 
+                    WHEN 'high' THEN 2 
+                    WHEN 'medium' THEN 3 
+                    WHEN 'low' THEN 4 
+                END,
+                t.due_date ASC
+            LIMIT %s
+        """, (limit,))
+        
+        tasks = cursor.fetchall()
+        
+        for task in tasks:
+            if task.get('due_date'):
+                task['due_date'] = task['due_date'].isoformat()
+            if task.get('created_at'):
+                task['created_at'] = task['created_at'].isoformat()
+        
+        return {
+            "success": True,
+            "tasks": tasks
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
 # ========== HEALTH CHECK ==========
 
 @app.get("/health")

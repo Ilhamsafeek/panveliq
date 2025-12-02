@@ -569,7 +569,7 @@
         <div class="stat-card">
             <div class="stat-header">
                 <div>
-                    <div class="stat-value" id="totalRevenue">$0</div>
+                    <div class="stat-value" id="totalRevenue">₹0</div>
                     <div class="stat-label">Monthly Revenue</div>
                 </div>
                 <div class="stat-icon info">
@@ -740,7 +740,7 @@
 
                 document.getElementById('totalClients').textContent = stats.total_clients;
                 document.getElementById('activeClients').textContent = stats.active_clients;
-                document.getElementById('totalRevenue').textContent = `$${stats.total_revenue.toFixed(2)}`;
+                document.getElementById('totalRevenue').textContent = `₹${stats.total_revenue.toFixed(2)}`;
 
                 // Calculate enterprise clients
                 const enterpriseCount = stats.clients_by_tier.find(t => t.package_tier === 'enterprise')?.count || 0;

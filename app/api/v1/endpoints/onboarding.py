@@ -484,6 +484,7 @@ async def get_pending_verifications(current_user: dict = Depends(get_current_use
         if connection:
             connection.close()
 
+
 @router.put("/verify/{onboarding_id}", summary="Verify onboarding (Admin)")
 async def verify_onboarding(
     onboarding_id: int,
@@ -492,6 +493,8 @@ async def verify_onboarding(
 ):
     """
     Admin verifies or rejects onboarding
+    - Verified: Creates subscription, activates user (status = 'active')
+    - Rejected: Sets user status to 'inactive'
     """
     if current_user['role'] != 'admin':
         raise HTTPException(
@@ -512,9 +515,9 @@ async def verify_onboarding(
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        # Get session
+        # Get onboarding session
         cursor.execute(
-            "SELECT user_id, selected_package_id FROM onboarding_sessions WHERE onboarding_id = %s",
+            "SELECT * FROM onboarding_sessions WHERE onboarding_id = %s",
             (onboarding_id,)
         )
         session = cursor.fetchone()
@@ -525,30 +528,40 @@ async def verify_onboarding(
                 detail="Onboarding session not found"
             )
         
-        # Update session
+        # Update onboarding session
         cursor.execute(
             """UPDATE onboarding_sessions 
-               SET verification_status = %s, discussion_notes = %s, verified_by = %s, verified_at = NOW()
+               SET verification_status = %s, 
+                   discussion_notes = %s, 
+                   verified_by = %s, 
+                   verified_at = NOW()
                WHERE onboarding_id = %s""",
-            (verification.verification_status, verification.discussion_notes, current_user['user_id'], onboarding_id)
+            (verification.verification_status, verification.discussion_notes, 
+             current_user['user_id'], onboarding_id)
         )
         
-        # If verified, create subscription and activate user
+        # Handle approval vs rejection
         if verification.verification_status == 'verified':
-            # Get billing cycle
-            cursor.execute("SELECT billing_cycle FROM packages WHERE package_id = %s", (session['selected_package_id'],))
+            # APPROVAL: Create subscription and activate user
+            
+            # Get package billing cycle
+            cursor.execute(
+                "SELECT billing_cycle FROM packages WHERE package_id = %s",
+                (session['selected_package_id'],)
+            )
             package = cursor.fetchone()
             
-            # Calculate dates
-            start_date = date.today()
-            if package['billing_cycle'] == 'monthly':
+            # Calculate subscription dates based on billing cycle
+            start_date = datetime.now().date()
+            
+            if package and package['billing_cycle'] == 'monthly':
                 end_date = start_date + timedelta(days=30)
-            elif package['billing_cycle'] == 'quarterly':
+            elif package and package['billing_cycle'] == 'quarterly':
                 end_date = start_date + timedelta(days=90)
-            elif package['billing_cycle'] == 'yearly':
+            elif package and package['billing_cycle'] == 'yearly':
                 end_date = start_date + timedelta(days=365)
             else:
-                end_date = start_date + timedelta(days=30)
+                end_date = start_date + timedelta(days=30)  # Default to monthly
             
             # Create subscription
             cursor.execute(
@@ -558,32 +571,52 @@ async def verify_onboarding(
             )
             
             # Activate user
-            cursor.execute("UPDATE users SET status = 'active' WHERE user_id = %s", (session['user_id'],))
+            cursor.execute(
+                "UPDATE users SET status = 'active' WHERE user_id = %s", 
+                (session['user_id'],)
+            )
+            
+            print(f"✅ User {session['user_id']} APPROVED - Status set to 'active'")
+            
+        else:
+            # REJECTION: Set user status to 'inactive'
+            cursor.execute(
+                "UPDATE users SET status = 'inactive' WHERE user_id = %s", 
+                (session['user_id'],)
+            )
+            
+            print(f"❌ User {session['user_id']} REJECTED - Status set to 'inactive'")
         
         connection.commit()
         
         return {
+            "success": True,
             "status": "success",
             "message": f"Onboarding {verification.verification_status} successfully",
-            "onboarding_id": onboarding_id
+            "onboarding_id": onboarding_id,
+            "user_status": "active" if verification.verification_status == 'verified' else "inactive"
         }
-    
+        
     except HTTPException:
+        if connection:
+            connection.rollback()
         raise
     except Exception as e:
         if connection:
             connection.rollback()
         print(f"❌ Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to verify onboarding: {str(e)}"
         )
-    
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
 
 @router.get("/onboarding/{onboarding_id}", summary="Get onboarding details (Admin)")
 async def get_onboarding_details(

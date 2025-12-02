@@ -20,14 +20,14 @@ let heatmapInstance = null;
 // INITIALIZATION
 // =====================================================
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Check authentication first
     const token = localStorage.getItem('access_token');
     if (!token) {
         window.location.href = '/auth/login';
         return;
     }
-    
+
     initializeDateRange();
     loadClients();
 });
@@ -36,15 +36,15 @@ function initializeDateRange() {
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 30);
-    
+
     const startInput = document.getElementById('startDate');
     const endInput = document.getElementById('endDate');
-    
+
     if (startInput && endInput) {
         startInput.valueAsDate = startDate;
         endInput.valueAsDate = endDate;
     }
-    
+
     selectedDateRange = {
         start: startDate.toISOString().split('T')[0],
         end: endDate.toISOString().split('T')[0]
@@ -57,11 +57,11 @@ function initializeDateRange() {
 
 function switchView(view) {
     currentView = view;
-    
+
     // Update tab buttons
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.getElementById(`${view}Tab`).classList.add('active');
-    
+
     // Show/hide sections based on view
     const campaignSection = document.getElementById('campaignSection');
     if (view === 'campaign') {
@@ -70,7 +70,7 @@ function switchView(view) {
     } else {
         campaignSection.style.display = 'none';
     }
-    
+
     // Reload data for the selected view
     if (currentClientId) {
         if (view === 'weekly') {
@@ -92,25 +92,25 @@ async function loadClients() {
             window.location.href = '/auth/login';
             return;
         }
-        
+
         const response = await fetch('/api/v1/clients/list', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
+
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         console.log('Clients data:', data); // Debug log
-        
+
         if (data.success && data.clients && data.clients.length > 0) {
             const selector = document.getElementById('clientSelector');
             selector.innerHTML = '<option value="">Select Client...</option>';
-            
+
             data.clients.forEach(client => {
                 const option = document.createElement('option');
                 // FIX: Use user_id instead of client_id
@@ -118,17 +118,17 @@ async function loadClients() {
                 option.textContent = client.business_name || client.full_name;
                 selector.appendChild(option);
             });
-            
+
             // Auto-select first client and load data
             currentClientId = data.clients[0].user_id || data.clients[0].client_id;
             selector.value = currentClientId;
-            
+
             console.log('Selected client ID:', currentClientId); // Debug log
-            
+
             // Hide loading and show content
             hideLoading();
             document.getElementById('analyticsContent').style.display = 'block';
-            
+
             // Now load analytics data
             loadAnalytics();
         } else {
@@ -145,13 +145,13 @@ async function loadClients() {
 function handleClientChange() {
     const selector = document.getElementById('clientSelector');
     const selectedValue = selector.value;
-    
+
     console.log('Client changed, selected value:', selectedValue); // Debug log
-    
+
     currentClientId = selectedValue ? parseInt(selectedValue) : null;
-    
+
     console.log('Current client ID after change:', currentClientId); // Debug log
-    
+
     if (currentClientId) {
         // Show loading
         showLoading();
@@ -171,63 +171,64 @@ function handleClientChange() {
 
 async function loadAnalytics() {
     console.log('loadAnalytics called, currentClientId:', currentClientId); // Debug log
-    
+
     if (!currentClientId) {
         console.warn('No client selected');
         hideLoading();
         return;
     }
-    
+
     showLoading();
-    
+
     try {
         const token = localStorage.getItem('access_token');
         if (!token) {
             window.location.href = '/auth/login';
             return;
         }
-        
+
         const url = `${API_BASE}/overview/${currentClientId}?start_date=${selectedDateRange.start}&end_date=${selectedDateRange.end}`;
-        
+
         console.log('Fetching analytics from:', url); // Debug log
-        
+
         const response = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
+
         console.log('Analytics response status:', response.status); // Debug log
-        
+
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             console.error('Analytics API error:', errorData);
             throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
-        
+
         console.log('Analytics data received:', data); // Debug log
-        
+
         if (data.success) {
             // Show content area
             document.getElementById('analyticsContent').style.display = 'block';
-            
+
             displayOverviewMetrics(data.overview_metrics || {});
             displayDailyTrends(data.daily_metrics || []);
-            
+
             if (data.ai_insights) {
                 displayAIInsights(data.ai_insights);
             }
-            
+
             hideLoading();
-            
+
             // Load additional data in background
             setTimeout(() => {
                 if (typeof loadAlerts === 'function') loadAlerts();
                 if (typeof loadFunnels === 'function') loadFunnels();
                 if (typeof loadKeywordMovement === 'function') loadKeywordMovement();
                 if (typeof loadGA4Data === 'function') loadGA4Data();
+                loadContentEngagement();
             }, 500);
         } else {
             throw new Error(data.detail || 'Failed to load analytics');
@@ -235,10 +236,10 @@ async function loadAnalytics() {
     } catch (error) {
         console.error('Error loading analytics:', error);
         hideLoading();
-        
+
         // Show error message
         showError(`Failed to load analytics: ${error.message}`);
-        
+
         // Show empty state instead of error for better UX
         displayEmptyState();
         document.getElementById('analyticsContent').style.display = 'block';
@@ -251,12 +252,12 @@ function displayEmptyState() {
     document.getElementById('ctr').textContent = '0%';
     document.getElementById('totalConversions').textContent = '0';
     document.getElementById('conversionRate').textContent = '0%';
-    document.getElementById('totalSpend').textContent = '$0';
+    document.getElementById('totalSpend').textContent = '₹0';
     document.getElementById('roas').textContent = '0.00';
     document.getElementById('websiteVisits').textContent = '0';
     document.getElementById('socialEngagement').textContent = '0';
     document.getElementById('bounceRate').textContent = '0%';
-    
+
     // Show message in insights
     const insightsGrid = document.getElementById('insightsGrid');
     if (insightsGrid) {
@@ -275,7 +276,7 @@ function displayEmptyState() {
 
 async function loadWeeklyAnalytics() {
     if (!currentClientId) return;
-    
+
     try {
         const token = localStorage.getItem('access_token');
         const response = await fetch(`${API_BASE}/overview/weekly/${currentClientId}?weeks=8`, {
@@ -283,9 +284,9 @@ async function loadWeeklyAnalytics() {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             displayWeeklyTrends(data.weekly_data);
         }
@@ -299,10 +300,10 @@ function displayWeeklyTrends(weeklyData) {
         const start = new Date(w.week_start_date);
         return start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }).reverse();
-    
+
     const impressionsData = weeklyData.map(w => w.total_impressions || 0).reverse();
     const clicksData = weeklyData.map(w => w.total_clicks || 0).reverse();
-    
+
     // Update trend chart
     if (trendChart) {
         trendChart.data.labels = labels;
@@ -318,24 +319,24 @@ function displayWeeklyTrends(weeklyData) {
 
 async function loadCampaignAnalytics() {
     if (!currentClientId) return;
-    
+
     try {
         const token = localStorage.getItem('access_token');
         const filter = document.getElementById('campaignTypeFilter')?.value || '';
-        
+
         let url = `${API_BASE}/campaigns/${currentClientId}?start_date=${selectedDateRange.start}&end_date=${selectedDateRange.end}`;
         if (filter) {
             url += `&campaign_type=${filter}`;
         }
-        
+
         const response = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             displayCampaignTable(data.campaigns);
         }
@@ -346,12 +347,12 @@ async function loadCampaignAnalytics() {
 
 function displayCampaignTable(campaigns) {
     const tbody = document.getElementById('campaignTableBody');
-    
+
     if (!campaigns || campaigns.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem;">No campaign data available</td></tr>';
         return;
     }
-    
+
     tbody.innerHTML = campaigns.map(campaign => `
         <tr>
             <td>${campaign.campaign_name || 'Untitled Campaign'}</td>
@@ -360,7 +361,7 @@ function displayCampaignTable(campaigns) {
             <td>${(campaign.clicks || 0).toLocaleString()}</td>
             <td>${campaign.ctr ? campaign.ctr.toFixed(2) + '%' : '0%'}</td>
             <td>${campaign.conversions || 0}</td>
-            <td>$${(campaign.spend || 0).toLocaleString()}</td>
+            <td>₹${(campaign.spend || 0).toLocaleString()}</td>
             <td>${campaign.roas ? campaign.roas.toFixed(2) : '0.00'}</td>
         </tr>
     `).join('');
@@ -380,7 +381,7 @@ function displayOverviewMetrics(metrics) {
     document.getElementById('ctr').textContent = `${metrics.ctr}%`;
     document.getElementById('totalConversions').textContent = metrics.total_conversions.toLocaleString();
     document.getElementById('conversionRate').textContent = `${metrics.conversion_rate}%`;
-    document.getElementById('totalSpend').textContent = `$${metrics.total_ad_spend.toLocaleString()}`;
+    document.getElementById('totalSpend').textContent = `₹${metrics.total_ad_spend.toLocaleString()}`;
     document.getElementById('roas').textContent = metrics.avg_roas.toFixed(2);
     document.getElementById('websiteVisits').textContent = metrics.total_website_visits.toLocaleString();
     document.getElementById('socialEngagement').textContent = metrics.total_social_engagement.toLocaleString();
@@ -395,18 +396,18 @@ function displayDailyTrends(dailyMetrics) {
         const date = new Date(m.metric_date);
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     });
-    
+
     const impressionsData = dailyMetrics.map(m => m.total_impressions || 0);
     const clicksData = dailyMetrics.map(m => m.total_clicks || 0);
     const conversionsData = dailyMetrics.map(m => m.total_conversions || 0);
     const spendData = dailyMetrics.map(m => m.total_ad_spend || 0);
-    
+
     // Create trend chart
     const trendCtx = document.getElementById('trendChart');
     if (trendChart) {
         trendChart.destroy();
     }
-    
+
     trendChart = new Chart(trendCtx, {
         type: 'line',
         data: {
@@ -437,7 +438,7 @@ function displayDailyTrends(dailyMetrics) {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        callback: function(value) {
+                        callback: function (value) {
                             return value.toLocaleString();
                         }
                     }
@@ -445,17 +446,17 @@ function displayDailyTrends(dailyMetrics) {
             }
         }
     });
-    
+
     // Create channel distribution chart
     const channelCtx = document.getElementById('channelChart');
     if (channelChart) {
         channelChart.destroy();
     }
-    
+
     const totalImpressions = impressionsData.reduce((a, b) => a + b, 0);
     const totalClicks = clicksData.reduce((a, b) => a + b, 0);
     const totalConversions = conversionsData.reduce((a, b) => a + b, 0);
-    
+
     channelChart = new Chart(channelCtx, {
         type: 'doughnut',
         data: {
@@ -481,7 +482,7 @@ function displayDailyTrends(dailyMetrics) {
             }
         }
     });
-    
+
     // Store data for metric switching
     window.chartData = {
         labels,
@@ -494,9 +495,9 @@ function displayDailyTrends(dailyMetrics) {
 
 function updateTrendChart() {
     const metric = document.getElementById('trendMetric').value;
-    
+
     if (!window.chartData || !trendChart) return;
-    
+
     const datasetConfig = {
         impressions: {
             label: 'Impressions',
@@ -523,14 +524,14 @@ function updateTrendChart() {
             backgroundColor: 'rgba(245, 158, 11, 0.1)'
         }
     };
-    
+
     const config = datasetConfig[metric];
     trendChart.data.datasets[0] = {
         ...config,
         tension: 0.4,
         fill: true
     };
-    
+
     trendChart.update();
 }
 
@@ -540,7 +541,7 @@ function updateTrendChart() {
 
 async function loadKeywordMovement() {
     if (!currentClientId) return;
-    
+
     try {
         const token = localStorage.getItem('access_token');
         const response = await fetch(`${API_BASE}/seo/keyword-movement/${currentClientId}?days=30`, {
@@ -548,9 +549,9 @@ async function loadKeywordMovement() {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             displayKeywordMovement(data.keyword_movements);
         }
@@ -561,7 +562,7 @@ async function loadKeywordMovement() {
 
 function displayKeywordMovement(movements) {
     const grid = document.getElementById('keywordMovementGrid');
-    
+
     if (!movements || movements.length === 0) {
         grid.innerHTML = `
             <div class="empty-state">
@@ -571,15 +572,15 @@ function displayKeywordMovement(movements) {
         `;
         return;
     }
-    
+
     grid.innerHTML = movements.slice(0, 6).map(kw => `
         <div class="keyword-card ${kw.trend}">
             <div class="keyword-header">
                 <div class="keyword-name">${kw.keyword}</div>
                 <div class="keyword-trend ${kw.trend}">
-                    ${kw.trend === 'up' ? '<i class="ti ti-trending-up"></i>' : 
-                      kw.trend === 'down' ? '<i class="ti ti-trending-down"></i>' : 
-                      '<i class="ti ti-minus"></i>'}
+                    ${kw.trend === 'up' ? '<i class="ti ti-trending-up"></i>' :
+            kw.trend === 'down' ? '<i class="ti ti-trending-down"></i>' :
+                '<i class="ti ti-minus"></i>'}
                     ${kw.trend_label}
                 </div>
             </div>
@@ -603,7 +604,7 @@ function displayKeywordMovement(movements) {
 
 async function loadGA4Data() {
     if (!currentClientId) return;
-    
+
     try {
         const token = localStorage.getItem('access_token');
         const response = await fetch(`${API_BASE}/ga4/${currentClientId}?start_date=${selectedDateRange.start}&end_date=${selectedDateRange.end}`, {
@@ -611,9 +612,9 @@ async function loadGA4Data() {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success && data.summary) {
             // Update bounce rate in metrics
             document.getElementById('bounceRate').textContent = `${data.summary.avg_bounce_rate}%`;
@@ -629,25 +630,25 @@ async function loadGA4Data() {
 
 async function loadHeatmapData() {
     if (!currentClientId) return;
-    
+
     const pageUrl = document.getElementById('heatmapPageSelect').value;
     if (!pageUrl) return;
-    
+
     try {
         const token = localStorage.getItem('access_token');
         let url = `${API_BASE}/heatmap/${currentClientId}?days=7`;
         if (pageUrl) {
             url += `&page_url=${encodeURIComponent(pageUrl)}`;
         }
-        
+
         const response = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             displayHeatmap(data.heatmap_data);
         }
@@ -658,7 +659,7 @@ async function loadHeatmapData() {
 
 function displayHeatmap(heatmapData) {
     const container = document.getElementById('heatmapContainer');
-    
+
     if (!heatmapData || heatmapData.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
@@ -668,10 +669,10 @@ function displayHeatmap(heatmapData) {
         `;
         return;
     }
-    
+
     // Create heatmap visualization
     container.innerHTML = '<div class="heatmap-canvas" id="heatmapCanvas"></div>';
-    
+
     const canvas = document.getElementById('heatmapCanvas');
     const config = {
         container: canvas,
@@ -680,17 +681,17 @@ function displayHeatmap(heatmapData) {
         minOpacity: 0,
         blur: 0.75
     };
-    
+
     heatmapInstance = h337.create(config);
-    
+
     const points = heatmapData.map(point => ({
         x: point.click_x,
         y: point.click_y,
         value: point.interaction_count
     }));
-    
+
     const max = Math.max(...points.map(p => p.value));
-    
+
     heatmapInstance.setData({
         max: max,
         data: points
@@ -706,12 +707,12 @@ async function detectAnomalies() {
         showError('Please select a client');
         return;
     }
-    
+
     const btn = event.target.closest('button');
     const originalHTML = btn.innerHTML;
     btn.innerHTML = '<i class="ti ti-loader"></i> Detecting...';
     btn.disabled = true;
-    
+
     try {
         const token = localStorage.getItem('access_token');
         const response = await fetch(`${API_BASE}/detect-anomalies/${currentClientId}`, {
@@ -720,9 +721,9 @@ async function detectAnomalies() {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             showSuccess(`Detected ${data.anomalies_detected} anomalies`);
             loadAnomalies();
@@ -738,7 +739,7 @@ async function detectAnomalies() {
 
 async function loadAnomalies() {
     if (!currentClientId) return;
-    
+
     try {
         const token = localStorage.getItem('access_token');
         const response = await fetch(`${API_BASE}/anomalies/${currentClientId}?unresolved_only=true`, {
@@ -746,9 +747,9 @@ async function loadAnomalies() {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             displayAnomalies(data.anomalies);
         }
@@ -759,7 +760,7 @@ async function loadAnomalies() {
 
 function displayAnomalies(anomalies) {
     const grid = document.getElementById('anomalyGrid');
-    
+
     if (!anomalies || anomalies.length === 0) {
         grid.innerHTML = `
             <div class="empty-state">
@@ -769,7 +770,7 @@ function displayAnomalies(anomalies) {
         `;
         return;
     }
-    
+
     grid.innerHTML = anomalies.map(anomaly => `
         <div class="anomaly-card ${anomaly.severity}">
             <div class="anomaly-header">
@@ -798,7 +799,7 @@ function displayAnomalies(anomalies) {
 
 function displayAIInsights(insights) {
     const grid = document.getElementById('insightsGrid');
-    
+
     if (!insights || insights.length === 0) {
         grid.innerHTML = `
             <div class="empty-state">
@@ -808,7 +809,7 @@ function displayAIInsights(insights) {
         `;
         return;
     }
-    
+
     grid.innerHTML = insights.map(insight => `
         <div class="insight-card ${insight.type}">
             <div class="insight-icon">
@@ -825,7 +826,7 @@ function displayAIInsights(insights) {
 
 async function loadAlerts() {
     if (!currentClientId) return;
-    
+
     try {
         const token = localStorage.getItem('access_token');
         const response = await fetch(`${API_BASE}/alerts/${currentClientId}`, {
@@ -833,9 +834,9 @@ async function loadAlerts() {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             displayAlerts(data.alerts);
         }
@@ -846,7 +847,7 @@ async function loadAlerts() {
 
 function displayAlerts(alerts) {
     const container = document.getElementById('alertsList');
-    
+
     if (!alerts || alerts.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
@@ -856,7 +857,7 @@ function displayAlerts(alerts) {
         `;
         return;
     }
-    
+
     container.innerHTML = alerts.map(alert => `
         <div class="alert-item ${!alert.is_read ? 'unread' : ''}">
             <div class="alert-icon">
@@ -887,9 +888,9 @@ async function markAlertRead(alertId) {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             loadAlerts();
         }
@@ -904,7 +905,7 @@ async function markAlertRead(alertId) {
 
 async function loadFunnels() {
     if (!currentClientId) return;
-    
+
     try {
         const token = localStorage.getItem('access_token');
         const response = await fetch(`${API_BASE}/funnels/${currentClientId}`, {
@@ -912,9 +913,9 @@ async function loadFunnels() {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             displayFunnels(data.funnels);
         }
@@ -925,7 +926,7 @@ async function loadFunnels() {
 
 function displayFunnels(funnels) {
     const grid = document.getElementById('funnelsGrid');
-    
+
     if (!funnels || funnels.length === 0) {
         grid.innerHTML = `
             <div class="empty-state">
@@ -935,7 +936,7 @@ function displayFunnels(funnels) {
         `;
         return;
     }
-    
+
     grid.innerHTML = funnels.map(funnel => `
         <div class="funnel-card">
             <div class="funnel-header">
@@ -943,11 +944,11 @@ function displayFunnels(funnels) {
             </div>
             <div class="funnel-stages">
                 ${funnel.funnel_stages.map((stage, index) => {
-                    const nextStage = funnel.funnel_stages[index + 1];
-                    const dropOffRate = nextStage ? 
-                        ((stage.count - nextStage.count) / stage.count * 100).toFixed(1) : 0;
-                    
-                    return `
+        const nextStage = funnel.funnel_stages[index + 1];
+        const dropOffRate = nextStage ?
+            ((stage.count - nextStage.count) / stage.count * 100).toFixed(1) : 0;
+
+        return `
                         <div class="funnel-stage-item">
                             <div class="funnel-stage-name">${stage.name}</div>
                             <div class="funnel-stage-stats">
@@ -956,7 +957,7 @@ function displayFunnels(funnels) {
                             </div>
                         </div>
                     `;
-                }).join('')}
+    }).join('')}
             </div>
         </div>
     `).join('');
@@ -974,28 +975,28 @@ function closeFunnelModal() {
 function addFunnelStage() {
     const container = document.getElementById('funnelStages');
     const stageNumber = container.children.length + 1;
-    
+
     const stageDiv = document.createElement('div');
     stageDiv.className = 'funnel-stage';
     stageDiv.innerHTML = `
         <input type="text" placeholder="Stage ${stageNumber}" required>
         <input type="number" placeholder="Count" min="0">
     `;
-    
+
     container.appendChild(stageDiv);
 }
 
 async function handleCreateFunnel(event) {
     event.preventDefault();
-    
+
     if (!currentClientId) {
         showError('Please select a client');
         return;
     }
-    
+
     const funnelName = document.getElementById('funnelName').value;
     const stageInputs = document.querySelectorAll('#funnelStages .funnel-stage');
-    
+
     const stages = Array.from(stageInputs).map(stage => {
         const inputs = stage.querySelectorAll('input');
         return {
@@ -1003,7 +1004,7 @@ async function handleCreateFunnel(event) {
             count: parseInt(inputs[1].value) || 0
         };
     });
-    
+
     try {
         const token = localStorage.getItem('access_token');
         const response = await fetch(`${API_BASE}/funnels`, {
@@ -1018,9 +1019,9 @@ async function handleCreateFunnel(event) {
                 funnel_stages: stages
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             showSuccess('Funnel created successfully!');
             closeFunnelModal();
@@ -1042,15 +1043,15 @@ async function syncAnalytics() {
         showError('Please select a client');
         return;
     }
-    
+
     const btn = event.target.closest('button');
     const originalHTML = btn.innerHTML;
     btn.innerHTML = '<i class="ti ti-refresh"></i> Syncing from APIs...';
     btn.disabled = true;
-    
+
     try {
         const token = localStorage.getItem('access_token');
-        
+
         const response = await fetch(`${API_BASE}/sync-all-platforms`, {
             method: 'POST',
             headers: {
@@ -1063,10 +1064,10 @@ async function syncAnalytics() {
                 end_date: selectedDateRange.end
             })
         });
-        
+
         const data = await response.json();
         console.log('Sync response:', data);
-        
+
         if (data.success) {
             showSuccess('✓ Analytics synced successfully!');
             loadAnalytics();
@@ -1085,12 +1086,12 @@ async function syncAnalytics() {
 function applyDateRange() {
     const startInput = document.getElementById('startDate');
     const endInput = document.getElementById('endDate');
-    
+
     selectedDateRange = {
         start: startInput.value,
         end: endInput.value
     };
-    
+
     loadAnalytics();
 }
 
@@ -1099,19 +1100,19 @@ async function exportReport() {
         showError('Please select a client');
         return;
     }
-    
+
     try {
         const token = localStorage.getItem('access_token');
         const url = `${API_BASE}/export/${currentClientId}?start_date=${selectedDateRange.start}&end_date=${selectedDateRange.end}&format=json`;
-        
+
         const response = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             const dataStr = JSON.stringify(data.data, null, 2);
             const dataBlob = new Blob([dataStr], { type: 'application/json' });
@@ -1120,7 +1121,7 @@ async function exportReport() {
             link.href = url;
             link.download = `analytics_report_${selectedDateRange.start}_to_${selectedDateRange.end}.json`;
             link.click();
-            
+
             showSuccess('Report exported successfully!');
         }
     } catch (error) {
@@ -1135,7 +1136,7 @@ async function exportReport() {
 function showLoading() {
     const loadingState = document.getElementById('loadingState');
     const analyticsContent = document.getElementById('analyticsContent');
-    
+
     if (loadingState) {
         loadingState.style.display = 'flex';
     }
@@ -1146,7 +1147,7 @@ function showLoading() {
 
 function hideLoading() {
     const loadingState = document.getElementById('loadingState');
-    
+
     if (loadingState) {
         loadingState.style.display = 'none';
     }
@@ -1174,9 +1175,9 @@ function showError(message) {
         gap: 10px;
         animation: slideIn 0.3s ease;
     `;
-    
+
     document.body.appendChild(errorDiv);
-    
+
     setTimeout(() => {
         errorDiv.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => errorDiv.remove(), 300);
@@ -1206,9 +1207,9 @@ function showSuccess(message) {
         gap: 10px;
         animation: slideIn 0.3s ease;
     `;
-    
+
     document.body.appendChild(successDiv);
-    
+
     setTimeout(() => {
         successDiv.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => successDiv.remove(), 300);
@@ -1225,3 +1226,252 @@ function formatDate(dateString) {
         minute: '2-digit'
     });
 }
+
+
+// =====================================================
+// CONTENT ENGAGEMENT BY FORMAT & PLATFORM
+// =====================================================
+
+async function loadContentEngagement() {
+    if (!currentClientId) return;
+
+    try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE}/content-engagement/${currentClientId}?start_date=${selectedDateRange.start}&end_date=${selectedDateRange.end}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            displayFormatEngagement(data.by_format);
+            displayPlatformEngagement(data.by_platform);
+            displayTopContent(data.top_performing_content);
+            displayContentRecommendation(data.insights);
+        }
+    } catch (error) {
+        console.error('Error loading content engagement:', error);
+    }
+}
+
+function displayFormatEngagement(formatData) {
+    const grid = document.getElementById('formatEngagementGrid');
+    if (!grid) return;
+
+    if (!formatData || formatData.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <i class="ti ti-photo-off"></i>
+                <p>No content format data available</p>
+            </div>
+        `;
+        return;
+    }
+
+    const formatIcons = {
+        'image': 'ti-photo',
+        'video': 'ti-video',
+        'carousel': 'ti-carousel-horizontal',
+        'text': 'ti-text-caption',
+        'story': 'ti-circle-dashed',
+        'reel': 'ti-movie',
+        'article': 'ti-article'
+    };
+
+    const formatColors = {
+        'image': '#9926F3',
+        'video': '#1DD8FC',
+        'carousel': '#10B981',
+        'text': '#F59E0B',
+        'story': '#EC4899',
+        'reel': '#8B5CF6',
+        'article': '#3B82F6'
+    };
+
+    grid.innerHTML = formatData.map((item, index) => `
+        <div class="format-card ${index === 0 ? 'top-performer' : ''}">
+            <div class="format-icon" style="background: ${formatColors[item.content_format] || '#6B7280'}20; color: ${formatColors[item.content_format] || '#6B7280'}">
+                <i class="ti ${formatIcons[item.content_format] || 'ti-file'}"></i>
+            </div>
+            <div class="format-details">
+                <div class="format-name">${(item.content_format || 'unknown').replace('_', ' ').toUpperCase()}</div>
+                <div class="format-stats">
+                    <div class="format-stat">
+                        <span class="stat-value">${item.total_posts}</span>
+                        <span class="stat-label">Posts</span>
+                    </div>
+                    <div class="format-stat">
+                        <span class="stat-value">${(item.total_engagement || 0).toLocaleString()}</span>
+                        <span class="stat-label">Engagement</span>
+                    </div>
+                    <div class="format-stat">
+                        <span class="stat-value">${item.avg_engagement_rate}%</span>
+                        <span class="stat-label">Eng. Rate</span>
+                    </div>
+                </div>
+            </div>
+            ${index === 0 ? '<div class="top-badge"><i class="ti ti-crown"></i> Best</div>' : ''}
+        </div>
+    `).join('');
+}
+
+function displayPlatformEngagement(platformData) {
+    const grid = document.getElementById('platformEngagementGrid');
+    if (!grid) return;
+
+    if (!platformData || platformData.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <i class="ti ti-brand-instagram"></i>
+                <p>No platform data available</p>
+            </div>
+        `;
+        return;
+    }
+
+    const platformIcons = {
+        'instagram': 'ti-brand-instagram',
+        'facebook': 'ti-brand-facebook',
+        'linkedin': 'ti-brand-linkedin',
+        'twitter': 'ti-brand-twitter',
+        'tiktok': 'ti-brand-tiktok'
+    };
+
+    const platformColors = {
+        'instagram': '#E4405F',
+        'facebook': '#1877F2',
+        'linkedin': '#0A66C2',
+        'twitter': '#1DA1F2',
+        'tiktok': '#000000'
+    };
+
+    grid.innerHTML = platformData.map((item, index) => `
+        <div class="platform-card ${index === 0 ? 'top-performer' : ''}">
+            <div class="platform-icon" style="background: ${platformColors[item.platform] || '#6B7280'}; color: white;">
+                <i class="ti ${platformIcons[item.platform] || 'ti-world'}"></i>
+            </div>
+            <div class="platform-details">
+                <div class="platform-name">${(item.platform || 'unknown').charAt(0).toUpperCase() + (item.platform || 'unknown').slice(1)}</div>
+                <div class="platform-metrics">
+                    <div class="metric-row">
+                        <span>Posts:</span>
+                        <strong>${item.total_posts}</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Impressions:</span>
+                        <strong>${(item.total_impressions || 0).toLocaleString()}</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Reach:</span>
+                        <strong>${(item.total_reach || 0).toLocaleString()}</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Engagement:</span>
+                        <strong>${(item.total_engagement || 0).toLocaleString()}</strong>
+                    </div>
+                    <div class="metric-row highlight">
+                        <span>Eng. Rate:</span>
+                        <strong>${item.avg_engagement_rate}%</strong>
+                    </div>
+                </div>
+            </div>
+            ${index === 0 ? '<div class="top-badge"><i class="ti ti-crown"></i> Best</div>' : ''}
+        </div>
+    `).join('');
+}
+
+function displayTopContent(topContent) {
+    const list = document.getElementById('topContentList');
+    if (!list) return;
+
+    if (!topContent || topContent.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state">
+                <i class="ti ti-trophy-off"></i>
+                <p>No top performing content yet</p>
+            </div>
+        `;
+        return;
+    }
+
+    const platformIcons = {
+        'instagram': 'ti-brand-instagram',
+        'facebook': 'ti-brand-facebook',
+        'linkedin': 'ti-brand-linkedin',
+        'twitter': 'ti-brand-twitter',
+        'tiktok': 'ti-brand-tiktok'
+    };
+
+    const formatIcons = {
+        'image': 'ti-photo',
+        'video': 'ti-video',
+        'carousel': 'ti-carousel-horizontal',
+        'text': 'ti-text-caption',
+        'story': 'ti-circle-dashed',
+        'reel': 'ti-movie'
+    };
+
+    list.innerHTML = topContent.map((item, index) => `
+        <div class="top-content-item">
+            <div class="content-rank">#${index + 1}</div>
+            <div class="content-info">
+                <div class="content-meta">
+                    <span class="platform-badge">
+                        <i class="ti ${platformIcons[item.platform] || 'ti-world'}"></i>
+                        ${item.platform || 'unknown'}
+                    </span>
+                    <span class="format-badge">
+                        <i class="ti ${formatIcons[item.content_format] || 'ti-file'}"></i>
+                        ${item.content_format || 'unknown'}
+                    </span>
+                </div>
+                <div class="content-caption">${item.caption ? (item.caption.length > 80 ? item.caption.substring(0, 80) + '...' : item.caption) : 'No caption'}</div>
+                <div class="content-date">${item.published_at ? formatDate(item.published_at) : 'N/A'}</div>
+            </div>
+            <div class="content-stats">
+                <div class="stat-item">
+                    <span class="stat-number">${(item.impressions || 0).toLocaleString()}</span>
+                    <span class="stat-label">Impressions</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${(item.engagement || 0).toLocaleString()}</span>
+                    <span class="stat-label">Engagement</span>
+                </div>
+                <div class="stat-item highlight">
+                    <span class="stat-number">${item.engagement_rate || 0}%</span>
+                    <span class="stat-label">Eng. Rate</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function displayContentRecommendation(insights) {
+    const container = document.getElementById('contentRecommendation');
+    const textEl = document.getElementById('recommendationText');
+    if (!container || !textEl) return;
+
+    if (!insights || !insights.recommendation) {
+        container.style.display = 'none';
+        return;
+    }
+
+    textEl.innerHTML = `
+        <strong>Insight:</strong> ${insights.recommendation}
+        ${insights.best_format ? `<br><small>Best performing format: <strong>${insights.best_format.toUpperCase()}</strong></small>` : ''}
+        ${insights.best_platform ? `<br><small>Best performing platform: <strong>${insights.best_platform.charAt(0).toUpperCase() + insights.best_platform.slice(1)}</strong></small>` : ''}
+    `;
+
+    container.style.display = 'flex';
+}
+
+// ============================================
+// UPDATE: Add this call inside loadAnalytics() setTimeout block
+// Find the setTimeout block and add: loadContentEngagement();
+// ============================================
+
+// Also update displayOverviewMetrics to include CPC
+// Add this line inside displayOverviewMetrics function:
+// document.getElementById('avgCpc').textContent = `₹${(metrics.avg_cpc || 0).toFixed(2)}`;

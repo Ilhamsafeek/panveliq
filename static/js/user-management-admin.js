@@ -165,6 +165,9 @@ function displayUsers(users) {
                 <td>${created}</td>
                 <td>
                     <div class="actions">
+                        <button class="btn-icon" onclick="viewUserDetails(${user.user_id})" title="View Details">
+                         <i class="ti ti-eye"></i>
+                        </button>
                         <button class="btn-icon" onclick="editUser(${user.user_id})" title="Edit">
                             <i class="ti ti-edit"></i>
                         </button>
@@ -423,6 +426,169 @@ async function changePassword() {
     }
 }
 
+
+async function viewUserDetails(userId) {
+    try {
+        const token = localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE}/users/${userId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const user = data.user;
+
+            // Basic Information
+            document.getElementById('viewUserEmail').textContent = user.email;
+            document.getElementById('viewUserName').textContent = user.full_name;
+            document.getElementById('viewUserPhone').textContent = user.phone || 'Not provided';
+            document.getElementById('viewUserRole').innerHTML = `<span class="badge badge-${user.role}">${user.role}</span>`;
+            document.getElementById('viewUserStatus').innerHTML = `<span class="badge badge-${user.status}">${user.status}</span>`;
+            document.getElementById('viewUserCreated').textContent = new Date(user.created_at).toLocaleString();
+            document.getElementById('viewUserUpdated').textContent = new Date(user.updated_at).toLocaleString();
+            document.getElementById('viewUserLastLogin').textContent = user.last_login ? new Date(user.last_login).toLocaleString() : 'Never';
+
+            // Role-specific information
+            const roleSpecificSection = document.getElementById('roleSpecificInfo');
+
+            if (user.role === 'client') {
+                roleSpecificSection.innerHTML = `
+                    <div class="section-divider"></div>
+                    <h4 class="section-title">Client Information</h4>
+                    
+                    ${user.client_profile ? `
+                        <div class="detail-group">
+                            <label class="detail-label">Business Name</label>
+                            <p class="detail-value">${user.client_profile.business_name || 'Not provided'}</p>
+                        </div>
+                        <div class="detail-group">
+                            <label class="detail-label">Business Type</label>
+                            <p class="detail-value">${user.client_profile.business_type || 'Not provided'}</p>
+                        </div>
+                        <div class="detail-group">
+                            <label class="detail-label">Website</label>
+                            <p class="detail-value">${user.client_profile.website_url || 'Not provided'}</p>
+                        </div>
+                        <div class="detail-group">
+                            <label class="detail-label">Budget</label>
+                            <p class="detail-value">${user.client_profile.current_budget ? '₹' + parseFloat(user.client_profile.current_budget).toLocaleString() : 'Not set'}</p>
+                        </div>
+                    ` : '<p class="detail-value text-muted">No business profile created</p>'}
+                    
+                    ${user.subscription ? `
+                        <div class="section-divider"></div>
+                        <h4 class="section-title">Active Subscription</h4>
+                        <div class="detail-group">
+                            <label class="detail-label">Package</label>
+                            <p class="detail-value">
+                                <span class="package-badge ${user.subscription.package_tier}">${user.subscription.package_name}</span>
+                            </p>
+                        </div>
+                        <div class="detail-group">
+                            <label class="detail-label">Price</label>
+                            <p class="detail-value">₹${parseFloat(user.subscription.price).toLocaleString()} / ${user.subscription.billing_cycle}</p>
+                        </div>
+                        <div class="detail-group">
+                            <label class="detail-label">Subscription Period</label>
+                            <p class="detail-value">${new Date(user.subscription.start_date).toLocaleDateString()} - ${new Date(user.subscription.end_date).toLocaleDateString()}</p>
+                        </div>
+                    ` : '<p class="detail-value text-muted">No active subscription</p>'}
+                    
+                    ${user.assigned_employee ? `
+                        <div class="section-divider"></div>
+                        <h4 class="section-title">Assigned Employee</h4>
+                        <div class="detail-group">
+                            <label class="detail-label">Employee</label>
+                            <p class="detail-value">${user.assigned_employee.employee_name} (${user.assigned_employee.employee_email})</p>
+                        </div>
+                        <div class="detail-group">
+                            <label class="detail-label">Assigned Since</label>
+                            <p class="detail-value">${new Date(user.assigned_employee.assigned_at).toLocaleDateString()}</p>
+                        </div>
+                    ` : ''}
+                `;
+            } else if (user.role === 'employee') {
+                roleSpecificSection.innerHTML = `
+                    <div class="section-divider"></div>
+                    <h4 class="section-title">Employee Information</h4>
+                    <div class="detail-group">
+                        <label class="detail-label">Assigned Clients</label>
+                        <p class="detail-value">${user.assigned_clients_count || 0} clients</p>
+                    </div>
+                `;
+            } else {
+                roleSpecificSection.innerHTML = '';
+            }
+
+            // Tasks Summary
+            if (user.tasks_summary && user.tasks_summary.total > 0) {
+                document.getElementById('tasksSection').innerHTML = `
+                    <div class="section-divider"></div>
+                    <h4 class="section-title">Tasks Summary</h4>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-value">${user.tasks_summary.total || 0}</div>
+                            <div class="stat-label">Total Tasks</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" style="color: #F59E0B;">${user.tasks_summary.pending || 0}</div>
+                            <div class="stat-label">Pending</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" style="color: #3B82F6;">${user.tasks_summary.in_progress || 0}</div>
+                            <div class="stat-label">In Progress</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" style="color: #10B981;">${user.tasks_summary.completed || 0}</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('tasksSection').innerHTML = '';
+            }
+
+            // Permissions Summary
+            const permissionsCount = (user.custom_permissions?.length || 0) + (user.role_permissions?.length || 0);
+            document.getElementById('permissionsSection').innerHTML = `
+                <div class="section-divider"></div>
+                <h4 class="section-title">Permissions</h4>
+                <div class="detail-group">
+                    <label class="detail-label">Role Permissions</label>
+                    <p class="detail-value">${user.role_permissions?.length || 0} permissions from role</p>
+                </div>
+                <div class="detail-group">
+                    <label class="detail-label">Custom Permissions</label>
+                    <p class="detail-value">${user.custom_permissions?.length || 0} custom permissions</p>
+                </div>
+                <div class="detail-group">
+                    <label class="detail-label">Total Permissions</label>
+                    <p class="detail-value"><strong>${permissionsCount} total permissions</strong></p>
+                </div>
+            `;
+
+            // Activity Summary
+            document.getElementById('activitySection').innerHTML = `
+                <div class="section-divider"></div>
+                <h4 class="section-title">Activity</h4>
+                <div class="detail-group">
+                    <label class="detail-label">Recent Activity (30 days)</label>
+                    <p class="detail-value">${user.recent_activity_count || 0} activities logged</p>
+                </div>
+            `;
+
+            openModal('viewUserModal');
+        } else {
+            const error = await response.json();
+            showError(error.detail || 'Failed to load user details');
+        }
+    } catch (error) {
+        console.error('Error loading user details:', error);
+        showError('Failed to load user details');
+    }
+}
+
+
 // ==============================================
 // PERMISSIONS MANAGEMENT
 // ==============================================
@@ -520,12 +686,12 @@ function displayPermissionsGrid(groupedPerms, userPermIds, rolePermIds) {
         <div class="permission-card">
             <h5>${formatModuleName(module)}</h5>
             ${perms.map(p => {
-                const hasRole = rolePermIds.has(p.permission_id);
-                const hasCustom = userPermIds.has(p.permission_id);
-                const checked = hasCustom ? 'checked' : '';
-                const disabled = hasRole ? 'disabled title="Granted by role"' : '';
+        const hasRole = rolePermIds.has(p.permission_id);
+        const hasCustom = userPermIds.has(p.permission_id);
+        const checked = hasCustom ? 'checked' : '';
+        const disabled = hasRole ? 'disabled title="Granted by role"' : '';
 
-                return `
+        return `
                     <div class="permission-item">
                         <input type="checkbox" 
                                id="perm-${p.permission_id}" 
@@ -538,7 +704,7 @@ function displayPermissionsGrid(groupedPerms, userPermIds, rolePermIds) {
                         </label>
                     </div>
                 `;
-            }).join('')}
+    }).join('')}
         </div>
     `).join('');
 
@@ -657,7 +823,7 @@ function displayAuditLog(logs) {
 // ==============================================
 
 function formatModuleName(module) {
-    return module.split('_').map(word => 
+    return module.split('_').map(word =>
         word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
 }

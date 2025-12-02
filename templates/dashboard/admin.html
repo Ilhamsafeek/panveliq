@@ -1,17 +1,11 @@
-<!-- This is how your admin dashboard should be structured -->
-<!-- File: templates/dashboard/admin.html -->
-
 {% extends "base.html" %}
 
 {% block title %}Admin Dashboard{% endblock %}
 
-<!-- Set show_sidebar to True - this will show ONLY sidebar, NO navbar -->
 {% set show_sidebar = True %}
 
 {% block extra_css %}
 <style>
-    /* Admin Dashboard Styles */
-
     .dashboard-header {
         margin-bottom: 2rem;
     }
@@ -100,6 +94,7 @@
     /* Content Sections */
     .content-grid {
         display: grid;
+        grid-template-columns: repeat(2, 1fr);
         gap: 1.5rem;
     }
 
@@ -108,6 +103,10 @@
         border-radius: var(--radius-lg);
         border: 1px solid var(--color-gray-200);
         padding: 1.5rem;
+    }
+
+    .content-card.full-width {
+        grid-column: span 2;
     }
 
     .card-header {
@@ -123,10 +122,17 @@
         font-size: 18px;
         font-weight: 700;
         color: var(--color-gray-900);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .card-title i {
+        color: var(--primary-purple);
     }
 
     .btn-primary {
-        padding: 0.75rem 1.5rem;
+        padding: 0.5rem 1rem;
         background: var(--gradient-primary);
         color: white;
         border: none;
@@ -137,6 +143,7 @@
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
+        font-size: 14px;
     }
 
     .btn-primary:hover {
@@ -144,12 +151,209 @@
         box-shadow: 0 8px 20px rgba(153, 38, 243, 0.3);
     }
 
-    @media (max-width: 768px) {
-        .dashboard-container {
-            padding: 1rem;
-        }
+    .btn-secondary {
+        padding: 0.5rem 1rem;
+        background: var(--color-gray-100);
+        color: var(--color-gray-700);
+        border: 1px solid var(--color-gray-300);
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 14px;
+    }
 
+    .btn-secondary:hover {
+        background: var(--color-gray-200);
+    }
+
+    /* Activity Feed */
+    .activity-feed {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .activity-item {
+        display: flex;
+        gap: 1rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--color-gray-100);
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .activity-icon.user { background: rgba(153, 38, 243, 0.1); color: var(--primary-purple); }
+    .activity-icon.task { background: rgba(29, 216, 252, 0.1); color: var(--primary-cyan); }
+    .activity-icon.content { background: rgba(16, 185, 129, 0.1); color: var(--color-success); }
+    .activity-icon.campaign { background: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
+    .activity-icon.login { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
+    .activity-icon.finance { background: rgba(236, 72, 153, 0.1); color: #EC4899; }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-title {
+        font-weight: 600;
+        color: var(--color-gray-900);
+        margin-bottom: 0.25rem;
+    }
+
+    .activity-description {
+        font-size: 14px;
+        color: var(--color-gray-600);
+        margin-bottom: 0.25rem;
+    }
+
+    .activity-time {
+        font-size: 12px;
+        color: var(--color-gray-500);
+    }
+
+    /* Pending Tasks */
+    .task-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: var(--color-gray-50);
+        border-radius: var(--radius-md);
+        margin-bottom: 0.75rem;
+    }
+
+    .task-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .task-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .task-priority {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .task-priority.urgent { background: var(--color-error); }
+    .task-priority.high { background: var(--color-warning); }
+    .task-priority.medium { background: var(--color-info); }
+    .task-priority.low { background: var(--color-gray-400); }
+
+    .task-title {
+        font-weight: 600;
+        color: var(--color-gray-900);
+    }
+
+    .task-meta {
+        font-size: 12px;
+        color: var(--color-gray-500);
+    }
+
+    .task-due {
+        font-size: 13px;
+        color: var(--color-gray-600);
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .quick-action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: var(--color-gray-50);
+        border: 1px solid var(--color-gray-200);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .quick-action-btn:hover {
+        background: white;
+        border-color: var(--primary-purple);
+        box-shadow: var(--shadow-md);
+    }
+
+    .quick-action-btn i {
+        font-size: 24px;
+        color: var(--primary-purple);
+    }
+
+    .quick-action-btn span {
+        font-weight: 600;
+        color: var(--color-gray-900);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--color-gray-500);
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    /* Loading */
+    .loading-spinner {
+        display: flex;
+        justify-content: center;
+        padding: 2rem;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--color-gray-200);
+        border-top-color: var(--primary-purple);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 1024px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+        .content-card.full-width {
+            grid-column: span 1;
+        }
+    }
+
+    @media (max-width: 768px) {
         .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        .quick-actions {
             grid-template-columns: 1fr;
         }
     }
@@ -193,7 +397,7 @@
                     <i class="ti ti-currency-dollar"></i>
                 </div>
             </div>
-            <div class="stat-value" id="totalRevenue">$0</div>
+            <div class="stat-value" id="totalRevenue">₹0</div>
             <div class="stat-label">Total Revenue</div>
         </div>
 
@@ -208,19 +412,67 @@
         </div>
     </div>
 
-    <!-- Recent Activity -->
+    <!-- Main Content Grid -->
     <div class="content-grid">
+        <!-- Recent Activity -->
         <div class="content-card">
             <div class="card-header">
-                <h3 class="card-title">Recent Activity</h3>
-                <button class="btn-primary">
+                <h3 class="card-title"><i class="ti ti-activity"></i> Recent Activity</h3>
+                <button class="btn-secondary" onclick="loadRecentActivity()">
                     <i class="ti ti-refresh"></i>
-                    Refresh
                 </button>
             </div>
-            <p style="text-align: center; padding: 2rem; color: var(--color-gray-500);">
-                Activity feed will appear here
-            </p>
+            <div class="activity-feed" id="activityFeed">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Tasks -->
+        <div class="content-card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-checkbox"></i> Pending Tasks</h3>
+                <a href="/tasks" class="btn-secondary">View All</a>
+            </div>
+            <div id="pendingTasksList">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="content-card full-width">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-bolt"></i> Quick Actions</h3>
+            </div>
+            <div class="quick-actions">
+                <a href="/admin/users" class="quick-action-btn">
+                    <i class="ti ti-user-plus"></i>
+                    <span>Manage Users</span>
+                </a>
+                <a href="/clients" class="quick-action-btn">
+                    <i class="ti ti-users-group"></i>
+                    <span>View Clients</span>
+                </a>
+                <a href="/admin/tasks" class="quick-action-btn">
+                    <i class="ti ti-list-check"></i>
+                    <span>Assign Tasks</span>
+                </a>
+                <a href="/admin/finance" class="quick-action-btn">
+                    <i class="ti ti-report-money"></i>
+                    <span>Financial Reports</span>
+                </a>
+                <a href="/modules/analytics" class="quick-action-btn">
+                    <i class="ti ti-chart-bar"></i>
+                    <span>View Analytics</span>
+                </a>
+                <a href="/admin/packages" class="quick-action-btn">
+                    <i class="ti ti-package"></i>
+                    <span>Manage Packages</span>
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -228,34 +480,208 @@
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    const token = localStorage.getItem('access_token');
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!token) {
+            window.location.href = '/auth/login';
+            return;
+        }
         loadDashboardStats();
+        loadRecentActivity();
+        loadPendingTasks();
     });
 
     async function loadDashboardStats() {
         try {
-            const token = localStorage.getItem('access_token');
-            if (!token) return;
-
-            // Load user stats
-            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/users/stats`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            const response = await fetch('/api/v1/admin/dashboard-stats', {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (response.ok) {
                 const data = await response.json();
-                if (data.stats) {
+                if (data.success) {
                     document.getElementById('totalUsers').textContent = data.stats.total_users || 0;
                     document.getElementById('activeClients').textContent = data.stats.active_clients || 0;
-                    document.getElementById('totalRevenue').textContent = `$${data.stats.total_revenue || 0}`;
+                    document.getElementById('totalRevenue').textContent = `₹${(data.stats.total_revenue || 0).toLocaleString()}`;
                     document.getElementById('pendingTasks').textContent = data.stats.pending_tasks || 0;
                 }
             }
         } catch (error) {
             console.error('Error loading dashboard stats:', error);
         }
+    }
+
+    async function loadRecentActivity() {
+        const container = document.getElementById('activityFeed');
+        
+        try {
+            const response = await fetch('/api/v1/admin/recent-activity?limit=10', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.success && data.activities && data.activities.length > 0) {
+                    container.innerHTML = data.activities.map(activity => `
+                        <div class="activity-item">
+                            <div class="activity-icon ${getActivityIconClass(activity.activity_type)}">
+                                <i class="ti ${getActivityIcon(activity.activity_type)}"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">${formatActivityType(activity.activity_type)}</div>
+                                <div class="activity-description">${activity.activity_description || ''}</div>
+                                <div class="activity-time">
+                                    ${activity.user_name ? `<strong>${activity.user_name}</strong> • ` : ''}
+                                    ${formatTimeAgo(activity.created_at)}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="ti ti-activity-heartbeat"></i>
+                            <p>No recent activity</p>
+                        </div>
+                    `;
+                }
+            } else {
+                throw new Error('Failed to fetch');
+            }
+        } catch (error) {
+            console.error('Error loading activity:', error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="ti ti-activity-heartbeat"></i>
+                    <p>Unable to load activity</p>
+                </div>
+            `;
+        }
+    }
+
+    async function loadPendingTasks() {
+        const container = document.getElementById('pendingTasksList');
+        
+        try {
+            const response = await fetch('/api/v1/tasks/pending?limit=5', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.success && data.tasks && data.tasks.length > 0) {
+                    container.innerHTML = data.tasks.map(task => `
+                        <div class="task-item">
+                            <div class="task-info">
+                                <div class="task-priority ${task.priority || 'medium'}"></div>
+                                <div>
+                                    <div class="task-title">${task.task_title}</div>
+                                    <div class="task-meta">
+                                        ${task.assigned_to_name ? `Assigned to: ${task.assigned_to_name}` : 'Unassigned'}
+                                        ${task.client_name ? ` • Client: ${task.client_name}` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="task-due">
+                                ${task.due_date ? formatDate(task.due_date) : 'No due date'}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="ti ti-checkbox"></i>
+                            <p>No pending tasks</p>
+                        </div>
+                    `;
+                }
+            } else {
+                throw new Error('Failed to fetch');
+            }
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="ti ti-checkbox"></i>
+                    <p>Unable to load tasks</p>
+                </div>
+            `;
+        }
+    }
+
+    function getActivityIcon(type) {
+        const icons = {
+            'login': 'ti-login',
+            'logout': 'ti-logout',
+            'user_created': 'ti-user-plus',
+            'user_updated': 'ti-user-edit',
+            'task_created': 'ti-checkbox',
+            'task_completed': 'ti-check',
+            'content_created': 'ti-file-plus',
+            'content_published': 'ti-send',
+            'campaign_created': 'ti-speakerphone',
+            'campaign_sent': 'ti-mail-forward',
+            'payment_received': 'ti-cash',
+            'client_added': 'ti-briefcase'
+        };
+        return icons[type] || 'ti-activity';
+    }
+
+    function getActivityIconClass(type) {
+        const classes = {
+            'login': 'login',
+            'logout': 'login',
+            'user_created': 'user',
+            'user_updated': 'user',
+            'task_created': 'task',
+            'task_completed': 'task',
+            'content_created': 'content',
+            'content_published': 'content',
+            'campaign_created': 'campaign',
+            'campaign_sent': 'campaign',
+            'payment_received': 'finance',
+            'client_added': 'user'
+        };
+        return classes[type] || 'task';
+    }
+
+    function formatActivityType(type) {
+        const labels = {
+            'login': 'User Login',
+            'logout': 'User Logout',
+            'user_created': 'New User Created',
+            'user_updated': 'User Updated',
+            'task_created': 'Task Created',
+            'task_completed': 'Task Completed',
+            'content_created': 'Content Created',
+            'content_published': 'Content Published',
+            'campaign_created': 'Campaign Created',
+            'campaign_sent': 'Campaign Sent',
+            'payment_received': 'Payment Received',
+            'client_added': 'New Client Added'
+        };
+        return labels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    function formatTimeAgo(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const seconds = Math.floor((now - date) / 1000);
+        
+        if (seconds < 60) return 'Just now';
+        if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+        if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+        
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
 </script>
 {% endblock %}

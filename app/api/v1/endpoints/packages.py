@@ -262,13 +262,12 @@ async def update_package(
         if connection:
             connection.close()
 
-
 @router.delete("/{package_id}", summary="Delete package (admin)")
 async def delete_package(
     package_id: int,
     current_user: dict = Depends(require_admin)
 ):
-    """Admin: Delete a package (soft delete by setting is_active=false)"""
+    """Admin: Permanently delete a package"""
     connection = None
     cursor = None
     
@@ -278,19 +277,20 @@ async def delete_package(
         
         # Check if package exists
         cursor.execute(
-            "SELECT package_id FROM packages WHERE package_id = %s",
+            "SELECT package_id, package_name FROM packages WHERE package_id = %s",
             (package_id,)
         )
         
-        if not cursor.fetchone():
+        package = cursor.fetchone()
+        if not package:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Package not found"
             )
         
-        # Check if package has active subscriptions
+        # Check if package has ANY subscriptions (active or otherwise)
         cursor.execute(
-            "SELECT COUNT(*) as count FROM client_subscriptions WHERE package_id = %s AND status = 'active'",
+            "SELECT COUNT(*) as count FROM client_subscriptions WHERE package_id = %s",
             (package_id,)
         )
         
@@ -298,23 +298,38 @@ async def delete_package(
         if result['count'] > 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot delete package. {result['count']} active subscriptions exist."
+                detail=f"Cannot delete package '{package['package_name']}'. {result['count']} subscription(s) exist. Please remove all subscriptions first."
             )
         
-        # Soft delete
+        # Check if package is referenced in onboarding sessions
         cursor.execute(
-            "UPDATE packages SET is_active = FALSE WHERE package_id = %s",
+            "SELECT COUNT(*) as count FROM onboarding_sessions WHERE selected_package_id = %s",
+            (package_id,)
+        )
+        
+        onboarding_count = cursor.fetchone()
+        if onboarding_count['count'] > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot delete package '{package['package_name']}'. {onboarding_count['count']} onboarding session(s) reference this package."
+            )
+        
+        # HARD DELETE - Actually remove from database
+        cursor.execute(
+            "DELETE FROM packages WHERE package_id = %s",
             (package_id,)
         )
         
         connection.commit()
         
         return {
-            "status": "success",
-            "message": "Package deactivated successfully"
+            "success": True,
+            "message": f"Package '{package['package_name']}' deleted permanently"
         }
     
     except HTTPException:
+        if connection:
+            connection.rollback()
         raise
     except Exception as e:
         if connection:
@@ -330,7 +345,7 @@ async def delete_package(
             cursor.close()
         if connection:
             connection.close()
-
+            
 
 @router.get("/{package_id}", summary="Get single package")
 async def get_package(

@@ -1,6 +1,8 @@
 /**
  * Social Media Command Center - Module 6
  * File: static/js/social-media.js
+ * 
+ * FULLY CORRECTED VERSION
  */
 
 const API_BASE = '/api/v1/social-media';
@@ -8,6 +10,7 @@ let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let selectedContentId = null;
 let selectedMediaUrls = [];
+let selectedPlatforms = [];
 let currentEditingPostId = null;
 
 // =====================================================
@@ -21,17 +24,62 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTrendingTopics();
     loadPerformanceSummaries();
     initializePlatformSelector();
+    loadStats();
+    
+    const filterClient = document.getElementById('filterClient');
+    if (filterClient) {
+        filterClient.addEventListener('change', function() {
+            loadStats();
+            loadCalendar();
+            loadPosts();
+        });
+    }
+
+    const captionInput = document.getElementById('postCaption');
+    const charCount = document.getElementById('captionCharCount');
+    
+    if (captionInput && charCount) {
+        captionInput.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+        });
+    }
 });
+
+// =====================================================
+// PLATFORM SELECTOR - MULTI-SELECT SUPPORT
+// =====================================================
 
 function initializePlatformSelector() {
     const platforms = document.querySelectorAll('.platform-option');
     platforms.forEach(platform => {
-        platform.addEventListener('click', function() {
-            platforms.forEach(p => p.classList.remove('selected'));
-            this.classList.add('selected');
-            document.getElementById('postPlatform').value = this.dataset.platform;
+        platform.addEventListener('click', function(e) {
+            e.preventDefault();
+            const platformName = this.dataset.platform;
+            
+            if (this.classList.contains('selected')) {
+                this.classList.remove('selected');
+                selectedPlatforms = selectedPlatforms.filter(p => p !== platformName);
+            } else {
+                this.classList.add('selected');
+                selectedPlatforms.push(platformName);
+            }
+            
+            document.getElementById('postPlatform').value = selectedPlatforms.join(',');
+            updatePlatformCount();
         });
     });
+}
+
+function updatePlatformCount() {
+    const countEl = document.getElementById('selectedPlatformCount');
+    if (countEl) {
+        if (selectedPlatforms.length > 0) {
+            countEl.textContent = `${selectedPlatforms.length} platform${selectedPlatforms.length > 1 ? 's' : ''} selected`;
+            countEl.style.display = 'block';
+        } else {
+            countEl.style.display = 'none';
+        }
+    }
 }
 
 // =====================================================
@@ -42,43 +90,130 @@ async function loadClients() {
     try {
         const token = localStorage.getItem('access_token');
         const response = await fetch('/api/v1/clients/list', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!response.ok) throw new Error('Failed to load clients');
 
         const data = await response.json();
+        const clients = data.clients || [];
         
-        // Populate both filter and form dropdowns
         const filterSelect = document.getElementById('filterClient');
         const formSelect = document.getElementById('postClient');
         
-        data.clients.forEach(client => {
-            // FIXED: Use user_id instead of client_id
-            const option1 = new Option(client.full_name, client.user_id);
-            const option2 = new Option(client.full_name, client.user_id);
-            filterSelect.add(option1);
-            formSelect.add(option2);
+        if (filterSelect) filterSelect.innerHTML = '<option value="">All Clients</option>';
+        if (formSelect) formSelect.innerHTML = '<option value="">Select client...</option>';
+        
+        clients.forEach(client => {
+            const clientId = client.user_id || client.client_id;
+            const clientName = client.full_name || client.name || `Client ${clientId}`;
+            
+            if (filterSelect) filterSelect.add(new Option(clientName, clientId));
+            if (formSelect) formSelect.add(new Option(clientName, clientId));
         });
     } catch (error) {
         console.error('Error loading clients:', error);
+        showNotification('Failed to load clients', 'error');
     }
 }
 
+// =====================================================
+// LOAD STATS
+// =====================================================
 
+async function loadStats() {
+    try {
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
+        
+        const clientId = document.getElementById('filterClient')?.value || '';
+        
+        let url = `${API_BASE}/stats`;
+        if (clientId) url += `?client_id=${clientId}`;
+        
+        let response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const stats = data.stats || {};
+            updateStatsDisplay(stats.total || 0, stats.scheduled || 0, stats.published || 0, stats.draft || 0);
+            return;
+        }
+        
+        url = `${API_BASE}/posts`;
+        if (clientId) url += `?client_id=${clientId}`;
+        
+        response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) {
+            updateStatsDisplay(0, 0, 0, 0);
+            return;
+        }
+        
+        const data = await response.json();
+        const posts = data.posts || [];
+        
+        const total = posts.length;
+        const scheduled = posts.filter(p => p.status === 'scheduled').length;
+        const published = posts.filter(p => p.status === 'published').length;
+        const draft = posts.filter(p => p.status === 'draft').length;
+        
+        updateStatsDisplay(total, scheduled, published, draft);
+        
+    } catch (error) {
+        console.error('Error in loadStats:', error);
+        updateStatsDisplay(0, 0, 0, 0);
+    }
+}
+
+function updateStatsDisplay(total, scheduled, published, draft) {
+    const totalEl = document.getElementById('totalPosts');
+    const scheduledEl = document.getElementById('scheduledPosts');
+    const publishedEl = document.getElementById('publishedPosts');
+    const draftEl = document.getElementById('draftPosts');
+    
+    if (totalEl) totalEl.textContent = total;
+    if (scheduledEl) scheduledEl.textContent = scheduled;
+    if (publishedEl) publishedEl.textContent = published;
+    if (draftEl) draftEl.textContent = draft;
+}
+
+function updateStats(posts) {
+    if (!posts || !Array.isArray(posts)) posts = [];
+    
+    const total = posts.length;
+    const scheduled = posts.filter(p => p.status === 'scheduled').length;
+    const published = posts.filter(p => p.status === 'published').length;
+    const draft = posts.filter(p => p.status === 'draft').length;
+    
+    updateStatsDisplay(total, scheduled, published, draft);
+}
 
 // =====================================================
 // LOAD POSTS (LIST VIEW)
 // =====================================================
 
 async function loadPosts() {
+    const postsList = document.getElementById('postsList');
+    
     try {
+        if (postsList) {
+            postsList.innerHTML = `
+                <div class="loading-state">
+                    <div class="loader-spinner"></div>
+                    <p>Loading posts...</p>
+                </div>
+            `;
+        }
+        
         const token = localStorage.getItem('access_token');
-        const clientId = document.getElementById('filterClient').value;
-        const platform = document.getElementById('filterPlatform').value;
-        const status = document.getElementById('filterStatus').value;
+        const clientId = document.getElementById('filterClient')?.value || '';
+        const platform = document.getElementById('filterPlatform')?.value || '';
+        const status = document.getElementById('filterStatus')?.value || '';
         
         let url = `${API_BASE}/posts?`;
         if (clientId) url += `client_id=${clientId}&`;
@@ -86,185 +221,193 @@ async function loadPosts() {
         if (status) url += `status=${status}&`;
         
         const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!response.ok) throw new Error('Failed to load posts');
 
         const data = await response.json();
+        const posts = data.posts || [];
         
-        displayPosts(data.posts);
-        updateStats(data.posts);
+        updateStats(posts);
         
-        // Also reload performance summaries when client changes
-        if (clientId) {
-            loadPerformanceSummaries();
+        if (!posts || posts.length === 0) {
+            if (postsList) {
+                postsList.innerHTML = `
+                    <div class="empty-state" style="padding: 3rem; text-align: center;">
+                        <i class="ti ti-calendar-off" style="font-size: 3rem; color: #94a3b8;"></i>
+                        <h3 style="margin-top: 1rem; color: #475569;">No Posts Found</h3>
+                        <p style="color: #94a3b8;">Create your first social media post to get started</p>
+                        <button class="btn btn-primary" onclick="openPostModal()" style="margin-top: 1rem;">
+                            <i class="ti ti-plus"></i> Create Post
+                        </button>
+                    </div>
+                `;
+            }
+            return;
         }
+        
+        let html = '';
+        posts.forEach(post => {
+            const platformClass = `platform-${post.platform}`;
+            const statusClass = `status-${post.status}`;
+            const scheduledDate = post.scheduled_at ? new Date(post.scheduled_at).toLocaleString() : 'Not scheduled';
+            const hashtags = post.hashtags || [];
+            const mediaCount = post.media_count || 0;
+            
+            html += `
+                <div class="post-item">
+                    <div class="post-platform-icon ${platformClass}">
+                        <i class="ti ti-brand-${post.platform}"></i>
+                    </div>
+                    <div class="post-content">
+                        <div class="post-header">
+                            <div class="post-client">${post.client_name || 'Unknown Client'}</div>
+                            <span class="post-status ${statusClass}">${post.status}</span>
+                        </div>
+                        <div class="post-caption">${(post.caption || '').substring(0, 200)}${(post.caption || '').length > 200 ? '...' : ''}</div>
+                        <div class="post-meta">
+                            <span><i class="ti ti-calendar"></i> ${scheduledDate}</span>
+                            <span><i class="ti ti-photo"></i> ${mediaCount} media</span>
+                            <span><i class="ti ti-hash"></i> ${hashtags.length} hashtags</span>
+                        </div>
+                    </div>
+                    <div class="post-actions">
+                        <button onclick="editPost(${post.post_id})" title="Edit">
+                            <i class="ti ti-pencil"></i>
+                        </button>
+                        <button onclick="deletePost(${post.post_id})" title="Delete">
+                            <i class="ti ti-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        if (postsList) postsList.innerHTML = html;
         
     } catch (error) {
         console.error('Error loading posts:', error);
-        showNotification('Failed to load posts', 'error');
+        if (postsList) {
+            postsList.innerHTML = `
+                <div class="empty-state" style="padding: 3rem; text-align: center;">
+                    <i class="ti ti-alert-circle" style="font-size: 3rem; color: #ef4444;"></i>
+                    <h3 style="margin-top: 1rem; color: #475569;">Failed to Load Posts</h3>
+                    <p style="color: #94a3b8;">${error.message}</p>
+                </div>
+            `;
+        }
+        updateStats([]);
     }
 }
 
-function displayPosts(posts) {
-    const postsList = document.getElementById('postsList');
-    
-    if (!posts || posts.length === 0) {
-        postsList.innerHTML = `
-            <div class="empty-state">
-                <i class="ti ti-calendar-off"></i>
-                <h3>No posts found</h3>
-                <p>Start creating social media posts to see them here</p>
-                <button class="btn btn-primary" onclick="openCreatePostModal()">
-                    <i class="ti ti-plus"></i> Create Your First Post
-                </button>
-            </div>
-        `;
-        return;
-    }
-    
-    let html = '';
-    posts.forEach(post => {
-        const platformClass = `platform-${post.platform}`;
-        const statusClass = `status-${post.status}`;
-        const scheduledDate = post.scheduled_at ? new Date(post.scheduled_at).toLocaleString() : 'Not scheduled';
-        
-        html += `
-            <div class="post-item">
-                <div class="post-platform-icon ${platformClass}">
-                    <i class="ti ti-brand-${post.platform}"></i>
-                </div>
-                <div class="post-content">
-                    <div class="post-header">
-                        <div class="post-client">${post.client_name}</div>
-                        <span class="post-status ${statusClass}">${post.status.charAt(0).toUpperCase() + post.status.slice(1)}</span>
-                    </div>
-                    <div class="post-caption">${post.caption.substring(0, 200)}${post.caption.length > 200 ? '...' : ''}</div>
-                    <div class="post-meta">
-                        <span><i class="ti ti-calendar"></i> ${scheduledDate}</span>
-                        <span><i class="ti ti-photo"></i> ${post.media_count} media</span>
-                        <span><i class="ti ti-hash"></i> ${post.hashtags.length} hashtags</span>
-                    </div>
-                </div>
-                <div class="post-actions">
-                    <button onclick="editPost(${post.post_id})" title="Edit">
-                        <i class="ti ti-edit"></i>
-                    </button>
-                    <button onclick="deletePost(${post.post_id})" title="Delete">
-                        <i class="ti ti-trash"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-    
-    postsList.innerHTML = html;
-}
-
-function updateStats(posts) {
-    const total = posts.length;
-    const scheduled = posts.filter(p => p.status === 'scheduled').length;
-    const published = posts.filter(p => p.status === 'published').length;
-    const draft = posts.filter(p => p.status === 'draft').length;
-    
-    document.getElementById('totalPosts').textContent = total;
-    document.getElementById('scheduledPosts').textContent = scheduled;
-    document.getElementById('publishedPosts').textContent = published;
-    document.getElementById('draftPosts').textContent = draft;
+function truncateText(text, maxLength) {
+    if (!text) return '';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
 }
 
 // =====================================================
 // CALENDAR VIEW
 // =====================================================
 
-async function loadCalendar() {
+function loadCalendar() {
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    const calendarMonth = document.getElementById('calendarMonth');
+    if (calendarMonth) {
+        calendarMonth.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+    }
+    
+    fetchCalendarData();
+}
+
+async function fetchCalendarData() {
+    const grid = document.getElementById('calendarGrid');
+    const clientId = document.getElementById('filterClient')?.value || '';
+    
     try {
         const token = localStorage.getItem('access_token');
-        const clientId = document.getElementById('filterClient').value;
         
-        if (!clientId) {
-            displayCalendarGrid({});
+        let url = `${API_BASE}/calendar?month=${currentMonth + 1}&year=${currentYear}`;
+        if (clientId) {
+            url += `&client_id=${clientId}`;
+        }
+        
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) {
+            renderCalendar({});
             return;
         }
         
-        const response = await fetch(`${API_BASE}/calendar?client_id=${clientId}&month=${currentMonth + 1}&year=${currentYear}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) throw new Error('Failed to load calendar');
-
         const data = await response.json();
-        displayCalendarGrid(data.calendar);
+        renderCalendar(data.calendar || {});
         
     } catch (error) {
         console.error('Error loading calendar:', error);
+        renderCalendar({});
     }
 }
 
-function displayCalendarGrid(calendarData) {
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                       'July', 'August', 'September', 'October', 'November', 'December'];
+function renderCalendar(calendarData) {
+    const grid = document.getElementById('calendarGrid');
+    if (!grid) return;
     
-    document.getElementById('calendarMonth').textContent = `${monthNames[currentMonth]} ${currentYear}`;
-    
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    const lastDay = new Date(currentYear, currentMonth + 1, 0);
-    const startingDayOfWeek = firstDay.getDay();
-    const numberOfDays = lastDay.getDate();
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const today = new Date();
     
     let html = `
         <div class="calendar-grid">
-            <div class="calendar-day-header">Sun</div>
-            <div class="calendar-day-header">Mon</div>
-            <div class="calendar-day-header">Tue</div>
-            <div class="calendar-day-header">Wed</div>
-            <div class="calendar-day-header">Thu</div>
-            <div class="calendar-day-header">Fri</div>
-            <div class="calendar-day-header">Sat</div>
+            <div class="calendar-header-row">
+                <div class="calendar-day-header">Sun</div>
+                <div class="calendar-day-header">Mon</div>
+                <div class="calendar-day-header">Tue</div>
+                <div class="calendar-day-header">Wed</div>
+                <div class="calendar-day-header">Thu</div>
+                <div class="calendar-day-header">Fri</div>
+                <div class="calendar-day-header">Sat</div>
+            </div>
+            <div class="calendar-days">
     `;
     
-    // Empty cells before first day
-    for (let i = 0; i < startingDayOfWeek; i++) {
-        html += '<div class="calendar-day other-month"></div>';
+    for (let i = 0; i < firstDay; i++) {
+        html += '<div class="calendar-day empty"></div>';
     }
     
-    // Days of month
-    const today = new Date();
-    for (let day = 1; day <= numberOfDays; day++) {
-        const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const isToday = today.getDate() === day && 
+                        today.getMonth() === currentMonth && 
+                        today.getFullYear() === currentYear;
         
-        const posts = calendarData[dateKey] || [];
+        const dayPosts = calendarData[dateStr] || [];
         
         html += `
-            <div class="calendar-day ${isToday ? 'today' : ''}">
+            <div class="calendar-day ${isToday ? 'today' : ''}" onclick="showDayPosts('${dateStr}')">
                 <div class="day-number">${day}</div>
-        `;
-        
-        posts.forEach(post => {
-            html += `
-                <div class="calendar-post ${post.platform}" onclick="editPost(${post.post_id})" title="${post.caption}">
-                    <i class="ti ti-brand-${post.platform}"></i> ${post.caption.substring(0, 30)}...
+                <div class="day-posts">
+                    ${dayPosts.slice(0, 3).map(post => `
+                        <div class="calendar-post ${post.platform}" title="${post.caption || ''}">
+                            <i class="ti ti-brand-${post.platform}"></i>
+                            <span>${truncateText(post.caption, 20)}</span>
+                        </div>
+                    `).join('')}
+                    ${dayPosts.length > 3 ? `<div class="more-posts">+${dayPosts.length - 3} more</div>` : ''}
                 </div>
-            `;
-        });
-        
-        html += '</div>';
+            </div>
+        `;
     }
     
-    html += '</div>';
-    
-    document.getElementById('calendarGrid').innerHTML = html;
+    html += '</div></div>';
+    grid.innerHTML = html;
 }
 
 function changeMonth(delta) {
     if (delta === 0) {
-        // Today
         const today = new Date();
         currentMonth = today.getMonth();
         currentYear = today.getFullYear();
@@ -281,24 +424,24 @@ function changeMonth(delta) {
     loadCalendar();
 }
 
+function showDayPosts(dateStr) {
+    showNotification(`Showing posts for ${dateStr}`, 'info');
+}
+
 // =====================================================
 // VIEW SWITCHING
 // =====================================================
 
 function switchView(view) {
-    const tabs = document.querySelectorAll('.view-tab');
-    tabs.forEach(tab => tab.classList.remove('active'));
-    event.target.closest('.view-tab').classList.add('active');
-    
-    document.getElementById('calendarView').classList.remove('active');
-    document.getElementById('listView').classList.remove('active');
+    document.querySelectorAll('.view-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.calendar-view, .list-view').forEach(v => v.classList.remove('active'));
     
     if (view === 'calendar') {
-        document.getElementById('calendarView').classList.add('active');
-        loadCalendar();
+        document.querySelector('.view-tab:first-child')?.classList.add('active');
+        document.getElementById('calendarView')?.classList.add('active');
     } else {
-        document.getElementById('listView').classList.add('active');
-        loadPosts();
+        document.querySelector('.view-tab:last-child')?.classList.add('active');
+        document.getElementById('listView')?.classList.add('active');
     }
 }
 
@@ -306,33 +449,39 @@ function switchView(view) {
 // CREATE/EDIT POST MODAL
 // =====================================================
 
-function openCreatePostModal() {
+function openPostModal() {
     currentEditingPostId = null;
     selectedContentId = null;
     selectedMediaUrls = [];
+    selectedPlatforms = [];
     
     document.getElementById('modalTitle').textContent = 'Create New Post';
     document.getElementById('postForm').reset();
     document.getElementById('postModal').classList.add('active');
     document.getElementById('submitPostBtn').innerHTML = '<i class="ti ti-check"></i> Create Post';
     
-    // Reset platform selection
     document.querySelectorAll('.platform-option').forEach(p => p.classList.remove('selected'));
     document.getElementById('postPlatform').value = '';
     
-    // Hide pickers
     document.getElementById('contentLibraryPicker').style.display = 'none';
     document.getElementById('mediaLibraryPicker').style.display = 'none';
     document.getElementById('bestTimesPanel').style.display = 'none';
+    
+    const mediaPreview = document.getElementById('selectedMediaPreview');
+    if (mediaPreview) mediaPreview.innerHTML = '';
+    
+    updatePlatformCount();
+}
+
+function openCreatePostModal() {
+    openPostModal();
 }
 
 async function editPost(postId) {
     try {
         const token = localStorage.getItem('access_token');
         const response = await fetch(`${API_BASE}/posts/${postId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!response.ok) throw new Error('Failed to load post');
@@ -344,29 +493,32 @@ async function editPost(postId) {
         document.getElementById('modalTitle').textContent = 'Edit Post';
         document.getElementById('submitPostBtn').innerHTML = '<i class="ti ti-check"></i> Update Post';
         
-        // Populate form
         document.getElementById('postClient').value = post.client_id;
-        document.getElementById('postCaption').value = post.caption;
-        document.getElementById('postHashtags').value = post.hashtags.join(', ');
-        document.getElementById('postStatus').value = post.status;
+        document.getElementById('postCaption').value = post.caption || '';
+        document.getElementById('postHashtags').value = (post.hashtags || []).join(', ');
+        document.getElementById('postStatus').value = post.status || 'draft';
         
         if (post.scheduled_at) {
             const date = new Date(post.scheduled_at);
-            const localDateTime = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+            const localDateTime = new Date(date.getTime() - (date.getTimezoneOffset() * 60000))
+                .toISOString().slice(0, 16);
             document.getElementById('postScheduledAt').value = localDateTime;
         }
         
-        // Select platform
-        document.querySelectorAll('.platform-option').forEach(p => p.classList.remove('selected'));
-        const platformEl = document.querySelector(`[data-platform="${post.platform}"]`);
-        if (platformEl) {
-            platformEl.classList.add('selected');
-            document.getElementById('postPlatform').value = post.platform;
-        }
+        selectedPlatforms = post.platform ? post.platform.split(',') : [];
+        document.querySelectorAll('.platform-option').forEach(p => {
+            if (selectedPlatforms.includes(p.dataset.platform)) {
+                p.classList.add('selected');
+            } else {
+                p.classList.remove('selected');
+            }
+        });
+        document.getElementById('postPlatform').value = selectedPlatforms.join(',');
         
         selectedMediaUrls = post.media_urls || [];
         selectedContentId = post.content_id;
         
+        updatePlatformCount();
         document.getElementById('postModal').classList.add('active');
         
     } catch (error) {
@@ -395,65 +547,80 @@ async function savePost(event) {
         
         const token = localStorage.getItem('access_token');
         const clientId = document.getElementById('postClient').value;
-        const platform = document.getElementById('postPlatform').value;
+        const platforms = document.getElementById('postPlatform').value;
         const caption = document.getElementById('postCaption').value;
-        const hashtags = document.getElementById('postHashtags').value
-            .split(',')
-            .map(h => h.trim())
-            .filter(h => h);
+        const hashtagsInput = document.getElementById('postHashtags').value;
+        const hashtags = hashtagsInput.split(',').map(h => h.trim()).filter(h => h);
         const status = document.getElementById('postStatus').value;
         const scheduledAt = document.getElementById('postScheduledAt').value;
         
-        if (!platform) {
-            showNotification('Please select a platform', 'error');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnText;
-            return;
+        if (!clientId) {
+            showNotification('Please select a client', 'error');
+            throw new Error('Client required');
         }
         
-        const postData = {
-            client_id: parseInt(clientId),
-            content_id: selectedContentId,
-            platform: platform,
-            caption: caption,
-            media_urls: selectedMediaUrls,
-            hashtags: hashtags,
-            scheduled_at: scheduledAt || null,
-            status: status
-        };
-        
-        let url = `${API_BASE}/posts`;
-        let method = 'POST';
-        
-        if (currentEditingPostId) {
-            url += `/${currentEditingPostId}`;
-            method = 'PUT';
+        if (!platforms) {
+            showNotification('Please select at least one platform', 'error');
+            throw new Error('Platform required');
         }
         
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(postData)
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Failed to save post');
+        if (!caption.trim()) {
+            showNotification('Please enter a caption', 'error');
+            throw new Error('Caption required');
         }
         
-        const result = await response.json();
+        const platformList = platforms.split(',').filter(p => p.trim());
+        let successCount = 0;
         
-        showNotification(result.message, 'success');
-        closePostModal();
-        loadPosts();
-        loadCalendar();
+        for (const platform of platformList) {
+            const postData = {
+                client_id: parseInt(clientId),
+                content_id: selectedContentId,
+                platform: platform.trim(),
+                caption: caption,
+                media_urls: selectedMediaUrls,
+                hashtags: hashtags,
+                scheduled_at: scheduledAt || null,
+                status: status
+            };
+            
+            let url = `${API_BASE}/posts`;
+            let method = 'POST';
+            
+            if (currentEditingPostId && platformList.length === 1) {
+                url += `/${currentEditingPostId}`;
+                method = 'PUT';
+            }
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(postData)
+            });
+            
+            if (response.ok) {
+                successCount++;
+            }
+        }
+        
+        if (successCount > 0) {
+            showNotification(`Successfully saved ${successCount} post(s)`, 'success');
+            closePostModal();
+            loadPosts();
+            loadCalendar();
+            loadStats();
+        } else {
+            throw new Error('Failed to save any posts');
+        }
         
     } catch (error) {
         console.error('Error saving post:', error);
-        showNotification(error.message, 'error');
+        if (!['Client required', 'Platform required', 'Caption required'].includes(error.message)) {
+            showNotification(error.message || 'Failed to save post', 'error');
+        }
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnText;
@@ -471,9 +638,7 @@ async function deletePost(postId) {
         const token = localStorage.getItem('access_token');
         const response = await fetch(`${API_BASE}/posts/${postId}`, {
             method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         
         if (!response.ok) throw new Error('Failed to delete post');
@@ -481,6 +646,7 @@ async function deletePost(postId) {
         showNotification('Post deleted successfully', 'success');
         loadPosts();
         loadCalendar();
+        loadStats();
         
     } catch (error) {
         console.error('Error deleting post:', error);
@@ -494,68 +660,64 @@ async function deletePost(postId) {
 
 async function loadContentLibrary() {
     const clientId = document.getElementById('postClient').value;
+    const picker = document.getElementById('contentLibraryPicker');
     
     if (!clientId) {
         showNotification('Please select a client first', 'error');
         return;
     }
     
+    picker.innerHTML = '<div class="loading-state"><div class="loader-spinner"></div><p>Loading content...</p></div>';
+    picker.style.display = 'block';
+    
     try {
         const token = localStorage.getItem('access_token');
-        const response = await fetch(`/api/v1/content/list?client_id=${clientId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+        
+        let response = await fetch(`/api/v1/content/list?client_id=${clientId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
+        
+        if (!response.ok) {
+            response = await fetch(`/api/v1/content?client_id=${clientId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        }
 
         if (!response.ok) throw new Error('Failed to load content library');
 
         const data = await response.json();
-        displayContentLibrary(data.content || []);
+        displayContentLibrary(data.content || data.data || []);
         
     } catch (error) {
         console.error('Error loading content library:', error);
-        showNotification('Failed to load content library', 'error');
+        picker.innerHTML = `<div style="text-align: center; padding: 2rem; color: #64748b;">Failed to load content library</div>`;
     }
 }
 
 function displayContentLibrary(content) {
     const picker = document.getElementById('contentLibraryPicker');
     
-    if (content.length === 0) {
-        picker.innerHTML = '<p style="text-align: center; color: #64748b;">No saved content found</p>';
-        picker.style.display = 'block';
+    if (!content || content.length === 0) {
+        picker.innerHTML = `<div style="text-align: center; padding: 2rem; color: #64748b;">No saved content found</div>`;
         return;
     }
     
-    let html = '';
-    content.forEach(item => {
-        const isSelected = selectedContentId === item.content_id;
-        html += `
-            <div class="content-card ${isSelected ? 'selected' : ''}" onclick="selectContent(${item.content_id}, '${item.content_text.replace(/'/g, "\\'")}', ${JSON.stringify(item.hashtags || [])})">
-                <div class="content-card-platform">${item.platform || 'General'}</div>
-                <div class="content-card-text">${item.content_text}</div>
-            </div>
-        `;
-    });
-    
-    picker.innerHTML = html;
-    picker.style.display = 'grid';
+    picker.innerHTML = content.map(item => `
+        <div class="content-card" onclick="selectContent(${item.content_id || item.id}, this)">
+            <div class="content-card-platform">${item.platform || 'General'}</div>
+            <div class="content-card-text">${truncateText(item.content_text || item.text || '', 100)}</div>
+        </div>
+    `).join('');
 }
 
-function selectContent(contentId, text, hashtags) {
+function selectContent(contentId, element) {
     selectedContentId = contentId;
-    document.getElementById('postCaption').value = text;
     
-    if (hashtags && hashtags.length > 0) {
-        document.getElementById('postHashtags').value = hashtags.join(', ');
-    }
+    document.querySelectorAll('.content-card').forEach(card => card.classList.remove('selected'));
+    element.classList.add('selected');
     
-    // Update selected state
-    document.querySelectorAll('.content-card').forEach(card => {
-        card.classList.remove('selected');
-    });
-    event.target.closest('.content-card').classList.add('selected');
+    const contentText = element.querySelector('.content-card-text')?.textContent || '';
+    document.getElementById('postCaption').value = contentText;
     
     showNotification('Content loaded successfully', 'success');
 }
@@ -566,57 +728,62 @@ function selectContent(contentId, text, hashtags) {
 
 async function loadMediaLibrary() {
     const clientId = document.getElementById('postClient').value;
+    const picker = document.getElementById('mediaLibraryPicker');
     
     if (!clientId) {
         showNotification('Please select a client first', 'error');
         return;
     }
     
+    picker.innerHTML = '<div class="loading-state"><div class="loader-spinner"></div><p>Loading media...</p></div>';
+    picker.style.display = 'grid';
+    
     try {
         const token = localStorage.getItem('access_token');
-        const response = await fetch(`/api/v1/media-studio/assets?client_id=${clientId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+        
+        let response = await fetch(`/api/v1/media-studio/assets?client_id=${clientId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
+        
+        if (!response.ok) {
+            response = await fetch(`/api/v1/media/assets?client_id=${clientId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        }
 
         if (!response.ok) throw new Error('Failed to load media library');
 
         const data = await response.json();
-        displayMediaLibrary(data.assets || []);
+        displayMediaLibrary(data.assets || data.data || []);
         
     } catch (error) {
         console.error('Error loading media library:', error);
-        showNotification('Failed to load media library', 'error');
+        picker.innerHTML = `<div style="text-align: center; padding: 2rem; color: #64748b; grid-column: 1/-1;">Failed to load media library</div>`;
     }
 }
 
 function displayMediaLibrary(assets) {
     const picker = document.getElementById('mediaLibraryPicker');
     
-    if (assets.length === 0) {
-        picker.innerHTML = '<p style="text-align: center; color: #64748b;">No media assets found</p>';
-        picker.style.display = 'block';
+    if (!assets || assets.length === 0) {
+        picker.innerHTML = `<div style="text-align: center; padding: 2rem; color: #64748b; grid-column: 1/-1;">No media assets found</div>`;
         return;
     }
     
-    let html = '';
-    assets.forEach(asset => {
-        const isSelected = selectedMediaUrls.includes(asset.file_url);
-        html += `
-            <div class="media-card ${isSelected ? 'selected' : ''}" onclick="toggleMedia('${asset.file_url}', '${asset.asset_type}')">
-                <img src="${asset.file_url}" alt="${asset.asset_name}">
-                <div class="media-card-type">${asset.asset_type}</div>
+    picker.innerHTML = assets.map(asset => {
+        const fileUrl = asset.file_url || asset.url;
+        const isSelected = selectedMediaUrls.includes(fileUrl);
+        return `
+            <div class="media-card ${isSelected ? 'selected' : ''}" onclick="toggleMedia('${fileUrl}')">
+                <img src="${fileUrl}" alt="${asset.asset_name || 'Asset'}" onerror="this.src='/static/images/placeholder.png'">
+                <div class="media-card-type">${asset.asset_type || 'image'}</div>
                 <div class="checkmark"><i class="ti ti-check"></i></div>
             </div>
         `;
-    });
-    
-    picker.innerHTML = html;
-    picker.style.display = 'grid';
+    }).join('');
 }
 
-function toggleMedia(url, type) {
+function toggleMedia(url) {
     const index = selectedMediaUrls.indexOf(url);
     
     if (index > -1) {
@@ -625,27 +792,65 @@ function toggleMedia(url, type) {
         selectedMediaUrls.push(url);
     }
     
-    // Update UI
-    event.target.closest('.media-card').classList.toggle('selected');
-    
+    event.target.closest('.media-card')?.classList.toggle('selected');
     showNotification(`${selectedMediaUrls.length} media selected`, 'info');
+    updateSelectedMediaPreview();
+}
+
+function updateSelectedMediaPreview() {
+    const preview = document.getElementById('selectedMediaPreview');
+    if (!preview) return;
+    
+    if (selectedMediaUrls.length === 0) {
+        preview.innerHTML = '';
+        return;
+    }
+    
+    preview.innerHTML = `
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
+            ${selectedMediaUrls.map(url => `
+                <div style="position: relative; width: 60px; height: 60px; border-radius: 8px; overflow: hidden;">
+                    <img src="${url}" style="width: 100%; height: 100%; object-fit: cover;">
+                    <button onclick="removeMedia('${url}')" style="position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 50%; background: #ef4444; border: none; color: white; cursor: pointer;">×</button>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function removeMedia(url) {
+    const index = selectedMediaUrls.indexOf(url);
+    if (index > -1) selectedMediaUrls.splice(index, 1);
+    updateSelectedMediaPreview();
 }
 
 // =====================================================
-// AI BEST TIMES
+// AI BEST TIMES - COMPLETELY FIXED
 // =====================================================
 
 async function getBestTimes() {
     const clientId = document.getElementById('postClient').value;
-    const platform = document.getElementById('postPlatform').value;
+    const platforms = document.getElementById('postPlatform').value;
+    const panel = document.getElementById('bestTimesPanel');
     
-    if (!clientId || !platform) {
-        showNotification('Please select client and platform first', 'error');
+    if (!clientId) {
+        showNotification('Please select a client first', 'error');
         return;
     }
     
+    if (!platforms) {
+        showNotification('Please select at least one platform first', 'error');
+        return;
+    }
+    
+    panel.innerHTML = '<div class="loading-state"><div class="loader-spinner"></div><p>Analyzing best times...</p></div>';
+    panel.style.display = 'block';
+    
     try {
         const token = localStorage.getItem('access_token');
+        const platformList = platforms.split(',');
+        const firstPlatform = platformList[0].trim();
+        
         const response = await fetch(`${API_BASE}/best-times`, {
             method: 'POST',
             headers: {
@@ -654,69 +859,158 @@ async function getBestTimes() {
             },
             body: JSON.stringify({
                 client_id: parseInt(clientId),
-                platform: platform
+                platform: firstPlatform
             })
         });
 
         if (!response.ok) throw new Error('Failed to get best times');
 
         const data = await response.json();
-        displayBestTimes(data.recommended_times);
+        console.log('Best times API response:', data);
+        
+        const times = data.recommended_times || [];
+        displayBestTimes(times);
         
     } catch (error) {
         console.error('Error getting best times:', error);
-        showNotification('Failed to get best times', 'error');
+        panel.innerHTML = `<div style="text-align: center; padding: 2rem; color: #64748b;">Failed to analyze best times</div>`;
     }
 }
 
 function displayBestTimes(times) {
     const panel = document.getElementById('bestTimesPanel');
     
+    if (!times || times.length === 0) {
+        panel.innerHTML = `<div style="text-align: center; padding: 2rem; color: #64748b;">No best time recommendations available</div>`;
+        return;
+    }
+    
     let html = '<div class="best-times-grid">';
+    
     times.forEach(time => {
+        // Parse values safely
+        const day = time.day || 'Unknown';
+        const hour = parseInt(time.hour) || 12;
+        let score = parseFloat(time.engagement_score) || 0;
+        
+        // FIX: Normalize score - keep dividing by 100 until it's in 0-100 range
+        while (score > 100) {
+            score = score / 100;
+        }
+        
+        // Format time for display (convert 24h to 12h format)
+        const hour12 = hour % 12 || 12;
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const timeDisplay = `${hour12}:00 ${ampm}`;
+        
         html += `
-            <div class="best-time-item" onclick="useBestTime('${time.day}', ${time.hour})">
+            <div class="best-time-item" onclick="useBestTime('${day}', ${hour})" style="cursor: pointer;">
                 <div class="best-time-info">
                     <div class="best-time-icon">
                         <i class="ti ti-clock"></i>
                     </div>
                     <div class="best-time-details">
-                        <h4>${time.day} at ${time.time_formatted}</h4>
-                        <p>Click to use this time</p>
+                        <h4>${day}</h4>
+                        <p>${timeDisplay}</p>
                     </div>
                 </div>
                 <div class="best-time-score">
-                    <div class="score-value">${time.engagement_score.toFixed(1)}</div>
-                    <div class="score-label">Engagement Score</div>
+                    <span class="score-badge">${score.toFixed(1)}%</span>
                 </div>
             </div>
         `;
     });
-    html += '</div>';
     
+    html += '</div>';
     panel.innerHTML = html;
     panel.style.display = 'block';
 }
 
 function useBestTime(day, hour) {
-    const dayMap = {
-        'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4,
-        'Friday': 5, 'Saturday': 6, 'Sunday': 0
+    console.log('useBestTime called with:', day, hour);
+    
+    // Get form elements
+    const dateInput = document.getElementById('postScheduledAt');
+    const statusSelect = document.getElementById('postStatus');
+    
+    if (!dateInput) {
+        console.error('Date input not found');
+        showNotification('Error: Date input not found', 'error');
+        return;
+    }
+    
+    if (!statusSelect) {
+        console.error('Status select not found');
+        showNotification('Error: Status select not found', 'error');
+        return;
+    }
+    
+    // FIXED: Day mapping aligned with JavaScript's getDay() where Sunday = 0
+    // Backend uses Monday = 0, but we receive day NAME so we map to JS days
+    const dayToJsIndex = {
+        'Sunday': 0,
+        'Monday': 1,
+        'Tuesday': 2,
+        'Wednesday': 3,
+        'Thursday': 4,
+        'Friday': 5,
+        'Saturday': 6
     };
     
-    const today = new Date();
-    const targetDay = dayMap[day];
-    const daysUntilTarget = (targetDay + 7 - today.getDay()) % 7 || 7;
+    const targetDayIndex = dayToJsIndex[day];
     
-    const targetDate = new Date(today);
-    targetDate.setDate(today.getDate() + daysUntilTarget);
-    targetDate.setHours(hour, 0, 0, 0);
+    if (targetDayIndex === undefined) {
+        console.error('Invalid day:', day);
+        showNotification('Invalid day selected', 'error');
+        return;
+    }
     
-    const localDateTime = new Date(targetDate.getTime() - (targetDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-    document.getElementById('postScheduledAt').value = localDateTime;
-    document.getElementById('postStatus').value = 'scheduled';
+    // Ensure hour is a number
+    const targetHour = parseInt(hour);
+    if (isNaN(targetHour) || targetHour < 0 || targetHour > 23) {
+        console.error('Invalid hour:', hour);
+        showNotification('Invalid hour selected', 'error');
+        return;
+    }
     
-    showNotification(`Scheduled for ${day} at ${hour}:00`, 'success');
+    // Calculate next occurrence of this day
+    const now = new Date();
+    const currentDayIndex = now.getDay(); // JavaScript: Sunday = 0
+    
+    let daysUntil = targetDayIndex - currentDayIndex;
+    if (daysUntil <= 0) {
+        daysUntil += 7; // Next week
+    }
+    
+    // Create target date
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + daysUntil);
+    targetDate.setHours(targetHour, 0, 0, 0);
+    
+    // Format for datetime-local input: YYYY-MM-DDTHH:MM
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const dateNum = String(targetDate.getDate()).padStart(2, '0');
+    const hourStr = String(targetHour).padStart(2, '0');
+    
+    const formattedDateTime = `${year}-${month}-${dateNum}T${hourStr}:00`;
+    
+    console.log('Setting datetime to:', formattedDateTime);
+    console.log('Target date object:', targetDate);
+    
+    // SET THE VALUES DIRECTLY
+    dateInput.value = formattedDateTime;
+    statusSelect.value = 'scheduled';
+    
+    // Verify the values were set
+    console.log('Date input value after set:', dateInput.value);
+    console.log('Status select value after set:', statusSelect.value);
+    
+    // Visual feedback
+    const hour12 = targetHour % 12 || 12;
+    const ampm = targetHour >= 12 ? 'PM' : 'AM';
+    
+    showNotification(`Scheduled for ${day} at ${hour12}:00 ${ampm}`, 'success');
 }
 
 // =====================================================
@@ -724,86 +1018,69 @@ function useBestTime(day, hour) {
 // =====================================================
 
 async function loadTrendingTopics() {
+    const container = document.getElementById('trendingTopics');
+    if (!container) return;
+    
     try {
         const token = localStorage.getItem('access_token');
-        const platform = document.getElementById('trendingPlatformFilter').value;
+        const platform = document.getElementById('trendingPlatformFilter')?.value || '';
         
         let url = `${API_BASE}/trending`;
-        if (platform) {
-            url += `?platform=${platform}`;
-        }
+        if (platform) url += `?platform=${platform}`;
         
         const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        if (!response.ok) throw new Error('Failed to load trending topics');
+        if (!response.ok) throw new Error('Failed to load trends');
 
         const data = await response.json();
-        displayTrendingTopics(data.trends);
+        displayTrendingTopics(data.topics || data.trending || data.trends || []);
         
     } catch (error) {
         console.error('Error loading trending topics:', error);
+        container.innerHTML = '<p style="color: #94a3b8; text-align: center;">Unable to load trending topics</p>';
     }
 }
 
-function displayTrendingTopics(trends) {
+function displayTrendingTopics(topics) {
     const container = document.getElementById('trendingTopics');
     
-    if (!trends || trends.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="ti ti-trending-down"></i>
-                <h3>No trending topics</h3>
-                <p>Check back later for trending topics</p>
-            </div>
-        `;
+    if (!topics || topics.length === 0) {
+        container.innerHTML = '<p style="color: #94a3b8; text-align: center;">No trending topics available</p>';
         return;
     }
     
-    let html = '<div class="trending-grid">';
-    
-    trends.forEach(trend => {
-        const volumeFormatted = (trend.volume / 1000).toFixed(1) + 'K';
-        html += `
-            <div class="trending-card" onclick="useTrendingTopic('${trend.topic.replace(/'/g, "\\'")}')">
-                <div class="trending-header">
-                    <span class="trending-platform">${trend.platform}</span>
-                    <span class="trending-volume">
-                        <i class="ti ti-eye"></i> ${volumeFormatted}
-                    </span>
+    container.innerHTML = `
+        <div class="trending-grid">
+            ${topics.slice(0, 6).map(topic => `
+                <div class="trending-card" onclick="useTrend('${(topic.topic || topic.name || '').replace(/'/g, "\\'")}')">
+                    <div class="trending-header">
+                        <span class="trending-platform">${topic.platform || 'All'}</span>
+                        <span class="trending-volume">
+                            <i class="ti ti-trending-up"></i> ${formatNumber(topic.volume || 0)}
+                        </span>
+                    </div>
+                    <div class="trending-topic">${topic.topic || topic.name}</div>
+                    <span class="trending-category">${topic.category || 'Trending'}</span>
                 </div>
-                <div class="trending-topic">#${trend.topic}</div>
-                <div class="trending-category">${trend.category}</div>
-            </div>
-        `;
-    });
-    
-    html += '</div>';
-    container.innerHTML = html;
+            `).join('')}
+        </div>
+    `;
 }
 
-function useTrendingTopic(topic) {
+function useTrend(topic) {
     const caption = document.getElementById('postCaption');
     if (caption) {
-        const currentCaption = caption.value;
-        const newCaption = currentCaption ? `${currentCaption}\n\n#${topic}` : `#${topic}`;
-        caption.value = newCaption;
-        
-        // Open modal if not already open
-        const modal = document.getElementById('postModal');
-        if (!modal.classList.contains('active')) {
-            openCreatePostModal();
-            // Wait a bit then set caption
-            setTimeout(() => {
-                document.getElementById('postCaption').value = newCaption;
-            }, 100);
-        }
-        
-        showNotification(`Added trending topic: ${topic}`, 'success');
+        caption.value += (caption.value ? ' ' : '') + topic;
+        showNotification('Trend added to caption', 'success');
     }
+}
+
+function formatNumber(num) {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
 }
 
 // =====================================================
@@ -811,101 +1088,63 @@ function useTrendingTopic(topic) {
 // =====================================================
 
 async function loadPerformanceSummaries() {
-    const clientId = document.getElementById('filterClient').value;
-    
-    if (!clientId) {
-        document.getElementById('performanceSummaries').innerHTML = `
-            <p style="text-align: center; color: #64748b; grid-column: 1/-1;">Select a client to view performance summaries</p>
-        `;
-        return;
-    }
+    const container = document.getElementById('performanceSummaries');
+    if (!container) return;
     
     try {
         const token = localStorage.getItem('access_token');
-        const response = await fetch(`${API_BASE}/performance-summary/${clientId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+        const clientId = document.getElementById('filterClient')?.value || '';
+        
+        let url = `${API_BASE}/analytics/summary`;
+        if (clientId) url += `?client_id=${clientId}`;
+        
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        if (!response.ok) throw new Error('Failed to load performance summaries');
+        if (!response.ok) throw new Error('Failed to load performance data');
 
         const data = await response.json();
-        displayPerformanceSummaries(data.summaries);
+        displayPerformanceSummaries(data.summaries || data.analytics || []);
         
     } catch (error) {
         console.error('Error loading performance summaries:', error);
+        container.innerHTML = '<p style="color: #94a3b8; text-align: center;">Unable to load performance data</p>';
     }
 }
 
 function displayPerformanceSummaries(summaries) {
     const container = document.getElementById('performanceSummaries');
+    if (!container) return;
     
     if (!summaries || summaries.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state" style="grid-column: 1/-1;">
-                <i class="ti ti-chart-line"></i>
-                <h3>No performance data yet</h3>
-                <p>Start posting to see performance summaries</p>
-            </div>
-        `;
+        container.innerHTML = '<p style="color: #94a3b8; text-align: center;">No performance data available</p>';
         return;
     }
     
-    let html = '';
-    
-    summaries.forEach(summary => {
-        const metrics = summary.metrics;
-        const platformClass = summary.platform.toLowerCase();
-        const statusClass = `status-${summary.status}`;
-        const statusText = summary.status.replace('_', ' ').toUpperCase();
-        
-        html += `
+    container.innerHTML = summaries.map(summary => {
+        const platform = summary.platform || 'Unknown';
+        return `
             <div class="performance-card">
                 <div class="performance-header">
-                    <div class="platform-badge ${platformClass}">
-                        <i class="ti ti-brand-${summary.platform}"></i>
-                        ${summary.platform.charAt(0).toUpperCase() + summary.platform.slice(1)}
+                    <div class="platform-badge platform-${platform.toLowerCase()}">
+                        <i class="ti ti-brand-${platform.toLowerCase()}"></i>
+                        ${platform}
                     </div>
-                    <span class="status-indicator ${statusClass}">${statusText}</span>
                 </div>
-                
                 <div class="metrics-row">
                     <div class="metric-item">
-                        <div class="metric-label">Total Posts</div>
-                        <div class="metric-value">${metrics.total_posts}</div>
+                        <span class="metric-label">Posts</span>
+                        <span class="metric-value">${summary.total_posts || 0}</span>
                     </div>
                     <div class="metric-item">
-                        <div class="metric-label">Engagement Rate</div>
-                        <div class="metric-value">${metrics.engagement_rate}%</div>
+                        <span class="metric-label">Engagement</span>
+                        <span class="metric-value">${formatNumber(summary.engagement || 0)}</span>
                     </div>
-                    <div class="metric-item">
-                        <div class="metric-label">Impressions</div>
-                        <div class="metric-value">${formatNumber(metrics.impressions)}</div>
-                    </div>
-                    <div class="metric-item">
-                        <div class="metric-label">Reach</div>
-                        <div class="metric-value">${formatNumber(metrics.reach)}</div>
-                    </div>
-                </div>
-                
-                <div class="performance-insight">
-                    <i class="ti ti-bulb"></i> ${summary.insight}
                 </div>
             </div>
         `;
-    });
-    
-    container.innerHTML = html;
-}
-
-function formatNumber(num) {
-    if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
-    }
-    return num.toString();
+    }).join('');
 }
 
 // =====================================================
@@ -913,21 +1152,31 @@ function formatNumber(num) {
 // =====================================================
 
 function showNotification(message, type = 'info') {
-    // Create notification element
+    const existing = document.querySelector('.notification');
+    if (existing) existing.remove();
+    
     const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="ti ti-${type === 'success' ? 'check' : type === 'error' ? 'x' : 'info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
     notification.style.cssText = `
         position: fixed;
-        top: 2rem;
-        right: 2rem;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        border-radius: 10px;
         background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
         color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         z-index: 10000;
         animation: slideIn 0.3s ease;
     `;
-    notification.textContent = message;
     
     document.body.appendChild(notification);
     
@@ -936,3 +1185,91 @@ function showNotification(message, type = 'info') {
         setTimeout(() => notification.remove(), 300);
     }, 3000);
 }
+
+// Animation styles
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+
+// =====================================================
+// MEDIA UPLOAD HANDLER
+// =====================================================
+
+async function handleMediaUpload(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    const clientId = document.getElementById('postClient').value;
+    if (!clientId) {
+        showNotification('Please select a client first', 'error');
+        event.target.value = '';
+        return;
+    }
+    
+    showNotification('Uploading media...', 'info');
+    
+    for (const file of files) {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('client_id', clientId);
+            formData.append('asset_type', file.type.startsWith('video/') ? 'video' : 'image');
+            formData.append('asset_name', file.name);
+            
+            const token = localStorage.getItem('access_token');
+            const response = await fetch('/api/v1/media-studio/upload', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.file_url) {
+                    selectedMediaUrls.push(result.file_url);
+                }
+            }
+        } catch (error) {
+            console.error('Error uploading file:', error);
+        }
+    }
+    
+    updateSelectedMediaPreview();
+    showNotification(`${files.length} file(s) uploaded`, 'success');
+    event.target.value = '';
+}
+
+// =====================================================
+// EXPOSE FUNCTIONS GLOBALLY
+// =====================================================
+
+window.openPostModal = openPostModal;
+window.openCreatePostModal = openCreatePostModal;
+window.closePostModal = closePostModal;
+window.editPost = editPost;
+window.deletePost = deletePost;
+window.savePost = savePost;
+window.loadPosts = loadPosts;
+window.loadCalendar = loadCalendar;
+window.loadContentLibrary = loadContentLibrary;
+window.loadMediaLibrary = loadMediaLibrary;
+window.selectContent = selectContent;
+window.toggleMedia = toggleMedia;
+window.removeMedia = removeMedia;
+window.getBestTimes = getBestTimes;
+window.useBestTime = useBestTime;
+window.useTrend = useTrend;
+window.switchView = switchView;
+window.changeMonth = changeMonth;
+window.showDayPosts = showDayPosts;
+window.handleMediaUpload = handleMediaUpload;
+window.loadTrendingTopics = loadTrendingTopics;

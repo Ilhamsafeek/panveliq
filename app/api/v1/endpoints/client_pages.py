@@ -44,7 +44,7 @@ async def get_my_package(current_user: dict = Depends(get_current_user)):
                 cs.subscription_id,
                 cs.start_date,
                 cs.end_date,
-                cs.status,
+                cs.status as subscription_status,
                 p.package_id,
                 p.package_name,
                 p.package_tier,
@@ -55,6 +55,7 @@ async def get_my_package(current_user: dict = Depends(get_current_user)):
             FROM client_subscriptions cs
             INNER JOIN packages p ON cs.package_id = p.package_id
             WHERE cs.client_id = %s
+            AND cs.status = 'active'
             ORDER BY cs.start_date DESC
             LIMIT 1
         """
@@ -63,20 +64,38 @@ async def get_my_package(current_user: dict = Depends(get_current_user)):
         subscription = cursor.fetchone()
         
         if not subscription:
+            print(f"No active subscription found for user {current_user['user_id']}")
             return {
                 "status": "success",
                 "has_package": False,
+                "package": None,
                 "message": "No active package found"
             }
         
         # Parse features JSON
-        if subscription['features'] and isinstance(subscription['features'], str):
-            subscription['features'] = json.loads(subscription['features'])
+        if subscription.get('features'):
+            if isinstance(subscription['features'], str):
+                subscription['features'] = json.loads(subscription['features'])
         
         # Calculate days remaining
-        if subscription['end_date']:
-            days_remaining = (subscription['end_date'] - datetime.now().date()).days
-            subscription['days_remaining'] = max(0, days_remaining)
+        days_remaining = 0
+        if subscription.get('end_date'):
+            end_date = subscription['end_date']
+            if isinstance(end_date, str):
+                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            today = datetime.now().date()
+            days_remaining = (end_date - today).days
+        
+        # Format dates for JSON response
+        if subscription.get('start_date'):
+            subscription['start_date'] = subscription['start_date'].isoformat() if hasattr(subscription['start_date'], 'isoformat') else str(subscription['start_date'])
+        if subscription.get('end_date'):
+            subscription['end_date'] = subscription['end_date'].isoformat() if hasattr(subscription['end_date'], 'isoformat') else str(subscription['end_date'])
+        
+        subscription['days_remaining'] = days_remaining
+        subscription['status'] = subscription['subscription_status']
+        
+        print(f"Package found for user {current_user['user_id']}: {subscription['package_name']}")
         
         return {
             "status": "success",
@@ -85,7 +104,9 @@ async def get_my_package(current_user: dict = Depends(get_current_user)):
         }
     
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
+        print(f"Error fetching package: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch package: {str(e)}"
@@ -97,6 +118,242 @@ async def get_my_package(current_user: dict = Depends(get_current_user)):
         if connection:
             connection.close()
 
+            
+@router.get("/my-proposals", summary="Get current user's proposals")
+async def get_my_proposals(current_user: dict = Depends(get_current_user)):
+    """Get all proposals sent to the current user"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Get all proposals for this client
+        query = """
+            SELECT 
+                p.proposal_id,
+                p.company_name,
+                p.business_type,
+                p.budget,
+                p.challenges,
+                p.target_audience,
+                p.existing_presence,
+                p.ai_generated_strategy,
+                p.competitive_differentiators,
+                p.suggested_timeline,
+                p.status,
+                p.sent_at,
+                p.created_at,
+                p.updated_at,
+                u.full_name as created_by_name,
+                u.email as created_by_email
+            FROM project_proposals p
+            LEFT JOIN users u ON p.created_by = u.user_id
+            WHERE p.client_id = %s
+            AND p.status IN ('sent', 'accepted', 'rejected')
+            ORDER BY p.created_at DESC
+        """
+        
+        cursor.execute(query, (current_user['user_id'],))
+        proposals = cursor.fetchall()
+        
+        # Format dates and parse JSON
+        for proposal in proposals:
+            if proposal.get('sent_at'):
+                proposal['sent_at'] = proposal['sent_at'].isoformat()
+            if proposal.get('created_at'):
+                proposal['created_at'] = proposal['created_at'].isoformat()
+            if proposal.get('updated_at'):
+                proposal['updated_at'] = proposal['updated_at'].isoformat()
+            
+            # Parse JSON fields
+            if proposal.get('existing_presence') and isinstance(proposal['existing_presence'], str):
+                proposal['existing_presence'] = json.loads(proposal['existing_presence'])
+            if proposal.get('ai_generated_strategy') and isinstance(proposal['ai_generated_strategy'], str):
+                proposal['ai_generated_strategy'] = json.loads(proposal['ai_generated_strategy'])
+            if proposal.get('competitive_differentiators') and isinstance(proposal['competitive_differentiators'], str):
+                proposal['competitive_differentiators'] = json.loads(proposal['competitive_differentiators'])
+            if proposal.get('suggested_timeline') and isinstance(proposal['suggested_timeline'], str):
+                proposal['suggested_timeline'] = json.loads(proposal['suggested_timeline'])
+        
+        return {
+            "status": "success",
+            "proposals": proposals,
+            "total": len(proposals)
+        }
+    
+    except Exception as e:
+        print(f"Error fetching proposals: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch proposals: {str(e)}"
+        )
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@router.get("/my-proposals/{proposal_id}", summary="Get single proposal details")
+async def get_proposal_details(
+    proposal_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get detailed view of a specific proposal"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        query = """
+            SELECT 
+                p.*,
+                u.full_name as created_by_name,
+                u.email as created_by_email
+            FROM project_proposals p
+            LEFT JOIN users u ON p.created_by = u.user_id
+            WHERE p.proposal_id = %s AND p.client_id = %s
+        """
+        
+        cursor.execute(query, (proposal_id, current_user['user_id']))
+        proposal = cursor.fetchone()
+        
+        if not proposal:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Proposal not found"
+            )
+        
+        # Format dates and parse JSON
+        if proposal.get('sent_at'):
+            proposal['sent_at'] = proposal['sent_at'].isoformat()
+        if proposal.get('created_at'):
+            proposal['created_at'] = proposal['created_at'].isoformat()
+        if proposal.get('updated_at'):
+            proposal['updated_at'] = proposal['updated_at'].isoformat()
+        
+        # Parse JSON fields
+        if proposal.get('existing_presence') and isinstance(proposal['existing_presence'], str):
+            proposal['existing_presence'] = json.loads(proposal['existing_presence'])
+        if proposal.get('ai_generated_strategy') and isinstance(proposal['ai_generated_strategy'], str):
+            proposal['ai_generated_strategy'] = json.loads(proposal['ai_generated_strategy'])
+        if proposal.get('competitive_differentiators') and isinstance(proposal['competitive_differentiators'], str):
+            proposal['competitive_differentiators'] = json.loads(proposal['competitive_differentiators'])
+        if proposal.get('suggested_timeline') and isinstance(proposal['suggested_timeline'], str):
+            proposal['suggested_timeline'] = json.loads(proposal['suggested_timeline'])
+        
+        return {
+            "status": "success",
+            "proposal": proposal
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching proposal details: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch proposal: {str(e)}"
+        )
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@router.post("/my-proposals/{proposal_id}/respond", summary="Respond to proposal")
+async def respond_to_proposal(
+    proposal_id: int,
+    response_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Client can accept or reject a proposal"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        action = response_data.get('action')  # 'accept' or 'reject'
+        comments = response_data.get('comments', '')
+        
+        if action not in ['accept', 'reject']:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Action must be 'accept' or 'reject'"
+            )
+        
+        new_status = 'accepted' if action == 'accept' else 'rejected'
+        
+        # Update proposal status
+        cursor.execute("""
+            UPDATE project_proposals 
+            SET status = %s, updated_at = NOW()
+            WHERE proposal_id = %s AND client_id = %s
+        """, (new_status, proposal_id, current_user['user_id']))
+        
+        if cursor.rowcount == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Proposal not found"
+            )
+        
+        # Create notification for the employee who created it
+        cursor.execute("""
+            SELECT created_by FROM project_proposals WHERE proposal_id = %s
+        """, (proposal_id,))
+        creator = cursor.fetchone()
+        
+        if creator:
+            cursor.execute("""
+                INSERT INTO notifications 
+                (user_id, notification_type, title, message, is_read, created_at)
+                VALUES (%s, %s, %s, %s, %s, NOW())
+            """, (
+                creator['created_by'],
+                f'proposal_{new_status}',
+                f'Proposal {new_status.capitalize()}',
+                f'Your proposal has been {new_status} by the client. {comments}',
+                False
+            ))
+        
+        connection.commit()
+        
+        return {
+            "status": "success",
+            "message": f"Proposal {new_status} successfully"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        if connection:
+            connection.rollback()
+        print(f"Error responding to proposal: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to respond to proposal: {str(e)}"
+        )
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 # ========== REPORTS ENDPOINTS ==========
 

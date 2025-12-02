@@ -650,10 +650,12 @@ function createAssetCard(asset) {
     const icon = typeIcons[asset.asset_type] || 'ti-file';
     const genLabel = generationLabels[asset.generation_type] || asset.generation_type;
     
-    const isImage = asset.asset_type === 'image' && asset.file_url && asset.file_url.startsWith('http');
+    const isImage = asset.asset_type === 'image' && asset.file_url;
     const previewContent = isImage 
-        ? `<img src="${asset.file_url}" alt="${asset.asset_name}">`
+        ? `<img src="${asset.file_url}" alt="${asset.asset_name}" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'ti ${icon}\\'></i>';">`
         : `<i class="ti ${icon}"></i>`;
+    
+    const escapedUrl = (asset.file_url || '').replace(/'/g, "\\'");
     
     return `
         <div class="asset-card">
@@ -662,15 +664,15 @@ function createAssetCard(asset) {
                 ${asset.ai_generated ? `<span class="asset-badge">${genLabel}</span>` : ''}
             </div>
             <div class="asset-info">
-                <h3>${asset.asset_name}</h3>
+                <h3>${asset.asset_name || 'Untitled Asset'}</h3>
                 <div class="asset-meta">
                     ${new Date(asset.created_at).toLocaleDateString()}
                 </div>
                 <div class="asset-actions">
-                    <button class="btn-icon" onclick="downloadAsset('${asset.file_url}')" title="Download">
+                    <button class="btn-icon" onclick="downloadAsset(${asset.asset_id})" title="Download">
                         <i class="ti ti-download"></i>
                     </button>
-                    <button class="btn-icon" onclick="viewAsset('${asset.file_url}')" title="View">
+                    <button class="btn-icon" onclick="viewAsset('${escapedUrl}')" title="View">
                         <i class="ti ti-eye"></i>
                     </button>
                     <button class="btn-icon" onclick="deleteAsset(${asset.asset_id})" title="Delete">
@@ -685,22 +687,61 @@ function createAssetCard(asset) {
 // =====================================================
 // ASSET ACTIONS
 // =====================================================
-
-function downloadAsset(url) {
-    if (url && url.startsWith('http')) {
-        window.open(url, '_blank');
-    } else {
-        showNotification('Download URL not available', 'error');
+async function downloadAsset(assetId) {
+    try {
+        showNotification('Starting download...', 'info');
+        
+        const token = localStorage.getItem('access_token');
+        
+        // Use the new download endpoint
+        const response = await fetch(`${API_BASE}/assets/${assetId}/download`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Download failed');
+        }
+        
+        // Check if it's a redirect response
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            if (data.redirect_url) {
+                window.open(data.redirect_url, '_blank');
+                return;
+            }
+        }
+        
+        // Handle direct file download
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `asset_${assetId}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        showNotification('Download completed', 'success');
+        
+    } catch (error) {
+        console.error('Download error:', error);
+        showNotification('Failed to download asset', 'error');
     }
 }
 
 function viewAsset(url) {
-    if (url && url.startsWith('http')) {
+    alert(url);
+    if (url && (url.startsWith('http') || url.startsWith('/static'))) {
         window.open(url, '_blank');
     } else {
         showNotification('View URL not available', 'error');
     }
 }
+
 
 async function deleteAsset(assetId) {
     if (!confirm('Are you sure you want to delete this asset?')) {

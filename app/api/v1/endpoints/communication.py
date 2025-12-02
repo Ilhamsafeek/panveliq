@@ -78,6 +78,15 @@ class AudienceSegmentCreate(BaseModel):
     contacts_data: Optional[List[Dict[str, Any]]] = []  # ADD THIS
 
 
+class TriggeredFlowUpdate(BaseModel):
+    """Update triggered automation flow"""
+    client_id: Optional[int] = None
+    flow_name: Optional[str] = None
+    trigger_type: Optional[str] = None
+    trigger_conditions: Optional[Dict[str, Any]] = None
+    flow_actions: Optional[List[Dict[str, Any]]] = None
+    channel: Optional[str] = None
+    is_active: Optional[bool] = None
 # ========== WHATSAPP CAMPAIGNS ==========
 
 @router.post("/whatsapp/campaigns/create")
@@ -261,47 +270,61 @@ async def list_whatsapp_campaigns(
         if connection:
             connection.close()
 
-
-@router.get("/whatsapp/campaigns/{campaign_id}")
-async def get_whatsapp_campaign(
+@router.put("/whatsapp/campaigns/{campaign_id}")
+async def update_whatsapp_campaign(
     campaign_id: int,
+    campaign: WhatsAppCampaignCreate,
     current_user: dict = Depends(require_admin_or_employee)
 ):
-    """Get specific WhatsApp campaign details"""
+    """Update existing WhatsApp campaign"""
     connection = None
     cursor = None
-    
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        query = """
-            SELECT wc.*, u.full_name as client_name, u.email as client_email
-            FROM whatsapp_campaigns wc
-            JOIN users u ON wc.client_id = u.user_id
-            WHERE wc.campaign_id = %s
-        """
-        
-        cursor.execute(query, (campaign_id,))
-        campaign = cursor.fetchone()
-        
-        if not campaign:
+        # Check if campaign exists
+        cursor.execute("SELECT campaign_id FROM whatsapp_campaigns WHERE campaign_id = %s", (campaign_id,))
+        if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="Campaign not found")
         
-        # Convert datetime
-        if campaign.get('scheduled_at'):
-            campaign['scheduled_at'] = campaign['scheduled_at'].isoformat()
-        if campaign.get('created_at'):
-            campaign['created_at'] = campaign['created_at'].isoformat()
+        # Update campaign
+        update_query = """
+            UPDATE whatsapp_campaigns
+            SET campaign_name = %s,
+                template_name = %s,
+                message_content = %s,
+                recipient_list = %s,
+                schedule_type = %s,
+                scheduled_at = %s,
+                updated_at = NOW()
+            WHERE campaign_id = %s
+        """
+        
+        cursor.execute(update_query, (
+            campaign.campaign_name,
+            campaign.template_name,
+            campaign.message_content,
+            json.dumps(campaign.recipient_list),
+            campaign.schedule_type,
+            campaign.scheduled_at,
+            campaign_id
+        ))
+        
+        connection.commit()
         
         return {
             "success": True,
-            "campaign": campaign
+            "message": "Campaign updated successfully",
+            "campaign_id": campaign_id
         }
-    
+        
     except HTTPException:
         raise
     except Exception as e:
+        if connection:
+            connection.rollback()
+        print(f"❌ Error updating campaign: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if cursor:
@@ -309,6 +332,57 @@ async def get_whatsapp_campaign(
         if connection:
             connection.close()
 
+@router.get("/whatsapp/campaigns/{campaign_id}")
+async def get_whatsapp_campaign(
+    campaign_id: int,
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """Get WhatsApp campaign details"""
+    connection = None
+    cursor = None
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        query = """
+            SELECT 
+                wc.*,
+                u.full_name as client_name
+            FROM whatsapp_campaigns wc
+            LEFT JOIN users u ON wc.client_id = u.user_id
+            WHERE wc.campaign_id = %s
+        """
+        cursor.execute(query, (campaign_id,))
+        campaign = cursor.fetchone()
+        
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+        
+        # Parse recipient_list if it's JSON string
+        if campaign.get('recipient_list') and isinstance(campaign['recipient_list'], str):
+            campaign['recipient_list'] = json.loads(campaign['recipient_list'])
+        
+        # Convert datetime
+        if campaign.get('created_at'):
+            campaign['created_at'] = campaign['created_at'].isoformat()
+        if campaign.get('scheduled_at'):
+            campaign['scheduled_at'] = campaign['scheduled_at'].isoformat()
+        
+        return {
+            "success": True,
+            "campaign": campaign
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error fetching campaign: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 # ========== EMAIL CAMPAIGNS ==========
 
@@ -702,75 +776,181 @@ async def list_triggered_flows(
 
 
 @router.get("/flows/{flow_id}")
-async def get_triggered_flow(
-    flow_id: int,
-    current_user: dict = Depends(require_admin_or_employee)
-):
-    """Get specific triggered flow details"""
-    connection = None
-    cursor = None
-    
+async def get_flow(flow_id: int, current_user: dict = Depends(require_admin_or_employee)):
+    """Get single automation flow details"""
+    conn = None
     try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
+        conn = get_db_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         
-        query = """
-            SELECT tf.*, u.full_name as client_name
+        cursor.execute("""
+            SELECT 
+                tf.*,
+                u.full_name as client_name,
+                (SELECT COUNT(*) FROM flow_executions WHERE flow_id = tf.flow_id) as total_executions
             FROM triggered_flows tf
             JOIN users u ON tf.client_id = u.user_id
             WHERE tf.flow_id = %s
-        """
+        """, (flow_id,))
         
-        cursor.execute(query, (flow_id,))
         flow = cursor.fetchone()
         
         if not flow:
             raise HTTPException(status_code=404, detail="Flow not found")
         
         # Parse JSON fields
-        if flow.get('trigger_conditions'):
-            flow['trigger_conditions'] = json.loads(flow['trigger_conditions']) if isinstance(flow['trigger_conditions'], str) else flow['trigger_conditions']
+        if flow.get('trigger_conditions') and isinstance(flow['trigger_conditions'], str):
+            try:
+                flow['trigger_conditions'] = json.loads(flow['trigger_conditions'])
+            except:
+                flow['trigger_conditions'] = {}
         
-        if flow.get('flow_actions'):
-            flow['flow_actions'] = json.loads(flow['flow_actions']) if isinstance(flow['flow_actions'], str) else flow['flow_actions']
+        if flow.get('flow_actions') and isinstance(flow['flow_actions'], str):
+            try:
+                flow['flow_actions'] = json.loads(flow['flow_actions'])
+            except:
+                flow['flow_actions'] = []
         
-        # Convert datetime
+        # Convert datetime to string
         if flow.get('created_at'):
             flow['created_at'] = flow['created_at'].isoformat()
         if flow.get('updated_at'):
             flow['updated_at'] = flow['updated_at'].isoformat()
         
-        # Get execution history
-        cursor.execute("""
-            SELECT execution_id, triggered_at, status, error_message
-            FROM flow_executions
-            WHERE flow_id = %s
-            ORDER BY triggered_at DESC
-            LIMIT 10
-        """, (flow_id,))
+        return {"success": True, "flow": flow}
         
-        executions = cursor.fetchall()
-        for execution in executions:
-            if execution.get('triggered_at'):
-                execution['triggered_at'] = execution['triggered_at'].isoformat()
-        
-        flow['recent_executions'] = executions
-        
-        return {
-            "success": True,
-            "flow": flow
-        }
-    
     except HTTPException:
         raise
     except Exception as e:
+        print(f"Error getting flow: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
+        if conn:
+            conn.close()
 
+
+
+@router.put("/flows/{flow_id}")
+async def update_flow(
+    flow_id: int,
+    flow_data: TriggeredFlowUpdate,
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """Update an existing automation flow"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        
+        # Check if flow exists
+        cursor.execute("SELECT flow_id FROM triggered_flows WHERE flow_id = %s", (flow_id,))
+        existing = cursor.fetchone()
+        
+        if not existing:
+            raise HTTPException(status_code=404, detail="Flow not found")
+        
+        # Build update query dynamically
+        update_fields = []
+        values = []
+        
+        if flow_data.client_id is not None:
+            update_fields.append("client_id = %s")
+            values.append(flow_data.client_id)
+        
+        if flow_data.flow_name is not None:
+            update_fields.append("flow_name = %s")
+            values.append(flow_data.flow_name)
+        
+        if flow_data.trigger_type is not None:
+            update_fields.append("trigger_type = %s")
+            values.append(flow_data.trigger_type)
+        
+        if flow_data.trigger_conditions is not None:
+            update_fields.append("trigger_conditions = %s")
+            values.append(json.dumps(flow_data.trigger_conditions))
+        
+        if flow_data.flow_actions is not None:
+            update_fields.append("flow_actions = %s")
+            values.append(json.dumps(flow_data.flow_actions))
+        
+        if flow_data.channel is not None:
+            update_fields.append("channel = %s")
+            values.append(flow_data.channel)
+        
+        if flow_data.is_active is not None:
+            update_fields.append("is_active = %s")
+            values.append(flow_data.is_active)
+        
+        if not update_fields:
+            return {"success": True, "message": "No fields to update", "flow_id": flow_id}
+        
+        # Add updated_at
+        update_fields.append("updated_at = NOW()")
+        
+        # Add flow_id for WHERE clause
+        values.append(flow_id)
+        
+        query = f"UPDATE triggered_flows SET {', '.join(update_fields)} WHERE flow_id = %s"
+        cursor.execute(query, values)
+        conn.commit()
+        
+        return {
+            "success": True,
+            "message": "Flow updated successfully",
+            "flow_id": flow_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating flow: {e}")
+        if conn:
+            conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            conn.close()
+
+
+@router.delete("/flows/{flow_id}")
+async def delete_flow(flow_id: int, current_user: dict = Depends(require_admin_or_employee)):
+    """Delete an automation flow"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if flow exists
+        cursor.execute("SELECT flow_id FROM triggered_flows WHERE flow_id = %s", (flow_id,))
+        existing = cursor.fetchone()
+        
+        if not existing:
+            raise HTTPException(status_code=404, detail="Flow not found")
+        
+        # Delete flow executions first (foreign key)
+        cursor.execute("DELETE FROM flow_executions WHERE flow_id = %s", (flow_id,))
+        
+        # Delete flow
+        cursor.execute("DELETE FROM triggered_flows WHERE flow_id = %s", (flow_id,))
+        conn.commit()
+        
+        return {
+            "success": True,
+            "message": "Flow deleted successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deleting flow: {e}")
+        if conn:
+            conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if conn:
+            conn.close()
+
+            
 
 @router.put("/flows/{flow_id}/toggle")
 async def toggle_flow_status(
@@ -830,18 +1010,16 @@ async def create_audience_segment(
     """Create a new audience segment with contacts"""
     connection = None
     cursor = None
-    
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
         
-        # Insert segment
+        # Insert segment with contacts_data
         query = """
             INSERT INTO audience_segments
-            (client_id, segment_name, description, platform, segment_criteria, estimated_size, created_by, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+            (client_id, segment_name, description, platform, segment_criteria, estimated_size, contacts_data, created_by, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
         """
-        
         cursor.execute(query, (
             segment.client_id,
             segment.segment_name,
@@ -849,29 +1027,11 @@ async def create_audience_segment(
             segment.platform,
             json.dumps(segment.segment_criteria),
             segment.estimated_size,
+            json.dumps(segment.contacts_data) if segment.contacts_data else None,  # ✅ Save contacts_data as JSON
             current_user['user_id']
         ))
         
         segment_id = cursor.lastrowid
-        
-        # Insert contacts if provided
-        if segment.contacts_data and len(segment.contacts_data) > 0:
-            contact_query = """
-                INSERT INTO segment_contacts
-                (segment_id, name, email, phone, company, additional_data, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, NOW())
-            """
-            
-            for contact in segment.contacts_data:
-                cursor.execute(contact_query, (
-                    segment_id,
-                    contact.get('name', ''),
-                    contact.get('email', ''),
-                    contact.get('phone', ''),
-                    contact.get('company', ''),
-                    json.dumps({k: v for k, v in contact.items() if k not in ['name', 'email', 'phone', 'company']})
-                ))
-        
         connection.commit()
         
         print(f"✅ Created segment {segment_id} with {segment.estimated_size} contacts")
@@ -882,7 +1042,7 @@ async def create_audience_segment(
             "segment_id": segment_id,
             "estimated_size": segment.estimated_size
         }
-    
+        
     except Exception as e:
         if connection:
             connection.rollback()
@@ -893,6 +1053,7 @@ async def create_audience_segment(
             cursor.close()
         if connection:
             connection.close()
+
 
 @router.get("/segments/list")
 async def list_audience_segments(
@@ -1054,116 +1215,87 @@ async def get_communication_analytics(
             connection.close()
 
 
-
-
 @router.get("/segments/{segment_id}")
-async def get_segment_details(
+async def get_segment(
     segment_id: int,
     current_user: dict = Depends(require_admin_or_employee)
 ):
-    """Get specific segment details"""
+    """Get segment details including contacts"""
     connection = None
     cursor = None
-    
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
         
         query = """
             SELECT 
-                s.segment_id, s.segment_name, s.description, s.platform,
-                s.estimated_size, s.segment_criteria, s.created_at,
-                u.full_name as client_name,
-                creator.full_name as created_by_name
+                s.segment_id,
+                s.segment_name,
+                s.description,
+                s.platform,
+                s.segment_criteria,
+                s.estimated_size,
+                s.contacts_data,
+                s.created_at,
+                s.client_id,
+                u.full_name as client_name
             FROM audience_segments s
-            JOIN users u ON s.client_id = u.user_id
-            JOIN users creator ON s.created_by = creator.user_id
+            LEFT JOIN users u ON s.client_id = u.user_id
             WHERE s.segment_id = %s
         """
-        
         cursor.execute(query, (segment_id,))
-        segment = cursor.fetchone()
+        segment = cursor.fetchone()  # ✅ Already a dictionary!
+        
+        print(f"📦 Raw segment: {segment}")
         
         if not segment:
             raise HTTPException(status_code=404, detail="Segment not found")
         
-        # Convert datetime
+        # ✅ Parse JSON fields (segment is already a dict)
+        try:
+            if segment.get('segment_criteria') and isinstance(segment['segment_criteria'], str):
+                segment['segment_criteria'] = json.loads(segment['segment_criteria'])
+            elif not segment.get('segment_criteria'):
+                segment['segment_criteria'] = {}
+        except Exception as e:
+            print(f"⚠️ Error parsing segment_criteria: {e}")
+            segment['segment_criteria'] = {}
+        
+        try:
+            if segment.get('contacts_data'):
+                if isinstance(segment['contacts_data'], str):
+                    print(f"📞 Parsing contacts_data: {segment['contacts_data']}")
+                    segment['contacts_data'] = json.loads(segment['contacts_data'])
+                    print(f"✅ Parsed to: {segment['contacts_data']}")
+            else:
+                segment['contacts_data'] = []
+        except Exception as e:
+            print(f"❌ Error parsing contacts_data: {e}")
+            segment['contacts_data'] = []
+        
+        # Convert datetime to string for JSON serialization
         if segment.get('created_at'):
             segment['created_at'] = segment['created_at'].isoformat()
         
-        # Parse segment_criteria if it's a string
-        if segment.get('segment_criteria') and isinstance(segment['segment_criteria'], str):
-            try:
-                segment['segment_criteria'] = json.loads(segment['segment_criteria'])
-            except:
-                pass
+        print(f"✅ Returning segment with {len(segment.get('contacts_data', []))} contacts")
         
         return {
             "success": True,
             "segment": segment
         }
-    
+        
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"❌ Full error: {error_detail}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
-
-
-@router.delete("/segments/{segment_id}")
-async def delete_segment(
-    segment_id: int,
-    current_user: dict = Depends(require_admin_or_employee)
-):
-    """Delete an audience segment"""
-    connection = None
-    cursor = None
-    
-    try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        
-        # Check if segment exists
-        cursor.execute("""
-            SELECT segment_id, segment_name 
-            FROM audience_segments 
-            WHERE segment_id = %s
-        """, (segment_id,))
-        
-        segment = cursor.fetchone()
-        
-        if not segment:
-            raise HTTPException(status_code=404, detail="Segment not found")
-        
-        # Delete the segment
-        cursor.execute("""
-            DELETE FROM audience_segments 
-            WHERE segment_id = %s
-        """, (segment_id,))
-        
-        connection.commit()
-        
-        return {
-            "success": True,
-            "message": f"Segment '{segment['segment_name']}' deleted successfully"
-        }
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        if connection:
-            connection.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
 
 
 @router.get("/segments/{segment_id}/recipients")
@@ -1240,3 +1372,58 @@ async def get_segment_recipients(
             cursor.close()
         if connection:
             connection.close()
+
+
+@router.post("/whatsapp/test-send")
+async def test_whatsapp_send(
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """Test WhatsApp API connection"""
+    import requests
+    
+    WHATSAPP_API_URL = "https://graph.facebook.com/v17.0/894443070408271/messages"
+    WHATSAPP_ACCESS_TOKEN = "EAA6Dz8Sr46MBP9NPIyHKvyJktmDC2kbUBbSFNIjtv2d4ZBXJFcEzx9c06VeQUGFQiwTZBoJlo0L8UThX1wYiCXJxiJXtfuTVj496A9XZCL1cvGoSTjVqBXSR2Lm8MykKE9XZCMJrmn6g51TZAR6Y9ZA6nGTisczzjttNgETiB0SVpNiS6K1fVUL0J6UyctgNbPKHqFptz3gOhqg0UJF66EsMZAaEKi3FMWfaxqSQHPohje2SXkZD"
+    
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": "94777140803",
+        "type": "text",
+        "text": {
+            "body": "Test message from PanvelIQ"
+        }
+    }
+    
+    try:
+        print(f"📞 Sending request to: {WHATSAPP_API_URL}")
+        print(f"📞 Payload: {payload}")
+        print(f"🔑 Token (first 30 chars): {WHATSAPP_ACCESS_TOKEN[:30]}...")
+        
+        response = requests.post(WHATSAPP_API_URL, headers=headers, json=payload)
+        
+        print(f"📊 Status Code: {response.status_code}")
+        print(f"📄 Full Response: {response.text}")
+        
+        response_data = {}
+        try:
+            response_data = response.json()
+        except:
+            response_data = {"raw_text": response.text}
+        
+        return {
+            "success": response.status_code == 200,
+            "status_code": response.status_code,
+            "response": response_data,
+            "error_details": response_data.get("error", {}) if isinstance(response_data, dict) else None
+        }
+    except Exception as e:
+        import traceback
+        print(f"❌ Exception: {traceback.format_exc()}")
+        return {
+            "success": False,
+            "error": str(e)
+        }

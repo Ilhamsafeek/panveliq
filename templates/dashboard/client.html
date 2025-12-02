@@ -11,22 +11,22 @@
         padding: 2rem;
         max-width: 100%;
     }
-    
+
     .dashboard-header {
         margin-bottom: 2rem;
     }
-    
+
     .dashboard-header h1 {
         font-size: 28px;
         font-weight: 700;
         color: var(--color-gray-900);
         margin-bottom: 0.5rem;
     }
-    
+
     .dashboard-header p {
         color: var(--color-gray-600);
     }
-    
+
     /* Welcome Card */
     .welcome-card {
         background: var(--gradient-primary);
@@ -38,22 +38,22 @@
         justify-content: space-between;
         align-items: center;
     }
-    
+
     .welcome-content h2 {
         font-size: 24px;
         margin-bottom: 0.5rem;
     }
-    
+
     .welcome-content p {
         opacity: 0.9;
         font-size: 15px;
     }
-    
+
     .welcome-icon {
         font-size: 80px;
         opacity: 0.2;
     }
-    
+
     /* Package Card */
     .package-card {
         background: white;
@@ -62,19 +62,19 @@
         padding: 1.5rem;
         margin-bottom: 2rem;
     }
-    
+
     .package-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 1.5rem;
     }
-    
+
     .package-header h3 {
         font-size: 18px;
         font-weight: 700;
     }
-    
+
     .package-badge {
         padding: 0.5rem 1rem;
         background: rgba(153, 38, 243, 0.1);
@@ -84,19 +84,19 @@
         font-size: 14px;
         text-transform: uppercase;
     }
-    
+
     .package-details {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 1rem;
     }
-    
+
     .package-detail-item {
         display: flex;
         align-items: center;
         gap: 0.75rem;
     }
-    
+
     .package-detail-icon {
         width: 40px;
         height: 40px;
@@ -108,19 +108,19 @@
         font-size: 20px;
         color: var(--primary-purple);
     }
-    
+
     .package-detail-info h4 {
         font-size: 14px;
         color: var(--color-gray-600);
         font-weight: 500;
     }
-    
+
     .package-detail-info p {
         font-size: 16px;
         font-weight: 600;
         color: var(--color-gray-900);
     }
-    
+
     /* Stats Grid */
     .stats-grid {
         display: grid;
@@ -128,7 +128,7 @@
         gap: 1.5rem;
         margin-bottom: 2rem;
     }
-    
+
     .stat-card {
         background: white;
         padding: 1.5rem;
@@ -136,19 +136,19 @@
         border: 1px solid var(--color-gray-200);
         transition: all 0.3s;
     }
-    
+
     .stat-card:hover {
         box-shadow: var(--shadow-lg);
         transform: translateY(-2px);
     }
-    
+
     .stat-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         margin-bottom: 1rem;
     }
-    
+
     .stat-icon {
         width: 48px;
         height: 48px;
@@ -158,24 +158,39 @@
         justify-content: center;
         font-size: 24px;
     }
-    
-    .stat-icon.purple { background: rgba(153, 38, 243, 0.1); color: var(--primary-purple); }
-    .stat-icon.cyan { background: rgba(29, 216, 252, 0.1); color: var(--primary-cyan); }
-    .stat-icon.green { background: rgba(16, 185, 129, 0.1); color: var(--color-success); }
-    .stat-icon.orange { background: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
-    
+
+    .stat-icon.purple {
+        background: rgba(153, 38, 243, 0.1);
+        color: var(--primary-purple);
+    }
+
+    .stat-icon.cyan {
+        background: rgba(29, 216, 252, 0.1);
+        color: var(--primary-cyan);
+    }
+
+    .stat-icon.green {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--color-success);
+    }
+
+    .stat-icon.orange {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--color-warning);
+    }
+
     .stat-value {
         font-size: 32px;
         font-weight: 700;
         color: var(--color-gray-900);
         margin-bottom: 0.25rem;
     }
-    
+
     .stat-label {
         color: var(--color-gray-600);
         font-size: 14px;
     }
-    
+
     .stat-trend {
         font-size: 13px;
         display: flex;
@@ -183,15 +198,15 @@
         gap: 0.25rem;
         margin-top: 0.5rem;
     }
-    
+
     .stat-trend.up {
         color: var(--color-success);
     }
-    
+
     .stat-trend.down {
         color: var(--color-error);
     }
-    
+
     /* Content Grid */
     .content-grid {
         display: grid;
@@ -199,14 +214,14 @@
         gap: 1.5rem;
         margin-bottom: 2rem;
     }
-    
+
     .content-card {
         background: white;
         border-radius: var(--radius-lg);
         border: 1px solid var(--color-gray-200);
         padding: 1.5rem;
     }
-    
+
     .card-header {
         display: flex;
         align-items: center;
@@ -215,13 +230,13 @@
         padding-bottom: 1rem;
         border-bottom: 1px solid var(--color-gray-200);
     }
-    
+
     .card-title {
         font-size: 18px;
         font-weight: 700;
         color: var(--color-gray-900);
     }
-    
+
     .btn-link {
         color: var(--primary-purple);
         text-decoration: none;
@@ -231,18 +246,18 @@
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .btn-link:hover {
         color: var(--primary-cyan);
     }
-    
+
     /* Campaign List */
     .campaign-list {
         display: flex;
         flex-direction: column;
         gap: 1rem;
     }
-    
+
     .campaign-item {
         display: flex;
         justify-content: space-between;
@@ -252,46 +267,46 @@
         border-radius: var(--radius-md);
         transition: all 0.2s;
     }
-    
+
     .campaign-item:hover {
         background: var(--color-gray-100);
     }
-    
+
     .campaign-info h4 {
         font-size: 15px;
         font-weight: 600;
         color: var(--color-gray-900);
         margin-bottom: 0.25rem;
     }
-    
+
     .campaign-info p {
         font-size: 13px;
         color: var(--color-gray-600);
     }
-    
+
     .campaign-status {
         padding: 0.5rem 1rem;
         border-radius: var(--radius-md);
         font-size: 13px;
         font-weight: 600;
     }
-    
+
     .campaign-status.active {
         background: rgba(16, 185, 129, 0.1);
         color: var(--color-success);
     }
-    
+
     .campaign-status.paused {
         background: rgba(245, 158, 11, 0.1);
         color: var(--color-warning);
     }
-    
+
     /* Quick Actions */
     .quick-actions {
         display: grid;
         gap: 1rem;
     }
-    
+
     .action-btn {
         display: flex;
         align-items: center;
@@ -304,13 +319,13 @@
         color: var(--color-gray-900);
         transition: all 0.2s;
     }
-    
+
     .action-btn:hover {
         background: white;
         border-color: var(--primary-purple);
         transform: translateX(4px);
     }
-    
+
     .action-icon {
         width: 48px;
         height: 48px;
@@ -322,54 +337,714 @@
         font-size: 24px;
         color: white;
     }
-    
+
     .action-content h4 {
         font-size: 15px;
         font-weight: 600;
         margin-bottom: 0.25rem;
     }
-    
+
     .action-content p {
         font-size: 13px;
         color: var(--color-gray-600);
     }
-    
+
     /* Empty State */
     .empty-state {
         text-align: center;
         padding: 3rem 1rem;
         color: var(--color-gray-400);
     }
-    
+
     .empty-state i {
         font-size: 48px;
         margin-bottom: 1rem;
     }
-    
+
     .empty-state p {
         font-size: 14px;
     }
-    
+
     @media (max-width: 768px) {
         .dashboard-container {
             padding: 1rem;
         }
-        
+
         .stats-grid {
             grid-template-columns: 1fr;
         }
-        
+
         .content-grid {
             grid-template-columns: 1fr;
         }
-        
+
         .welcome-card {
             flex-direction: column;
             text-align: center;
         }
-        
+
         .welcome-icon {
             display: none;
+        }
+    }
+
+
+    /* Proposals Section */
+    .section-card {
+        background: white;
+        border: 1px solid var(--color-gray-200);
+        border-radius: var(--radius-lg);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+
+    .section-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--color-gray-200);
+        background: var(--color-gray-50);
+    }
+
+    .section-header h3 {
+        font-size: 18px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 0;
+    }
+
+    .section-header h3 i {
+        font-size: 24px;
+        color: var(--primary-purple);
+    }
+
+    .section-body {
+        padding: 1.5rem;
+    }
+
+    .proposals-list {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .proposal-item {
+        background: var(--color-gray-50);
+        border: 1px solid var(--color-gray-200);
+        border-radius: var(--radius-md);
+        padding: 1.25rem;
+        transition: all 0.2s ease;
+    }
+
+    .proposal-item:hover {
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary-purple);
+    }
+
+    .proposal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 1rem;
+    }
+
+    .proposal-title h4 {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--color-gray-900);
+        margin: 0 0 0.25rem 0;
+    }
+
+    .proposal-title p {
+        font-size: 13px;
+        color: var(--color-gray-600);
+        margin: 0;
+    }
+
+    .proposal-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-sent {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3B82F6;
+    }
+
+    .badge-accepted {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+    }
+
+    .badge-rejected {
+        background: rgba(239, 68, 68, 0.1);
+        color: #EF4444;
+    }
+
+    .proposal-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .proposal-detail {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .proposal-detail-label {
+        font-size: 12px;
+        color: var(--color-gray-600);
+        margin-bottom: 0.25rem;
+    }
+
+    .proposal-detail-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-gray-900);
+    }
+
+    .proposal-actions {
+        display: flex;
+        gap: 0.75rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--color-gray-200);
+    }
+
+    .proposal-actions .btn {
+        flex: 1;
+        padding: 0.625rem 1rem;
+        font-size: 14px;
+    }
+
+    .loading-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--color-gray-400);
+    }
+
+    .loading-state i {
+        font-size: 32px;
+        margin-bottom: 0.5rem;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .empty-proposals {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--color-gray-400);
+    }
+
+    .empty-proposals i {
+        font-size: 64px;
+        margin-bottom: 1rem;
+    }
+
+    .empty-proposals h4 {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--color-gray-600);
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-proposals p {
+        font-size: 14px;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.75);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        padding: 2rem;
+        overflow-y: auto;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal-container {
+        background: white;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 900px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-header {
+        padding: 2rem;
+        border-bottom: 1px solid var(--color-gray-200);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, rgba(153, 38, 243, 0.05), rgba(29, 216, 252, 0.05));
+    }
+
+    .modal-header h2 {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .modal-header h2 i {
+        font-size: 28px;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .modal-close {
+        width: 40px;
+        height: 40px;
+        border: none;
+        background: var(--color-gray-100);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+        background: var(--color-gray-200);
+        transform: rotate(90deg);
+    }
+
+    .modal-close i {
+        font-size: 20px;
+        color: var(--color-gray-600);
+    }
+
+    .modal-body {
+        padding: 2rem;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .modal-footer {
+        padding: 1.5rem 2rem;
+        border-top: 1px solid var(--color-gray-200);
+        background: var(--color-gray-50);
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+    /* Proposal Content Styles */
+    .proposal-meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: var(--color-gray-50);
+        border-radius: 12px;
+    }
+
+    .meta-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .meta-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--color-gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+
+    .meta-value {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--color-gray-900);
+    }
+
+    .meta-value.budget {
+        font-size: 20px;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .proposal-section {
+        margin-bottom: 2rem;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid var(--color-gray-200);
+    }
+
+    .section-title i {
+        font-size: 22px;
+        color: var(--primary-purple);
+    }
+
+    .section-content {
+        color: var(--color-gray-700);
+        line-height: 1.8;
+    }
+
+    .strategy-campaigns {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .campaign-card {
+        background: white;
+        border: 1px solid var(--color-gray-200);
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .campaign-card h4 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--color-gray-900);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .campaign-card p {
+        font-size: 14px;
+        color: var(--color-gray-600);
+        margin: 0;
+    }
+
+    .differentiators-list {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .differentiator-item {
+        background: linear-gradient(135deg, rgba(153, 38, 243, 0.05), rgba(29, 216, 252, 0.05));
+        border-left: 4px solid var(--primary-purple);
+        padding: 1rem;
+        border-radius: 8px;
+    }
+
+    .differentiator-item h4 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--color-gray-900);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .differentiator-item p {
+        font-size: 14px;
+        color: var(--color-gray-700);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .differentiator-impact {
+        font-size: 13px;
+        color: var(--primary-purple);
+        font-weight: 600;
+    }
+
+    .timeline-phases {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .phase-item {
+        background: white;
+        border: 1px solid var(--color-gray-200);
+        border-radius: 8px;
+        padding: 1rem;
+        position: relative;
+    }
+
+    .phase-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: var(--gradient-primary);
+        border-radius: 8px 0 0 8px;
+    }
+
+    .phase-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .phase-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--color-gray-900);
+    }
+
+    .phase-duration {
+        font-size: 13px;
+        color: var(--primary-purple);
+        font-weight: 600;
+    }
+
+    .phase-milestones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .milestone-badge {
+        font-size: 12px;
+        padding: 0.25rem 0.75rem;
+        background: var(--color-gray-100);
+        border-radius: 12px;
+        color: var(--color-gray-700);
+    }
+
+    @media (max-width: 768px) {
+        .modal-container {
+            max-width: 100%;
+            max-height: 100vh;
+            border-radius: 0;
+        }
+
+        .proposal-meta {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Button System */
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-family: 'Gilroy-SemiBold', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn i {
+        font-size: 18px;
+    }
+
+    /* Small Button */
+    .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 13px;
+    }
+
+    .btn-sm i {
+        font-size: 16px;
+    }
+
+    /* Primary Button */
+    .btn-primary {
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 12px rgba(153, 38, 243, 0.3);
+    }
+
+    .btn-primary:hover {
+        box-shadow: 0 6px 20px rgba(153, 38, 243, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .btn-primary:active {
+        transform: translateY(0);
+    }
+
+    /* Success Button */
+    .btn-success {
+        background: linear-gradient(135deg, #10B981, #059669);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-success:hover {
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .btn-success:active {
+        transform: translateY(0);
+    }
+
+    /* Danger/Decline Button */
+    .btn-danger {
+        background: linear-gradient(135deg, #EF4444, #DC2626);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .btn-danger:active {
+        transform: translateY(0);
+    }
+
+    /* Outline Button */
+    .btn-outline {
+        background: white;
+        color: #6B7280;
+        border: 2px solid #E5E7EB;
+    }
+
+    .btn-outline:hover {
+        background: #F9FAFB;
+        border-color: #D1D5DB;
+        transform: translateY(-2px);
+    }
+
+    /* Outline Primary */
+    .btn-outline-primary {
+        background: white;
+        color: #9926F3;
+        border: 2px solid #9926F3;
+    }
+
+    .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    /* Outline Success */
+    .btn-outline-success {
+        background: white;
+        color: #10B981;
+        border: 2px solid #10B981;
+    }
+
+    .btn-outline-success:hover {
+        background: #10B981;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    /* Outline Danger */
+    .btn-outline-danger {
+        background: white;
+        color: #EF4444;
+        border: 2px solid #EF4444;
+    }
+
+    .btn-outline-danger:hover {
+        background: #EF4444;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    /* Button Group Styling */
+    .proposal-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.75rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--color-gray-200);
+    }
+
+    .proposal-actions .btn {
+        width: 100%;
+    }
+
+    /* Modal Footer Buttons */
+    .modal-footer {
+        padding: 1.5rem 2rem;
+        border-top: 1px solid var(--color-gray-200);
+        background: var(--color-gray-50);
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .modal-footer .btn {
+        min-width: 140px;
+    }
+
+    @media (max-width: 768px) {
+        .proposal-actions {
+            grid-template-columns: 1fr;
+        }
+
+        .modal-footer {
+            flex-direction: column;
+        }
+
+        .modal-footer .btn {
+            width: 100%;
         }
     }
 </style>
@@ -387,7 +1062,9 @@
             <i class="ti ti-chart-line"></i>
         </div>
     </div>
-    
+
+    <!-- Current Package -->
+
     <!-- Current Package -->
     <div class="package-card">
         <div class="package-header">
@@ -399,32 +1076,31 @@
                 <div class="package-detail-icon">
                     <i class="ti ti-package"></i>
                 </div>
-                <div class="package-detail-info">
-                    <h4>Package</h4>
-                    <p id="packageName">-</p>
-                </div>
-            </div>
-            <div class="package-detail-item">
-                <div class="package-detail-icon">
-                    <i class="ti ti-calendar"></i>
-                </div>
-                <div class="package-detail-info">
-                    <h4>Valid Until</h4>
-                    <p id="packageExpiry">-</p>
+                <div class="package-detail-content">
+                    <span class="package-detail-label">Package Name</span>
+                    <span class="package-detail-value" id="packageName">Loading...</span>
                 </div>
             </div>
             <div class="package-detail-item">
                 <div class="package-detail-icon">
                     <i class="ti ti-currency-dollar"></i>
                 </div>
-                <div class="package-detail-info">
-                    <h4>Monthly Cost</h4>
-                    <p id="packagePrice">-</p>
+                <div class="package-detail-content">
+                    <span class="package-detail-label">Monthly Price</span>
+                    <span class="package-detail-value" id="packagePrice">Loading...</span>
+                </div>
+            </div>
+            <div class="package-detail-item">
+                <div class="package-detail-icon">
+                    <i class="ti ti-calendar"></i>
+                </div>
+                <div class="package-detail-content">
+                    <span class="package-detail-label">Expires On</span>
+                    <span class="package-detail-value" id="packageExpiry">Loading...</span>
                 </div>
             </div>
         </div>
     </div>
-    
     <!-- Performance Stats -->
     <div class="stats-grid">
         <div class="stat-card">
@@ -440,7 +1116,7 @@
                 <span>0%</span>
             </div>
         </div>
-        
+
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon cyan">
@@ -454,7 +1130,7 @@
                 <span>0%</span>
             </div>
         </div>
-        
+
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon green">
@@ -468,7 +1144,7 @@
                 <span>0%</span>
             </div>
         </div>
-        
+
         <div class="stat-card">
             <div class="stat-header">
                 <div class="stat-icon orange">
@@ -479,7 +1155,7 @@
             <div class="stat-label">Active Campaigns</div>
         </div>
     </div>
-    
+
     <!-- Content Grid -->
     <div class="content-grid">
         <!-- Recent Campaigns -->
@@ -498,7 +1174,22 @@
                 </div>
             </div>
         </div>
-        
+
+        <div class="section-card">
+            <div class="section-header">
+                <h3>
+                    <i class="ti ti-file-text"></i>
+                    Marketing Proposals
+                </h3>
+            </div>
+            <div class="section-body" id="proposalsContainer">
+                <div class="loading-state">
+                    <i class="ti ti-loader"></i>
+                    <p>Loading proposals...</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Quick Actions -->
         <div class="content-card">
             <div class="card-header">
@@ -536,95 +1227,675 @@
         </div>
     </div>
 </div>
+
+<!-- Proposal Details Modal -->
+<div class="modal-overlay" id="proposalModal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2 id="proposalModalTitle">
+                <i class="ti ti-file-text"></i>
+                Proposal Details
+            </h2>
+            <button class="modal-close" onclick="closeProposalModal()">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+
+        <div class="modal-body" id="proposalModalContent">
+            <!-- Content will be dynamically loaded -->
+            <div class="loading-state">
+                <i class="ti ti-loader"></i>
+                <p>Loading proposal details...</p>
+            </div>
+        </div>
+
+        <div class="modal-footer" id="proposalModalFooter">
+            <!-- Action buttons will be dynamically added -->
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    loadClientDashboard();
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        loadClientDashboard();
+    });
 
-async function loadClientDashboard() {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-    
-    try {
-        // Load user info for welcome message
-        const userResponse = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (userResponse.ok) {
-            const user = await userResponse.json();
-            document.getElementById('welcomeMessage').textContent = `Welcome back, ${user.full_name || 'Client'}!`;
-        }
-        
-        // Load package info
-        loadPackageInfo(token);
-        
-        // Load performance stats
-        loadPerformanceStats(token);
-        
-        // Load recent campaigns
-        loadRecentCampaigns(token);
-        
-    } catch (error) {
-        console.error('Error loading dashboard:', error);
-    }
-}
+    async function loadClientDashboard() {
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
 
-async function loadPackageInfo(token) {
-    try {
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/clients/my-package`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data.package) {
-                document.getElementById('packageTier').textContent = data.package.tier || 'Basic';
-                document.getElementById('packageName').textContent = data.package.name || '-';
-                document.getElementById('packageExpiry').textContent = formatDate(data.package.end_date) || '-';
-                document.getElementById('packagePrice').textContent = `$${data.package.price || 0}`;
+        try {
+            // Load user info for welcome message
+            const userResponse = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (userResponse.ok) {
+                const user = await userResponse.json();
+                document.getElementById('welcomeMessage').textContent = `Welcome back, ${user.full_name || 'Client'}!`;
             }
-        }
-    } catch (error) {
-        console.error('Error loading package:', error);
-    }
-}
 
-async function loadPerformanceStats(token) {
-    try {
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/analytics/overview`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data.stats) {
-                document.getElementById('totalImpressions').textContent = formatNumber(data.stats.total_impressions || 0);
-                document.getElementById('totalClicks').textContent = formatNumber(data.stats.total_clicks || 0);
-                document.getElementById('totalEngagement').textContent = `${data.stats.engagement_rate || 0}%`;
-                document.getElementById('activeCampaigns').textContent = data.stats.active_campaigns || 0;
+            // Load package info
+            loadPackageInfo(token);
+
+            // Load proposals - ADD THIS LINE
+            loadProposals(token);
+
+            // Load performance stats
+            loadPerformanceStats(token);
+
+            // Load recent campaigns
+            loadRecentCampaigns(token);
+
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        }
+    }
+    async function loadProposals(token) {
+        const container = document.getElementById('proposalsContainer');
+        if (!container) return;
+
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/client-pages/my-proposals`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+
+                if (data.proposals && data.proposals.length > 0) {
+                    container.innerHTML = `
+                    <div class="proposals-list">
+                        ${data.proposals.map(proposal => createProposalHTML(proposal)).join('')}
+                    </div>
+                `;
+                } else {
+                    container.innerHTML = `
+                    <div class="empty-proposals">
+                        <i class="ti ti-file-off"></i>
+                        <h4>No Proposals Yet</h4>
+                        <p>Your marketing proposals will appear here once they are sent by your account manager.</p>
+                    </div>
+                `;
+                }
+            } else {
+                container.innerHTML = `
+                <div class="empty-proposals">
+                    <i class="ti ti-alert-circle"></i>
+                    <h4>Unable to Load Proposals</h4>
+                    <p>There was an error loading your proposals. Please refresh the page.</p>
+                </div>
+            `;
             }
+        } catch (error) {
+            console.error('Error loading proposals:', error);
+            container.innerHTML = `
+            <div class="empty-proposals">
+                <i class="ti ti-alert-circle"></i>
+                <h4>Unable to Load Proposals</h4>
+                <p>There was an error loading your proposals. Please refresh the page.</p>
+            </div>
+        `;
         }
-    } catch (error) {
-        console.error('Error loading stats:', error);
     }
-}
 
-async function loadRecentCampaigns(token) {
-    try {
-        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/campaigns/recent`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            const campaignList = document.getElementById('campaignList');
+    function createProposalHTML(proposal) {
+        const statusClass = {
+            'sent': 'badge-sent',
+            'accepted': 'badge-accepted',
+            'rejected': 'badge-rejected'
+        }[proposal.status] || 'badge-sent';
+
+        const statusText = {
+            'sent': 'Pending Review',
+            'accepted': 'Accepted',
+            'rejected': 'Rejected'
+        }[proposal.status] || proposal.status;
+
+        const budget = proposal.budget ? `₹${parseFloat(proposal.budget).toLocaleString()}` : 'N/A';
+        const sentDate = proposal.sent_at ? new Date(proposal.sent_at).toLocaleDateString() : 'N/A';
+
+        const showActions = proposal.status === 'sent';
+
+        return `
+        <div class="proposal-item">
+            <div class="proposal-header">
+                <div class="proposal-title">
+                    <h4>${proposal.company_name || 'Marketing Proposal'}</h4>
+                    <p>Created by ${proposal.created_by_name || 'PanvelIQ Team'}</p>
+                </div>
+                <span class="proposal-badge ${statusClass}">${statusText}</span>
+            </div>
             
-            if (data.campaigns && data.campaigns.length > 0) {
-                campaignList.innerHTML = data.campaigns.map(campaign => `
+            <div class="proposal-details">
+                <div class="proposal-detail">
+                    <span class="proposal-detail-label">Budget</span>
+                    <span class="proposal-detail-value">${budget}</span>
+                </div>
+                <div class="proposal-detail">
+                    <span class="proposal-detail-label">Business Type</span>
+                    <span class="proposal-detail-value">${proposal.business_type || 'N/A'}</span>
+                </div>
+                <div class="proposal-detail">
+                    <span class="proposal-detail-label">Sent On</span>
+                    <span class="proposal-detail-value">${sentDate}</span>
+                </div>
+            </div>
+            
+            ${showActions ? `
+                <div class="proposal-actions">
+                    <button class="btn btn-sm btn-primary" onclick="viewProposalDetails(${proposal.proposal_id})">
+                        <i class="ti ti-eye"></i>
+                        View Details
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="acceptProposal(${proposal.proposal_id})">
+                        <i class="ti ti-check"></i>
+                        Accept
+                    </button>
+                    <button class="btn btn-sm btn-outline" style="color: #EF4444; border-color: #EF4444;" onclick="rejectProposal(${proposal.proposal_id})">
+                        <i class="ti ti-x"></i>
+                        Decline
+                    </button>
+                </div>
+            ` : `
+                <div class="proposal-actions">
+                    <button class="btn btn-sm btn-primary" onclick="viewProposalDetails(${proposal.proposal_id})">
+                        <i class="ti ti-eye"></i>
+                        View Details
+                    </button>
+                </div>
+            `}
+        </div>
+    `;
+    }
+
+    async function viewProposalDetails(proposalId) {
+        const modal = document.getElementById('proposalModal');
+        const content = document.getElementById('proposalModalContent');
+
+        // Show modal with loading state
+        modal.classList.add('active');
+        content.innerHTML = `
+        <div class="loading-state">
+            <i class="ti ti-loader"></i>
+            <p>Loading proposal details...</p>
+        </div>
+    `;
+
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
+
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/client-pages/my-proposals/${proposalId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                displayProposalDetails(data.proposal);
+            } else {
+                content.innerHTML = `
+                <div class="empty-proposals">
+                    <i class="ti ti-alert-circle"></i>
+                    <h4>Failed to Load Proposal</h4>
+                    <p>There was an error loading the proposal details.</p>
+                </div>
+            `;
+            }
+        } catch (error) {
+            console.error('Error loading proposal:', error);
+            content.innerHTML = `
+            <div class="empty-proposals">
+                <i class="ti ti-alert-circle"></i>
+                <h4>Failed to Load Proposal</h4>
+                <p>There was an error loading the proposal details.</p>
+            </div>
+        `;
+        }
+    }
+
+    function displayProposalDetails(proposal) {
+        const content = document.getElementById('proposalModalContent');
+        const footer = document.getElementById('proposalModalFooter');
+        const title = document.getElementById('proposalModalTitle');
+
+        // Update modal title
+        title.innerHTML = `
+        <i class="ti ti-file-text"></i>
+        ${proposal.company_name || 'Marketing Proposal'}
+    `;
+
+        // Format budget
+        const budget = proposal.budget ? `₹${parseFloat(proposal.budget).toLocaleString()}` : 'N/A';
+
+        // Parse strategy
+        const strategy = proposal.ai_generated_strategy || {};
+        const campaigns = strategy.campaigns || [];
+
+        // Parse differentiators
+        const differentiators = proposal.competitive_differentiators || {};
+        const diffList = differentiators.differentiators || [];
+
+        // Parse timeline
+        const timeline = proposal.suggested_timeline || {};
+        const phases = timeline.phases || [];
+
+        // Build content HTML
+        content.innerHTML = `
+        <!-- Meta Information -->
+        <div class="proposal-meta">
+            <div class="meta-item">
+                <span class="meta-label">Company</span>
+                <span class="meta-value">${proposal.company_name || 'N/A'}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Business Type</span>
+                <span class="meta-value">${proposal.business_type || 'N/A'}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Budget</span>
+                <span class="meta-value budget">${budget}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Status</span>
+                <span class="meta-value">${formatStatus(proposal.status)}</span>
+            </div>
+        </div>
+        
+        <!-- Target Audience -->
+        ${proposal.target_audience ? `
+            <div class="proposal-section">
+                <h3 class="section-title">
+                    <i class="ti ti-target"></i>
+                    Target Audience
+                </h3>
+                <div class="section-content">
+                    <p>${proposal.target_audience}</p>
+                </div>
+            </div>
+        ` : ''}
+        
+        <!-- Challenges -->
+        ${proposal.challenges ? `
+            <div class="proposal-section">
+                <h3 class="section-title">
+                    <i class="ti ti-alert-circle"></i>
+                    Current Challenges
+                </h3>
+                <div class="section-content">
+                    <p>${proposal.challenges}</p>
+                </div>
+            </div>
+        ` : ''}
+        
+        <!-- AI Strategy -->
+        ${campaigns.length > 0 ? `
+            <div class="proposal-section">
+                <h3 class="section-title">
+                    <i class="ti ti-brain"></i>
+                    AI-Powered Strategy
+                </h3>
+                <div class="strategy-campaigns">
+                    ${campaigns.map(campaign => `
+                        <div class="campaign-card">
+                            <h4>${campaign.type || 'Campaign'}</h4>
+                            <p>${campaign.description || ''}</p>
+                            ${campaign.platforms ? `<p><strong>Platforms:</strong> ${campaign.platforms.join(', ')}</p>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        ` : ''}
+        
+        <!-- Competitive Differentiators -->
+        ${diffList.length > 0 ? `
+            <div class="proposal-section">
+                <h3 class="section-title">
+                    <i class="ti ti-trophy"></i>
+                    Competitive Advantages
+                </h3>
+                <div class="differentiators-list">
+                    ${diffList.map(diff => `
+                        <div class="differentiator-item">
+                            <h4>${diff.title || 'Advantage'}</h4>
+                            <p>${diff.description || ''}</p>
+                            ${diff.impact ? `<div class="differentiator-impact"><i class="ti ti-trending-up"></i> ${diff.impact}</div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        ` : ''}
+        
+        <!-- Timeline -->
+        ${phases.length > 0 ? `
+            <div class="proposal-section">
+                <h3 class="section-title">
+                    <i class="ti ti-calendar"></i>
+                    Project Timeline
+                </h3>
+                <div class="timeline-phases">
+                    ${phases.map(phase => `
+                        <div class="phase-item">
+                            <div class="phase-header">
+                                <span class="phase-name">${phase.phase || 'Phase'}</span>
+                                <span class="phase-duration">${phase.duration || ''}</span>
+                            </div>
+                            ${phase.milestones ? `
+                                <div class="phase-milestones">
+                                    ${phase.milestones.map(milestone => `
+                                        <span class="milestone-badge">${milestone}</span>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        ` : ''}
+        
+        <!-- Created By -->
+        <div class="proposal-section">
+            <h3 class="section-title">
+                <i class="ti ti-user"></i>
+                Prepared By
+            </h3>
+            <div class="section-content">
+                <p><strong>${proposal.created_by_name || 'PanvelIQ Team'}</strong></p>
+                <p>${proposal.created_by_email || ''}</p>
+                <p>Sent on: ${proposal.sent_at ? new Date(proposal.sent_at).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }) : 'N/A'}</p>
+            </div>
+        </div>
+    `;
+
+        // Update footer with action buttons
+        if (proposal.status === 'sent') {
+            footer.innerHTML = `
+            <button class="btn btn-outline" onclick="closeProposalModal()">
+                Close
+            </button>
+            <button class="btn btn-outline" style="color: #EF4444; border-color: #EF4444;" onclick="rejectProposalFromModal(${proposal.proposal_id})">
+                <i class="ti ti-x"></i>
+                Decline Proposal
+            </button>
+            <button class="btn btn-success" onclick="acceptProposalFromModal(${proposal.proposal_id})">
+                <i class="ti ti-check"></i>
+                Accept Proposal
+            </button>
+        `;
+        } else {
+            footer.innerHTML = `
+            <button class="btn btn-primary" onclick="closeProposalModal()">
+                Close
+            </button>
+        `;
+        }
+    }
+
+    function formatStatus(status) {
+        const statusMap = {
+            'sent': 'Pending Review',
+            'accepted': 'Accepted ✓',
+            'rejected': 'Declined',
+            'draft': 'Draft'
+        };
+        return statusMap[status] || status;
+    }
+
+    function closeProposalModal() {
+        const modal = document.getElementById('proposalModal');
+        modal.classList.remove('active');
+    }
+
+    async function acceptProposalFromModal(proposalId) {
+        if (!confirm('Are you sure you want to accept this proposal? This will initiate the project.')) return;
+
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
+
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/client-pages/my-proposals/${proposalId}/respond`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'accept',
+                    comments: ''
+                })
+            });
+
+            if (response.ok) {
+                closeProposalModal();
+                showSuccessMessage('Proposal Accepted!', 'The team will be notified and will begin working on your project.');
+                setTimeout(() => {
+                    loadProposals(token); // Reload proposals
+                }, 1500);
+            } else {
+                alert('Failed to accept proposal. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        }
+    }
+
+    async function rejectProposalFromModal(proposalId) {
+        const comments = prompt('Please provide a reason for declining this proposal (optional):');
+        if (comments === null) return; // User cancelled
+
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
+
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/client-pages/my-proposals/${proposalId}/respond`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'reject',
+                    comments: comments
+                })
+            });
+
+            if (response.ok) {
+                closeProposalModal();
+                showSuccessMessage('Proposal Declined', 'The team has been notified of your decision.');
+                setTimeout(() => {
+                    loadProposals(token); // Reload proposals
+                }, 1500);
+            } else {
+                alert('Failed to decline proposal. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        }
+    }
+
+    function showSuccessMessage(title, message) {
+        // Simple success notification
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        z-index: 10000;
+        min-width: 300px;
+        border-left: 4px solid #10B981;
+    `;
+        notification.innerHTML = `
+        <h4 style="margin: 0 0 0.5rem 0; color: #10B981; font-size: 16px;">
+            <i class="ti ti-check" style="font-size: 20px;"></i> ${title}
+        </h4>
+        <p style="margin: 0; color: #666; font-size: 14px;">${message}</p>
+    `;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.transition = 'opacity 0.3s';
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function (e) {
+        const modal = document.getElementById('proposalModal');
+        if (e.target === modal) {
+            closeProposalModal();
+        }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeProposalModal();
+        }
+    });
+
+    async function acceptProposal(proposalId) {
+        if (!confirm('Are you sure you want to accept this proposal?')) return;
+
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
+
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/client-pages/my-proposals/${proposalId}/respond`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'accept',
+                    comments: ''
+                })
+            });
+
+            if (response.ok) {
+                alert('Proposal accepted successfully!');
+                loadProposals(token); // Reload proposals
+            } else {
+                alert('Failed to accept proposal');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred');
+        }
+    }
+
+    async function rejectProposal(proposalId) {
+        const comments = prompt('Please provide a reason for declining (optional):');
+        if (comments === null) return; // User cancelled
+
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
+
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/client-pages/my-proposals/${proposalId}/respond`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'reject',
+                    comments: comments
+                })
+            });
+
+            if (response.ok) {
+                alert('Proposal declined');
+                loadProposals(token); // Reload proposals
+            } else {
+                alert('Failed to decline proposal');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred');
+        }
+    }
+
+    async function loadPackageInfo(token) {
+        try {
+            // FIXED: Changed from /clients/my-package to /client-pages/my-package
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/client-pages/my-package`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Package data received:', data); // Debug log
+
+                if (data.has_package !== false && data.package) {
+                    // Update package display
+                    const pkg = data.package;
+
+                    document.getElementById('packageTier').textContent = pkg.package_tier || 'Basic';
+                    document.getElementById('packageName').textContent = pkg.package_name || '-';
+                    document.getElementById('packageExpiry').textContent = formatDate(pkg.end_date) || '-';
+                    document.getElementById('packagePrice').textContent = `₹${parseFloat(pkg.price || 0).toFixed(2)}`;
+                } else {
+                    // No package found
+                    document.getElementById('packageTier').textContent = 'No Package';
+                    document.getElementById('packageName').textContent = 'Not subscribed';
+                    document.getElementById('packageExpiry').textContent = '-';
+                    document.getElementById('packagePrice').textContent = '₹0';
+                }
+            } else {
+                console.error('Failed to load package:', response.status);
+            }
+        } catch (error) {
+            console.error('Error loading package:', error);
+        }
+    }
+
+
+    async function loadPerformanceStats(token) {
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/analytics/overview`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.stats) {
+                    document.getElementById('totalImpressions').textContent = formatNumber(data.stats.total_impressions || 0);
+                    document.getElementById('totalClicks').textContent = formatNumber(data.stats.total_clicks || 0);
+                    document.getElementById('totalEngagement').textContent = `${data.stats.engagement_rate || 0}%`;
+                    document.getElementById('activeCampaigns').textContent = data.stats.active_campaigns || 0;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    }
+
+    async function loadRecentCampaigns(token) {
+        try {
+            const response = await fetch(`${APP_CONFIG.apiBaseUrl}/campaigns/recent`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const campaignList = document.getElementById('campaignList');
+
+                if (data.campaigns && data.campaigns.length > 0) {
+                    campaignList.innerHTML = data.campaigns.map(campaign => `
                     <div class="campaign-item">
                         <div class="campaign-info">
                             <h4>${campaign.name}</h4>
@@ -635,23 +1906,23 @@ async function loadRecentCampaigns(token) {
                         </span>
                     </div>
                 `).join('');
+                }
             }
+        } catch (error) {
+            console.error('Error loading campaigns:', error);
         }
-    } catch (error) {
-        console.error('Error loading campaigns:', error);
     }
-}
 
-function formatNumber(num) {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num.toString();
-}
+    function formatNumber(num) {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toString();
+    }
 
-function formatDate(dateString) {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
+    function formatDate(dateString) {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
 </script>
 {% endblock %}

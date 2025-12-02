@@ -441,6 +441,91 @@
         color: #6c757d;
         cursor: pointer;
     }
+
+
+    /* Keyword Rankings Table */
+    .keywords-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .keywords-table thead {
+        background: linear-gradient(135deg, #9926F3, #1DD8FC);
+    }
+
+    .keywords-table th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: white;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .keywords-table tbody tr {
+        border-bottom: 1px solid #e9ecef;
+        transition: background-color 0.2s ease;
+    }
+
+    .keywords-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .keywords-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .keywords-table td {
+        padding: 1rem;
+        font-size: 0.9375rem;
+        color: #495057;
+    }
+
+    .position-badge {
+        display: inline-block;
+        padding: 0.375rem 0.75rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .position-badge.top-10 {
+        background: #28a745;
+        color: white;
+    }
+
+    .position-badge.top-50 {
+        background: #ffc107;
+        color: #000;
+    }
+
+    .position-badge.beyond {
+        background: #6c757d;
+        color: white;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: #dee2e6;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state p {
+        font-size: 1rem;
+        margin: 0;
+    }
 </style>
 {% endblock %}
 
@@ -728,6 +813,13 @@
         }
     }
 
+
+    // Auto-load keywords when project is selected
+    document.addEventListener('change', function (e) {
+        if (e.target.id === 'keyword-project') {
+            loadKeywordRankings();
+        }
+    });
     // Load Projects to Select Dropdown
     async function loadProjectsToSelect(selectId) {
         try {
@@ -750,6 +842,7 @@
             console.error('Error loading projects:', error);
         }
     }
+
 
     // Create Project Modal
     function openCreateProjectModal() {
@@ -986,6 +1079,7 @@
     }
 
     // Track Keyword
+
     async function trackKeyword() {
         const projectId = document.getElementById('keyword-project').value;
         const keyword = document.getElementById('keyword-input').value;
@@ -1013,15 +1107,20 @@
             });
 
             const data = await response.json();
+            console.log('Track keyword response:', data); // Debug log
 
             if (data.success) {
-                alert(`Keyword tracked! Current position: #${data.current_position}`);
+                alert(`Keyword tracked successfully!\n\nKeyword: ${data.keyword}\nPosition: #${data.current_position}\nSearch Volume: ${data.search_volume.toLocaleString()}`);
                 document.getElementById('keyword-input').value = '';
+
+                // Reload the rankings table
                 loadKeywordRankings();
+            } else {
+                alert('Failed to track keyword: ' + (data.detail || data.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error tracking keyword:', error);
-            alert('Failed to track keyword');
+            alert('Failed to track keyword: ' + error.message);
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="ti ti-chart-line"></i> Track Keyword';
@@ -1030,7 +1129,25 @@
 
     async function loadKeywordRankings() {
         const projectId = document.getElementById('keyword-project').value;
-        if (!projectId) return;
+        const container = document.getElementById('keyword-rankings');
+
+        if (!projectId) {
+            container.innerHTML = `
+            <div class="empty-state">
+                <i class="ti ti-chart-line"></i>
+                <p>Please select a project to view keyword rankings</p>
+            </div>
+        `;
+            return;
+        }
+
+        // Show loading state
+        container.innerHTML = `
+        <div class="empty-state">
+            <i class="ti ti-loader"></i>
+            <p>Loading keyword rankings...</p>
+        </div>
+    `;
 
         try {
             const response = await fetch(`${API_BASE}/keywords/history/${projectId}`, {
@@ -1040,9 +1157,9 @@
             });
 
             const data = await response.json();
-            const container = document.getElementById('keyword-rankings');
+            console.log('Keyword data:', data); // Debug log
 
-            if (data.success && data.keywords.length > 0) {
+            if (data.success && data.keywords && data.keywords.length > 0) {
                 container.innerHTML = `
                 <table class="keywords-table">
                     <thead>
@@ -1059,10 +1176,14 @@
                         kw.current_position <= 50 ? 'top-50' : 'beyond';
                     return `
                                 <tr>
-                                    <td>${kw.keyword}</td>
+                                    <td><strong>${kw.keyword}</strong></td>
                                     <td><span class="position-badge ${posClass}">#${kw.current_position}</span></td>
                                     <td>${kw.search_volume ? kw.search_volume.toLocaleString() : 'N/A'}</td>
-                                    <td>${new Date(kw.tracked_date).toLocaleDateString()}</td>
+                                    <td>${new Date(kw.tracked_date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    })}</td>
                                 </tr>
                             `;
                 }).join('')}
@@ -1073,12 +1194,24 @@
                 container.innerHTML = `
                 <div class="empty-state">
                     <i class="ti ti-chart-line"></i>
-                    <p>No keywords tracked yet</p>
+                    <p>No keywords tracked yet for this project</p>
+                    <small style="color: #6c757d; display: block; margin-top: 0.5rem;">
+                        Track a keyword above to see rankings here
+                    </small>
                 </div>
             `;
             }
         } catch (error) {
             console.error('Error loading keywords:', error);
+            container.innerHTML = `
+            <div class="empty-state">
+                <i class="ti ti-alert-circle" style="color: #dc3545;"></i>
+                <p style="color: #dc3545;">Failed to load keyword rankings</p>
+                <small style="color: #6c757d; display: block; margin-top: 0.5rem;">
+                    ${error.message}
+                </small>
+            </div>
+        `;
         }
     }
 

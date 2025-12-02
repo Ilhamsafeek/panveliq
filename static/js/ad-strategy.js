@@ -176,7 +176,7 @@ function displayDashboardStats(stats) {
         </div>
         <div class="stat-card">
             <div class="stat-icon"><i class="ti ti-currency-dollar"></i></div>
-            <div class="stat-value">$${Number(stats.total_budget || 0).toLocaleString()}</div>
+            <div class="stat-value">₹${Number(stats.total_budget || 0).toLocaleString()}</div>
             <div class="stat-label">Total Budget</div>
         </div>
     `;
@@ -207,7 +207,7 @@ function displayPlatformPerformance(platforms) {
                 </div>
                 <div>
                     <div style="font-size: 0.875rem; color: #64748b;">Spend</div>
-                    <div style="font-size: 1.25rem; font-weight: 600;">$${Number(platform.spend || 0).toLocaleString()}</div>
+                    <div style="font-size: 1.25rem; font-weight: 600;">₹${Number(platform.spend || 0).toLocaleString()}</div>
                 </div>
                 <div>
                     <div style="font-size: 0.875rem; color: #64748b;">Conversions</div>
@@ -242,7 +242,7 @@ function displayRecentCampaigns(campaigns) {
                 </div>
             </div>
             <div style="font-size: 0.875rem; color: #64748b;">
-                Budget: $${Number(campaign.budget).toLocaleString()}
+                Budget: ₹${Number(campaign.budget).toLocaleString()}
             </div>
         </div>
     `).join('');
@@ -299,7 +299,7 @@ async function loadCampaigns() {
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem;">
                     <div>
                         <div style="font-size: 0.875rem; color: #64748b;">Budget</div>
-                        <div style="font-size: 1.1rem; font-weight: 600;">$${Number(campaign.budget).toLocaleString()}</div>
+                        <div style="font-size: 1.1rem; font-weight: 600;">₹${Number(campaign.budget).toLocaleString()}</div>
                     </div>
                     <div>
                         <div style="font-size: 0.875rem; color: #64748b;">Total Ads</div>
@@ -510,7 +510,7 @@ function displayCampaignDetailsModal(campaign, ads, performance) {
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; background: #f8fafc; padding: 1.5rem; border-radius: 8px;">
                 <div>
                     <div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.25rem;">Budget</div>
-                    <div style="font-size: 1.25rem; font-weight: 600;">$${Number(campaign.budget).toLocaleString()}</div>
+                    <div style="font-size: 1.25rem; font-weight: 600;">₹${Number(campaign.budget).toLocaleString()}</div>
                 </div>
                 <div>
                     <div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.25rem;">Start Date</div>
@@ -556,7 +556,7 @@ function displayCampaignDetailsModal(campaign, ads, performance) {
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">CPC</div>
-                        <div class="stat-value">$${(performance.cpc || 0).toFixed(2)}</div>
+                        <div class="stat-value">₹${(performance.cpc || 0).toFixed(2)}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Conversions</div>
@@ -564,7 +564,7 @@ function displayCampaignDetailsModal(campaign, ads, performance) {
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Spent</div>
-                        <div class="stat-value">$${Number(performance.amount_spent || 0).toLocaleString()}</div>
+                        <div class="stat-value">₹${Number(performance.amount_spent || 0).toLocaleString()}</div>
                     </div>
                 </div>
             </div>
@@ -626,7 +626,7 @@ function displayCampaignDetailsModal(campaign, ads, performance) {
                                     </div>
                                     <div>
                                         <div style="font-size: 0.75rem; color: #64748b;">CPC</div>
-                                        <div style="font-size: 0.875rem; font-weight: 600;">$${(ad.avg_cpc || 0).toFixed(2)}</div>
+                                        <div style="font-size: 0.875rem; font-weight: 600;">₹${(ad.avg_cpc || 0).toFixed(2)}</div>
                                     </div>
                                 </div>
                             ` : ''}
@@ -1163,7 +1163,7 @@ function displayPlatformRecommendations(recommendations) {
                     </div>
                     <div>
                         <div style="font-size: 0.875rem; color: #64748b;">Expected CPC</div>
-                        <div style="font-weight: 500;">$${rec.expected_cpc}</div>
+                        <div style="font-weight: 500;">₹${rec.expected_cpc}</div>
                     </div>
                     <div>
                         <div style="font-size: 0.875rem; color: #64748b;">Placement</div>
@@ -1390,7 +1390,7 @@ function displayForecastResults(forecast) {
             </div>
             <div class="forecast-metric">
                 <div class="forecast-metric-label">CPC</div>
-                <div class="forecast-metric-value">$${metrics.cpc}</div>
+                <div class="forecast-metric-value">₹${metrics.cpc}</div>
             </div>
             <div class="forecast-metric">
                 <div class="forecast-metric-label">Est. ROAS</div>

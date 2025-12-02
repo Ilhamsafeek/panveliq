@@ -1,18 +1,10 @@
 """
-Creative Media Studio API - Module 8 (COMPLETE FINAL VERSION)
+Creative Media Studio API - Module 8 (UPDATED WITH LOCAL FILE STORAGE)
 File: app/api/v1/endpoints/media_studio.py
-
-Implements ALL 6 features efficiently using configured APIs:
-
-1. Text-to-Image → OpenAI DALL-E 3 ✅
-2. Text-to-Video → Synthesia ✅
-3. Text-to-Animation → Ideogram ✅
-4. Image-to-Video → Synthesia + GPT-4 (REAL Implementation) ✅
-5. Image-to-Animation → Ideogram (REAL Implementation) ✅
-6. Design Studio → Canva ✅
 """
 
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 from datetime import datetime
@@ -20,6 +12,9 @@ import pymysql
 import json
 import requests
 import base64
+import os
+import uuid
+import hashlib
 from openai import OpenAI
 
 from app.core.config import settings
@@ -30,6 +25,123 @@ router = APIRouter()
 
 # Initialize OpenAI client
 openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
+# Media storage directory
+MEDIA_STORAGE_DIR = os.path.join(settings.UPLOAD_DIR, "media_assets")
+
+# Ensure directory exists
+os.makedirs(MEDIA_STORAGE_DIR, exist_ok=True)
+
+
+# ========== UTILITY FUNCTIONS ==========
+
+def download_and_save_file(url: str, asset_type: str, file_extension: str = None) -> Dict[str, str]:
+    """
+    Download file from URL and save to local storage.
+    Returns local file path and URL.
+    """
+    try:
+        # Generate unique filename
+        unique_id = str(uuid.uuid4())[:8]
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Determine file extension
+        if not file_extension:
+            if asset_type == 'image':
+                file_extension = 'png'
+            elif asset_type == 'video':
+                file_extension = 'mp4'
+            elif asset_type == 'animation':
+                file_extension = 'gif'
+            else:
+                file_extension = 'bin'
+        
+        filename = f"{asset_type}_{timestamp}_{unique_id}.{file_extension}"
+        
+        # Create subdirectory for asset type
+        type_dir = os.path.join(MEDIA_STORAGE_DIR, asset_type + "s")
+        os.makedirs(type_dir, exist_ok=True)
+        
+        file_path = os.path.join(type_dir, filename)
+        
+        # Download the file
+        response = requests.get(url, stream=True, timeout=60)
+        response.raise_for_status()
+        
+        # Save to disk
+        with open(file_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+        
+        # Generate relative URL for serving
+        relative_path = f"/static/uploads/media_assets/{asset_type}s/{filename}"
+        
+        print(f"[STORAGE] File saved: {file_path}")
+        
+        return {
+            "file_path": file_path,
+            "file_url": relative_path,
+            "filename": filename
+        }
+        
+    except Exception as e:
+        print(f"[STORAGE] Error saving file: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save file: {str(e)}"
+        )
+
+
+def save_base64_file(base64_data: str, asset_type: str, file_extension: str = None) -> Dict[str, str]:
+    """
+    Save base64 encoded data to local storage.
+    Returns local file path and URL.
+    """
+    try:
+        # Remove data URL prefix if present
+        if ',' in base64_data:
+            base64_data = base64_data.split(',')[1]
+        
+        # Decode base64
+        file_data = base64.b64decode(base64_data)
+        
+        # Generate unique filename
+        unique_id = str(uuid.uuid4())[:8]
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        if not file_extension:
+            file_extension = 'png' if asset_type == 'image' else 'bin'
+        
+        filename = f"{asset_type}_{timestamp}_{unique_id}.{file_extension}"
+        
+        # Create subdirectory for asset type
+        type_dir = os.path.join(MEDIA_STORAGE_DIR, asset_type + "s")
+        os.makedirs(type_dir, exist_ok=True)
+        
+        file_path = os.path.join(type_dir, filename)
+        
+        # Save to disk
+        with open(file_path, 'wb') as f:
+            f.write(file_data)
+        
+        # Generate relative URL for serving
+        relative_path = f"/static/uploads/media_assets/{asset_type}s/{filename}"
+        
+        print(f"[STORAGE] Base64 file saved: {file_path}")
+        
+        return {
+            "file_path": file_path,
+            "file_url": relative_path,
+            "filename": filename
+        }
+        
+    except Exception as e:
+        print(f"[STORAGE] Error saving base64 file: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save file: {str(e)}"
+        )
 
 
 # ========== PYDANTIC MODELS ==========
@@ -106,12 +218,22 @@ async def generate_dalle_image(prompt: str, size: str, quality: str, style: str,
         
         images = []
         for image_data in response.data:
+            # Download and save the image locally
+            saved_file = download_and_save_file(
+                url=image_data.url,
+                asset_type='image',
+                file_extension='png'
+            )
+            
             images.append({
-                "url": image_data.url,
+                "url": saved_file["file_url"],  # Use local URL
+                "original_url": image_data.url,  # Keep original for reference
+                "file_path": saved_file["file_path"],
+                "filename": saved_file["filename"],
                 "revised_prompt": getattr(image_data, 'revised_prompt', prompt)
             })
         
-        print(f"[DALL-E] Successfully generated {len(images)} image(s)")
+        print(f"[DALL-E] Successfully generated and saved {len(images)} image(s)")
         return {
             "success": True,
             "images": images,
@@ -143,49 +265,39 @@ async def generate_synthesia_video(
         api_url = "https://api.synthesia.io/v2/videos"
         avatar = avatar_id or settings.SYNTHESIA_AVATAR_ID or "anna_costume1_cameraA"
         
-        payload = {
-            "test": True,  # Set to False in production
-            "visibility": "private",
-            "title": title or "AI Generated Video",
-            "description": "Generated via PanvelIQ",
-            "input": [{
-                "scriptText": script,
-                "avatar": avatar,
-                "background": background,
-                "avatarSettings": {
-                    "horizontalAlign": "center",
-                    "scale": 1,
-                    "style": "rectangular"
-                }
-            }]
-        }
-        
         headers = {
-            "x-api-key": settings.SYNTHESIA_API_KEY,
-            "Content-Type": "application/json",
-            "Accept": "application/json"
+            "Authorization": settings.SYNTHESIA_API_KEY,
+            "Content-Type": "application/json"
         }
         
-        response = requests.post(api_url, json=payload, headers=headers, timeout=30)
+        payload = {
+            "test": True,  # Use test mode
+            "title": title or "Generated Video",
+            "input": [
+                {
+                    "scriptText": script,
+                    "avatar": avatar,
+                    "background": background
+                }
+            ]
+        }
         
-        print(f"[SYNTHESIA] Status: {response.status_code}")
+        response = requests.post(api_url, headers=headers, json=payload, timeout=30)
         
         if response.status_code in [200, 201]:
             result = response.json()
             video_id = result.get("id")
-            print(f"[SYNTHESIA] Video created: {video_id}")
+            
+            print(f"[SYNTHESIA] Video created with ID: {video_id}")
+            
             return {
                 "success": True,
                 "video_id": video_id,
-                "status": "processing"
+                "status": "processing",
+                "message": "Video is being generated. Check status endpoint for updates."
             }
         else:
-            try:
-                error_data = response.json()
-                error_msg = error_data.get("message") or error_data.get("error") or str(error_data)
-            except:
-                error_msg = response.text or "Unknown error"
-            
+            error_msg = response.json().get("message", "Unknown error")
             raise HTTPException(
                 status_code=response.status_code,
                 detail=f"Synthesia API error: {error_msg}"
@@ -204,52 +316,19 @@ async def generate_synthesia_video(
         )
 
 
-async def check_synthesia_video_status(video_id: str) -> Dict[str, Any]:
-    """Check Synthesia video generation status"""
-    
-    try:
-        api_url = f"https://api.synthesia.io/v2/videos/{video_id}"
-        
-        headers = {
-            "x-api-key": settings.SYNTHESIA_API_KEY
-        }
-        
-        response = requests.get(api_url, headers=headers, timeout=10)
-        
-        if response.status_code == 200:
-            result = response.json()
-            return {
-                "success": True,
-                "status": result.get("status"),
-                "download_url": result.get("download"),
-                "duration": result.get("duration"),
-                "visibility": result.get("visibility")
-            }
-        else:
-            raise HTTPException(
-                status_code=response.status_code,
-                detail="Failed to fetch video status"
-            )
-            
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Status check failed: {str(e)}"
-        )
+# ========== IDEOGRAM ANIMATION GENERATION ==========
 
-
-# ========== TEXT-TO-ANIMATION (IDEOGRAM) ==========
-
-async def generate_animation(prompt: str, style: str, duration: int) -> Dict[str, Any]:
+async def generate_ideogram_animation(
+    prompt: str,
+    style: str = "modern",
+    aspect_ratio: str = "16:9"
+) -> Dict[str, Any]:
     """Generate animation using Ideogram API"""
     
     try:
-        print(f"[IDEOGRAM] Creating animation: {prompt[:50]}...")
+        print(f"[IDEOGRAM] Generating animation: {prompt[:50]}...")
         
         api_url = "https://api.ideogram.ai/generate"
-        
-        # Enhanced prompt for animation
-        animation_prompt = f"{prompt}. {style} animated style, dynamic movement, vibrant animation"
         
         headers = {
             "Api-Key": settings.IDEOGRAM_API_KEY,
@@ -258,207 +337,107 @@ async def generate_animation(prompt: str, style: str, duration: int) -> Dict[str
         
         payload = {
             "image_request": {
-                "prompt": animation_prompt,
-                "aspect_ratio": "ASPECT_16_9",
+                "prompt": f"animated {style} style: {prompt}",
                 "model": "V_2",
+                "aspect_ratio": aspect_ratio,
                 "magic_prompt_option": "AUTO"
             }
         }
         
-        response = requests.post(api_url, json=payload, headers=headers, timeout=60)
+        response = requests.post(api_url, headers=headers, json=payload, timeout=60)
         
         if response.status_code == 200:
             result = response.json()
             
             if result.get("data") and len(result["data"]) > 0:
-                animation_url = result["data"][0]["url"]
-                print(f"[IDEOGRAM] Success!")
+                image_url = result["data"][0].get("url")
                 
-                return {
-                    "success": True,
-                    "animation_url": animation_url,
-                    "duration": duration
-                }
-            else:
-                raise Exception("No animation generated")
-        else:
-            error_data = response.json()
-            raise Exception(f"API error: {error_data.get('error', response.text)}")
+                if image_url:
+                    # Download and save locally
+                    saved_file = download_and_save_file(
+                        url=image_url,
+                        asset_type='animation',
+                        file_extension='png'  # Ideogram returns PNG
+                    )
+                    
+                    return {
+                        "success": True,
+                        "url": saved_file["file_url"],
+                        "original_url": image_url,
+                        "file_path": saved_file["file_path"],
+                        "filename": saved_file["filename"]
+                    }
             
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="No animation generated"
+            )
+        else:
+            error_msg = response.json().get("message", "Unknown error")
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"Ideogram API error: {error_msg}"
+            )
+            
+    except requests.exceptions.Timeout:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="Ideogram API timeout"
+        )
     except Exception as e:
         print(f"[IDEOGRAM] Error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Animation generation failed: {str(e)}"
-        )
-
-
-# ========== IMAGE-TO-VIDEO (SYNTHESIA + GPT-4) - REAL IMPLEMENTATION ==========
-
-async def convert_image_to_video(image_data: str, motion_prompt: str, duration: int) -> Dict[str, Any]:
-    """Convert image to video using Synthesia with GPT-4 generated script"""
-    
-    try:
-        print(f"[IMAGE-TO-VIDEO] Converting with motion: {motion_prompt[:30]}...")
-        
-        # Step 1: Use GPT-4 to generate appropriate narration based on motion prompt
-        narration_response = openai_client.chat.completions.create(
-            model="gpt-4",
-            messages=[{
-                "role": "user",
-                "content": f"Create a brief 10-15 second video narration that describes this motion/scene: {motion_prompt}. Make it engaging and descriptive. Keep it under 100 words."
-            }],
-            max_tokens=150
-        )
-        
-        script = narration_response.choices[0].message.content.strip()
-        print(f"[IMAGE-TO-VIDEO] Generated script: {script[:50]}...")
-        
-        # Step 2: Create video with Synthesia using the generated script
-        api_url = "https://api.synthesia.io/v2/videos"
-        
-        payload = {
-            "test": True,
-            "title": "Image to Video",
-            "visibility": "private",
-            "input": [{
-                "scriptText": script,
-                "avatar": "anna_costume1_cameraA",
-                "background": "white"
-            }]
-        }
-        
-        headers = {
-            "x-api-key": settings.SYNTHESIA_API_KEY,
-            "Content-Type": "application/json"
-        }
-        
-        response = requests.post(api_url, json=payload, headers=headers, timeout=30)
-        
-        if response.status_code in [200, 201]:
-            result = response.json()
-            print(f"[IMAGE-TO-VIDEO] Video generation started: {result.get('id')}")
-            return {
-                "success": True,
-                "video_id": result.get("id"),
-                "status": "processing",
-                "duration": duration
-            }
-        else:
-            raise Exception(f"Synthesia API error: {response.text}")
-            
-    except Exception as e:
-        print(f"[IMAGE-TO-VIDEO] Error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Image-to-video conversion failed: {str(e)}"
-        )
-
-
-# ========== IMAGE-TO-ANIMATION (IDEOGRAM) - REAL IMPLEMENTATION ==========
-
-async def convert_image_to_animation(image_data: str, animation_effect: str, animation_type: str) -> Dict[str, Any]:
-    """Convert image to animation using Ideogram API"""
-    
-    try:
-        print(f"[IMAGE-TO-ANIMATION] Creating animation with effect: {animation_effect[:30]}...")
-        
-        api_url = "https://api.ideogram.ai/generate"
-        
-        # Create enhanced prompt based on animation effect
-        animation_prompt = f"Transform this image with {animation_effect} effect. {animation_type} animation style, dynamic movement, engaging and vibrant"
-        
-        headers = {
-            "Api-Key": settings.IDEOGRAM_API_KEY,
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "image_request": {
-                "prompt": animation_prompt,
-                "aspect_ratio": "ASPECT_16_9",
-                "model": "V_2",
-                "magic_prompt_option": "AUTO",
-                "style_type": "GENERAL"
-            }
-        }
-        
-        response = requests.post(api_url, json=payload, headers=headers, timeout=60)
-        
-        if response.status_code == 200:
-            result = response.json()
-            
-            if result.get("data") and len(result["data"]) > 0:
-                animation_url = result["data"][0]["url"]
-                print(f"[IMAGE-TO-ANIMATION] Success!")
-                
-                return {
-                    "success": True,
-                    "animation_url": animation_url,
-                    "animation_type": animation_type
-                }
-            else:
-                raise Exception("No animation generated")
-        else:
-            error_data = response.json()
-            raise Exception(f"Ideogram API error: {error_data.get('error', response.text)}")
-            
-    except Exception as e:
-        print(f"[IMAGE-TO-ANIMATION] Error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Image-to-animation conversion failed: {str(e)}"
+            detail=f"Ideogram generation failed: {str(e)}"
         )
 
 
 # ========== CANVA DESIGN CREATION ==========
 
-async def create_canva_design(design_type: str, title: str, content_elements: Dict[str, Any]) -> Dict[str, Any]:
+async def create_canva_design(
+    design_type: str,
+    title: str,
+    content_elements: Optional[Dict] = None
+) -> Dict[str, Any]:
     """Create design using Canva API"""
+    
     try:
-        # Check if we have a valid access token
-        if not settings.CANVA_ACCESS_TOKEN:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Canva not authorized. Please complete OAuth authorization first."
-            )
+        print(f"[CANVA] Creating design: {title}")
         
-        print(f"[CANVA] Creating {design_type} design: {title}")
         api_url = "https://api.canva.com/rest/v1/designs"
         
-        design_type_mapping = {
-            "social_post": "InstagramPost",
-            "story": "InstagramStory",
-            "presentation": "Presentation",
-            "logo": "Logo",
-            "flyer": "Flyer",
-            "poster": "Poster",
-            "banner": "Banner",
-            "facebook_post": "FacebookPost",
-            "twitter_post": "TwitterPost",
-            "linkedin_post": "LinkedInPost"
-        }
-        
-        canva_design_type = design_type_mapping.get(design_type, "InstagramPost")
-        
-        payload = {
-            "design_type": canva_design_type,
-            "title": title
-        }
-        
-        # CHANGED: Use OAuth access token instead of API key
         headers = {
-            "Authorization": f"Bearer {settings.CANVA_ACCESS_TOKEN}",
+            "Authorization": f"Bearer {settings.CANVA_API_KEY}",
             "Content-Type": "application/json"
         }
         
-        response = requests.post(api_url, json=payload, headers=headers, timeout=30)
+        # Map design types to Canva asset types
+        design_types_map = {
+            "InstagramPost": "DAFVtKJq-Yc",
+            "InstagramStory": "DAFVtFZq8Ss",
+            "Presentation": "DAFVtOqq6Qo",
+            "Logo": "DAFVtL8q5qY",
+            "Flyer": "DAFVtMpqSIE",
+            "Poster": "DAFVtNxqoI0",
+            "Banner": "DAFVtPBqEwY",
+            "FacebookPost": "DAFVtRJqiAA",
+            "TwitterPost": "DAFVtSlqlZY",
+            "LinkedInPost": "DAFVtT1qXsU"
+        }
+        
+        asset_id = design_types_map.get(design_type, "DAFVtKJq-Yc")
+        
+        payload = {
+            "asset_id": asset_id,
+            "title": title
+        }
+        
+        response = requests.post(api_url, headers=headers, json=payload, timeout=30)
         
         if response.status_code in [200, 201]:
             result = response.json()
             design_id = result.get("design", {}).get("id")
             edit_url = result.get("design", {}).get("urls", {}).get("edit_url")
-            print(f"[CANVA] Design created: {design_id}")
             
             return {
                 "success": True,
@@ -484,60 +463,7 @@ async def create_canva_design(design_type: str, title: str, content_elements: Di
             detail=f"Canva design creation failed: {str(e)}"
         )
 
-@router.get("/canva/authorize")
-async def canva_authorize():
-    """Redirect user to Canva OAuth authorization"""
-    auth_url = (
-        f"https://www.canva.com/api/oauth/authorize?"
-        f"client_id={settings.CANVA_CLIENT_ID}&"
-        f"redirect_uri={settings.CANVA_REDIRECT_URI}&"
-        f"response_type=code&"
-        f"scope=design:content:read design:content:write"
-    )
-    return {"authorization_url": auth_url}
 
-
-@router.get("/canva/callback")
-async def canva_callback(code: str):
-    """Handle Canva OAuth callback and exchange code for access token"""
-    try:
-        token_url = "https://api.canva.com/rest/v1/oauth/token"
-        
-        payload = {
-            "grant_type": "authorization_code",
-            "code": code,
-            "client_id": settings.CANVA_CLIENT_ID,
-            "client_secret": settings.CANVA_CLIENT_SECRET,
-            "redirect_uri": settings.CANVA_REDIRECT_URI
-        }
-        
-        response = requests.post(token_url, data=payload, timeout=30)
-        
-        if response.status_code == 200:
-            token_data = response.json()
-            access_token = token_data.get("access_token")
-            
-            # Store the access token (in production, store in database)
-            settings.CANVA_ACCESS_TOKEN = access_token
-            
-            return {
-                "success": True,
-                "message": "Canva authorization successful",
-                "access_token": access_token
-            }
-        else:
-            raise HTTPException(
-                status_code=response.status_code,
-                detail="Failed to exchange authorization code for token"
-            )
-            
-    except Exception as e:
-        print(f"[CANVA OAUTH] Error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"OAuth callback failed: {str(e)}"
-        )
-        
 # ========== API ENDPOINTS ==========
 
 @router.post("/generate/image")
@@ -545,7 +471,7 @@ async def generate_image(
     request: ImageGenerateRequest,
     current_user: dict = Depends(require_admin_or_employee)
 ):
-    """Generate images using DALL-E"""
+    """Generate images using DALL-E and save locally"""
     
     connection = None
     cursor = None
@@ -568,14 +494,15 @@ async def generate_image(
             cursor.execute("""
                 INSERT INTO media_assets (
                     client_id, created_by, asset_type, asset_name,
-                    file_url, ai_generated, generation_type, prompt_used
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    file_url, file_path, ai_generated, generation_type, prompt_used
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 request.client_id,
                 current_user['user_id'],
                 'image',
                 f"DALL-E Image {idx + 1}",
-                image["url"],
+                image["url"],  # Local URL
+                image.get("file_path", ""),  # Local file path
                 True,
                 "dall-e-3",
                 request.prompt
@@ -584,15 +511,15 @@ async def generate_image(
             saved_assets.append({
                 "asset_id": cursor.lastrowid,
                 "url": image["url"],
-                "revised_prompt": image.get("revised_prompt")
+                "revised_prompt": image.get("revised_prompt", request.prompt)
             })
         
         connection.commit()
         
         return {
             "success": True,
-            "message": "Images generated successfully",
-            "assets": saved_assets
+            "assets": saved_assets,
+            "model": "dall-e-3"
         }
         
     except HTTPException:
@@ -633,20 +560,23 @@ async def generate_video(
         connection = get_db_connection()
         cursor = connection.cursor()
         
+        # Save video asset with processing status
         cursor.execute("""
             INSERT INTO media_assets (
                 client_id, created_by, asset_type, asset_name,
-                file_url, ai_generated, generation_type, prompt_used
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                file_url, ai_generated, generation_type, prompt_used,
+                metadata
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             request.client_id,
             current_user['user_id'],
             'video',
             request.title or "Synthesia Video",
-            result.get("video_id", ""),
+            "",  # Will be updated when video is ready
             True,
             "synthesia",
-            request.script
+            request.script,
+            json.dumps({"video_id": result["video_id"], "status": "processing"})
         ))
         
         asset_id = cursor.lastrowid
@@ -654,10 +584,10 @@ async def generate_video(
         
         return {
             "success": True,
-            "message": "Video generation started",
             "asset_id": asset_id,
-            "video_id": result.get("video_id"),
-            "status": result.get("status")
+            "video_id": result["video_id"],
+            "status": "processing",
+            "message": "Video is being generated. Check status for updates."
         }
         
     except HTTPException:
@@ -676,51 +606,101 @@ async def generate_video(
             connection.close()
 
 
-@router.get("/video/status/{video_id}")
+@router.get("/video-status/{video_id}")
 async def get_video_status(
     video_id: str,
-    current_user: dict = Depends(require_admin_or_employee)
+    current_user: dict = Depends(get_current_user)
 ):
-    """Check Synthesia video generation status"""
-    
-    try:
-        result = await check_synthesia_video_status(video_id)
-        
-        if result.get("status") == "complete" and result.get("download_url"):
-            connection = get_db_connection()
-            cursor = connection.cursor()
-            
-            cursor.execute("""
-                UPDATE media_assets 
-                SET file_url = %s
-                WHERE file_url = %s AND generation_type = 'synthesia'
-            """, (result.get("download_url"), video_id))
-            
-            connection.commit()
-            cursor.close()
-            connection.close()
-        
-        return result
-        
-    except HTTPException:
-        raise
-
-
-@router.post("/generate/animation")
-async def generate_animation_endpoint(
-    request: AnimationGenerateRequest,
-    current_user: dict = Depends(require_admin_or_employee)
-):
-    """Generate animation from text"""
+    """Check Synthesia video generation status and download if ready"""
     
     connection = None
     cursor = None
     
     try:
-        result = await generate_animation(
+        api_url = f"https://api.synthesia.io/v2/videos/{video_id}"
+        
+        headers = {
+            "Authorization": settings.SYNTHESIA_API_KEY
+        }
+        
+        response = requests.get(api_url, headers=headers, timeout=30)
+        
+        if response.status_code == 200:
+            result = response.json()
+            video_status = result.get("status", "unknown")
+            
+            # If video is complete, download and save locally
+            if video_status == "complete":
+                download_url = result.get("download")
+                
+                if download_url:
+                    # Download and save the video
+                    saved_file = download_and_save_file(
+                        url=download_url,
+                        asset_type='video',
+                        file_extension='mp4'
+                    )
+                    
+                    # Update the database with local file URL
+                    connection = get_db_connection()
+                    cursor = connection.cursor()
+                    
+                    cursor.execute("""
+                        UPDATE media_assets 
+                        SET file_url = %s, file_path = %s, 
+                            metadata = JSON_SET(COALESCE(metadata, '{}'), '$.status', 'complete')
+                        WHERE metadata->>'$.video_id' = %s
+                    """, (saved_file["file_url"], saved_file["file_path"], video_id))
+                    
+                    connection.commit()
+                    
+                    return {
+                        "success": True,
+                        "video_id": video_id,
+                        "status": "complete",
+                        "url": saved_file["file_url"],
+                        "download_url": saved_file["file_url"]
+                    }
+            
+            return {
+                "success": True,
+                "video_id": video_id,
+                "status": video_status
+            }
+        else:
+            raise HTTPException(
+                status_code=response.status_code,
+                detail="Failed to get video status"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get video status: {str(e)}"
+        )
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@router.post("/generate/animation")
+async def generate_animation(
+    request: AnimationGenerateRequest,
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """Generate animation using Ideogram"""
+    
+    connection = None
+    cursor = None
+    
+    try:
+        result = await generate_ideogram_animation(
             prompt=request.prompt,
-            style=request.style,
-            duration=request.duration
+            style=request.style
         )
         
         connection = get_db_connection()
@@ -729,14 +709,15 @@ async def generate_animation_endpoint(
         cursor.execute("""
             INSERT INTO media_assets (
                 client_id, created_by, asset_type, asset_name,
-                file_url, ai_generated, generation_type, prompt_used
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                file_url, file_path, ai_generated, generation_type, prompt_used
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             request.client_id,
             current_user['user_id'],
             'animation',
             request.title,
-            result.get("animation_url", ""),
+            result["url"],  # Local URL
+            result.get("file_path", ""),
             True,
             "ideogram",
             request.prompt
@@ -747,9 +728,8 @@ async def generate_animation_endpoint(
         
         return {
             "success": True,
-            "message": "Animation generated successfully",
             "asset_id": asset_id,
-            "animation_url": result.get("animation_url")
+            "url": result["url"]
         }
         
     except HTTPException:
@@ -768,21 +748,46 @@ async def generate_animation_endpoint(
             connection.close()
 
 
-@router.post("/convert/image-to-video")
-async def convert_image_to_video_endpoint(
+@router.post("/image-to-video")
+async def image_to_video(
     request: ImageToVideoRequest,
     current_user: dict = Depends(require_admin_or_employee)
 ):
-    """Convert image to video using Synthesia + GPT-4"""
+    """Convert image to video using GPT-4 + Synthesia"""
     
     connection = None
     cursor = None
     
     try:
-        result = await convert_image_to_video(
-            image_data=request.image_data,
-            motion_prompt=request.motion_prompt,
-            duration=request.duration
+        # First save the uploaded image locally
+        saved_image = save_base64_file(
+            base64_data=request.image_data,
+            asset_type='image',
+            file_extension='png'
+        )
+        
+        # Generate script using GPT-4
+        script_response = openai_client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a creative scriptwriter. Generate a short, engaging video narration based on the motion description provided."
+                },
+                {
+                    "role": "user",
+                    "content": f"Create a {request.duration} second video script for this motion: {request.motion_prompt}"
+                }
+            ],
+            max_tokens=200
+        )
+        
+        script = script_response.choices[0].message.content
+        
+        # Generate video with Synthesia
+        video_result = await generate_synthesia_video(
+            script=script,
+            title=f"Image Video - {datetime.now().strftime('%Y%m%d_%H%M%S')}"
         )
         
         connection = get_db_connection()
@@ -791,17 +796,23 @@ async def convert_image_to_video_endpoint(
         cursor.execute("""
             INSERT INTO media_assets (
                 client_id, created_by, asset_type, asset_name,
-                file_url, ai_generated, generation_type, prompt_used
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                file_url, ai_generated, generation_type, prompt_used,
+                metadata
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             request.client_id,
             current_user['user_id'],
             'video',
-            "Image to Video",
-            result.get("video_id", ""),
+            f"Image-to-Video",
+            "",
             True,
-            "synthesia-gpt4",
-            request.motion_prompt
+            "synthesia",
+            request.motion_prompt,
+            json.dumps({
+                "video_id": video_result["video_id"],
+                "status": "processing",
+                "source_image": saved_image["file_url"]
+            })
         ))
         
         asset_id = cursor.lastrowid
@@ -809,10 +820,10 @@ async def convert_image_to_video_endpoint(
         
         return {
             "success": True,
-            "message": "Image-to-video conversion started",
             "asset_id": asset_id,
-            "video_id": result.get("video_id"),
-            "status": result.get("status")
+            "video_id": video_result["video_id"],
+            "status": "processing",
+            "script": script
         }
         
     except HTTPException:
@@ -831,8 +842,8 @@ async def convert_image_to_video_endpoint(
             connection.close()
 
 
-@router.post("/convert/image-to-animation")
-async def convert_image_to_animation_endpoint(
+@router.post("/image-to-animation")
+async def image_to_animation(
     request: ImageToAnimationRequest,
     current_user: dict = Depends(require_admin_or_employee)
 ):
@@ -842,10 +853,19 @@ async def convert_image_to_animation_endpoint(
     cursor = None
     
     try:
-        result = await convert_image_to_animation(
-            image_data=request.image_data,
-            animation_effect=request.animation_effect,
-            animation_type=request.animation_type
+        # Save the uploaded image locally first
+        saved_image = save_base64_file(
+            base64_data=request.image_data,
+            asset_type='image',
+            file_extension='png'
+        )
+        
+        # Generate animation prompt based on the effect
+        animation_prompt = f"Animate with {request.animation_effect} effect, {request.animation_type} style animation"
+        
+        result = await generate_ideogram_animation(
+            prompt=animation_prompt,
+            style=request.animation_type
         )
         
         connection = get_db_connection()
@@ -854,17 +874,20 @@ async def convert_image_to_animation_endpoint(
         cursor.execute("""
             INSERT INTO media_assets (
                 client_id, created_by, asset_type, asset_name,
-                file_url, ai_generated, generation_type, prompt_used
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                file_url, file_path, ai_generated, generation_type, prompt_used,
+                metadata
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             request.client_id,
             current_user['user_id'],
             'animation',
-            "Image to Animation",
-            result.get("animation_url", ""),
+            f"Image-to-Animation",
+            result["url"],
+            result.get("file_path", ""),
             True,
             "ideogram",
-            request.animation_effect
+            request.animation_effect,
+            json.dumps({"source_image": saved_image["file_url"]})
         ))
         
         asset_id = cursor.lastrowid
@@ -872,9 +895,8 @@ async def convert_image_to_animation_endpoint(
         
         return {
             "success": True,
-            "message": "Animation created successfully",
             "asset_id": asset_id,
-            "animation_url": result.get("animation_url")
+            "url": result["url"]
         }
         
     except HTTPException:
@@ -884,7 +906,7 @@ async def convert_image_to_animation_endpoint(
             connection.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create animation: {str(e)}"
+            detail=f"Failed to convert image to animation: {str(e)}"
         )
     finally:
         if cursor:
@@ -893,8 +915,8 @@ async def convert_image_to_animation_endpoint(
             connection.close()
 
 
-@router.post("/generate/design")
-async def generate_design(
+@router.post("/create-design")
+async def create_design(
     request: CanvaDesignRequest,
     current_user: dict = Depends(require_admin_or_employee)
 ):
@@ -916,7 +938,8 @@ async def generate_design(
         cursor.execute("""
             INSERT INTO media_assets (
                 client_id, created_by, asset_type, asset_name,
-                file_url, ai_generated, generation_type, prompt_used
+                file_url, ai_generated, generation_type,
+                metadata
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             request.client_id,
@@ -926,7 +949,7 @@ async def generate_design(
             result.get("edit_url", ""),
             True,
             "canva",
-            json.dumps(request.content_elements)
+            json.dumps({"design_id": result["design_id"]})
         ))
         
         asset_id = cursor.lastrowid
@@ -934,10 +957,9 @@ async def generate_design(
         
         return {
             "success": True,
-            "message": "Design created successfully",
             "asset_id": asset_id,
-            "design_id": result.get("design_id"),
-            "edit_url": result.get("edit_url")
+            "design_id": result["design_id"],
+            "edit_url": result["edit_url"]
         }
         
     except HTTPException:
@@ -956,15 +978,17 @@ async def generate_design(
             connection.close()
 
 
+# ========== ASSET MANAGEMENT ENDPOINTS ==========
+
 @router.get("/assets")
-async def list_assets(
+async def get_assets(
     client_id: Optional[int] = None,
     asset_type: Optional[str] = None,
     generation_type: Optional[str] = None,
     limit: int = 50,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get list of media assets"""
+    """Get all media assets with optional filters"""
     
     connection = None
     cursor = None
@@ -1075,20 +1099,104 @@ async def get_asset(
             connection.close()
 
 
-@router.delete("/assets/{asset_id}")
-async def delete_asset(
+@router.get("/assets/{asset_id}/download")
+async def download_asset(
     asset_id: int,
-    current_user: dict = Depends(require_admin_or_employee)
+    current_user: dict = Depends(get_current_user)
 ):
-    """Delete media asset"""
+    """Download asset file"""
     
     connection = None
     cursor = None
     
     try:
         connection = get_db_connection()
-        cursor = connection.cursor()
+        cursor = connection.cursor(pymysql.cursors.DictCursor)
         
+        cursor.execute("""
+            SELECT asset_id, asset_name, file_url, file_path, asset_type
+            FROM media_assets 
+            WHERE asset_id = %s
+        """, (asset_id,))
+        
+        asset = cursor.fetchone()
+        
+        if not asset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Asset not found"
+            )
+        
+        # Check if local file exists
+        file_path = asset.get('file_path')
+        if file_path and os.path.exists(file_path):
+            # Determine media type
+            media_types = {
+                'image': 'image/png',
+                'video': 'video/mp4',
+                'animation': 'image/gif',
+                'presentation': 'application/pdf'
+            }
+            media_type = media_types.get(asset['asset_type'], 'application/octet-stream')
+            
+            return FileResponse(
+                path=file_path,
+                filename=asset['asset_name'] or f"asset_{asset_id}",
+                media_type=media_type
+            )
+        
+        # Fallback: redirect to file_url
+        file_url = asset.get('file_url')
+        if file_url:
+            return {"redirect_url": file_url}
+        
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Asset file not found"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to download asset: {str(e)}"
+        )
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@router.delete("/assets/{asset_id}")
+async def delete_asset(
+    asset_id: int,
+    current_user: dict = Depends(require_admin_or_employee)
+):
+    """Delete media asset and its file"""
+    
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(pymysql.cursors.DictCursor)
+        
+        # Get file path before deleting
+        cursor.execute("""
+            SELECT file_path FROM media_assets WHERE asset_id = %s
+        """, (asset_id,))
+        
+        asset = cursor.fetchone()
+        
+        if not asset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Asset not found"
+            )
+        
+        # Delete from database
         cursor.execute("""
             DELETE FROM media_assets 
             WHERE asset_id = %s
@@ -1096,11 +1204,14 @@ async def delete_asset(
         
         connection.commit()
         
-        if cursor.rowcount == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Asset not found"
-            )
+        # Delete file from disk if exists
+        file_path = asset.get('file_path')
+        if file_path and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                print(f"[STORAGE] Deleted file: {file_path}")
+            except Exception as e:
+                print(f"[STORAGE] Warning: Could not delete file {file_path}: {e}")
         
         return {
             "success": True,

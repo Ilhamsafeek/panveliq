@@ -13,6 +13,7 @@ from passlib.context import CryptContext
 from app.core.config import settings
 from app.core.security import get_current_user, require_admin, get_db_connection
 
+
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -528,6 +529,299 @@ async def get_admin_statistics(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch statistics: {str(e)}"
         )
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+
+@router.get("/admin/dashboard-stats", summary="Get admin dashboard statistics")
+async def get_dashboard_stats(current_user: dict = Depends(require_admin)):
+    """Get statistics for admin dashboard"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(pymysql.cursors.DictCursor)
+        
+        # Total users
+        cursor.execute("SELECT COUNT(*) as count FROM users")
+        total_users = cursor.fetchone()['count']
+        
+        # Active clients
+        cursor.execute("""
+            SELECT COUNT(*) as count FROM users 
+            WHERE role = 'client' AND status = 'active'
+        """)
+        active_clients = cursor.fetchone()['count']
+        
+        # Total revenue (from financial_transactions)
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0) as total 
+            FROM financial_transactions 
+            WHERE transaction_type = 'revenue'
+        """)
+        total_revenue = float(cursor.fetchone()['total'] or 0)
+        
+        # Pending tasks
+        cursor.execute("""
+            SELECT COUNT(*) as count FROM tasks 
+            WHERE status = 'pending'
+        """)
+        pending_tasks = cursor.fetchone()['count']
+        
+        # Active employees
+        cursor.execute("""
+            SELECT COUNT(*) as count FROM users 
+            WHERE role = 'employee' AND status = 'active'
+        """)
+        active_employees = cursor.fetchone()['count']
+        
+        # This month's revenue
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0) as total 
+            FROM financial_transactions 
+            WHERE transaction_type = 'revenue'
+            AND MONTH(transaction_date) = MONTH(CURRENT_DATE())
+            AND YEAR(transaction_date) = YEAR(CURRENT_DATE())
+        """)
+        monthly_revenue = float(cursor.fetchone()['total'] or 0)
+        
+        return {
+            "success": True,
+            "stats": {
+                "total_users": total_users,
+                "active_clients": active_clients,
+                "active_employees": active_employees,
+                "total_revenue": total_revenue,
+                "monthly_revenue": monthly_revenue,
+                "pending_tasks": pending_tasks
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch dashboard stats: {str(e)}"
+        )
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@router.get("/admin/recent-activity", summary="Get recent platform activity")
+async def get_recent_activity(
+    limit: int = 10,
+    current_user: dict = Depends(require_admin)
+):
+    """Get recent activity across the platform"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(pymysql.cursors.DictCursor)
+        
+        # First check if activity_logs table exists and has data
+        cursor.execute("""
+            SELECT 
+                al.log_id,
+                al.user_id,
+                al.activity_type,
+                al.activity_description,
+                al.created_at,
+                u.full_name as user_name,
+                u.email as user_email
+            FROM activity_logs al
+            LEFT JOIN users u ON al.user_id = u.user_id
+            ORDER BY al.created_at DESC
+            LIMIT %s
+        """, (limit,))
+        
+        activities = cursor.fetchall()
+        
+        # If no activities in activity_logs, gather from other sources
+        if not activities:
+            all_activities = []
+            
+            # Recent user registrations
+            cursor.execute("""
+                SELECT 
+                    user_id,
+                    full_name as user_name,
+                    'user_created' as activity_type,
+                    CONCAT('New user registered: ', full_name) as activity_description,
+                    created_at
+                FROM users
+                ORDER BY created_at DESC
+                LIMIT 5
+            """)
+            all_activities.extend(cursor.fetchall())
+            
+            # Recent tasks
+            cursor.execute("""
+                SELECT 
+                    t.task_id,
+                    u.full_name as user_name,
+                    'task_created' as activity_type,
+                    CONCAT('Task created: ', t.task_title) as activity_description,
+                    t.created_at
+                FROM tasks t
+                LEFT JOIN users u ON t.assigned_by = u.user_id
+                ORDER BY t.created_at DESC
+                LIMIT 5
+            """)
+            all_activities.extend(cursor.fetchall())
+            
+            # Recent content
+            cursor.execute("""
+                SELECT 
+                    c.content_id,
+                    u.full_name as user_name,
+                    'content_created' as activity_type,
+                    CONCAT('Content created: ', COALESCE(c.title, 'Untitled')) as activity_description,
+                    c.created_at
+                FROM content_library c
+                LEFT JOIN users u ON c.created_by = u.user_id
+                ORDER BY c.created_at DESC
+                LIMIT 5
+            """)
+            all_activities.extend(cursor.fetchall())
+            
+            # Recent campaigns
+            cursor.execute("""
+                SELECT 
+                    ec.email_campaign_id,
+                    u.full_name as user_name,
+                    'campaign_created' as activity_type,
+                    CONCAT('Email campaign: ', ec.campaign_name) as activity_description,
+                    ec.created_at
+                FROM email_campaigns ec
+                LEFT JOIN users u ON ec.created_by = u.user_id
+                ORDER BY ec.created_at DESC
+                LIMIT 5
+            """)
+            all_activities.extend(cursor.fetchall())
+            
+            # Sort all activities by created_at and limit
+            all_activities.sort(key=lambda x: x['created_at'] if x['created_at'] else datetime.min, reverse=True)
+            activities = all_activities[:limit]
+        
+        # Convert datetime objects
+        for activity in activities:
+            if activity.get('created_at'):
+                activity['created_at'] = activity['created_at'].isoformat()
+        
+        return {
+            "success": True,
+            "activities": activities
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch recent activity: {str(e)}"
+        )
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+@router.get("/tasks/pending", summary="Get pending tasks")
+async def get_pending_tasks(
+    limit: int = 5,
+    current_user: dict = Depends(require_admin)
+):
+    """Get pending tasks for admin dashboard"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor(pymysql.cursors.DictCursor)
+        
+        cursor.execute("""
+            SELECT 
+                t.task_id,
+                t.task_title,
+                t.task_description,
+                t.priority,
+                t.status,
+                t.due_date,
+                t.created_at,
+                u.full_name as assigned_to_name,
+                c.full_name as client_name
+            FROM tasks t
+            LEFT JOIN users u ON t.assigned_to = u.user_id
+            LEFT JOIN users c ON t.client_id = c.user_id
+            WHERE t.status IN ('pending', 'in_progress')
+            ORDER BY 
+                CASE t.priority 
+                    WHEN 'urgent' THEN 1 
+                    WHEN 'high' THEN 2 
+                    WHEN 'medium' THEN 3 
+                    WHEN 'low' THEN 4 
+                END,
+                t.due_date ASC
+            LIMIT %s
+        """, (limit,))
+        
+        tasks = cursor.fetchall()
+        
+        # Convert datetime objects
+        for task in tasks:
+            if task.get('due_date'):
+                task['due_date'] = task['due_date'].isoformat()
+            if task.get('created_at'):
+                task['created_at'] = task['created_at'].isoformat()
+        
+        return {
+            "success": True,
+            "tasks": tasks
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch pending tasks: {str(e)}"
+        )
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+# ============================================
+# HELPER: Log Activity Function
+# Call this from other endpoints to log activities
+# ============================================
+
+def log_activity(user_id: int, activity_type: str, description: str):
+    """Helper function to log user activity"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        cursor.execute("""
+            INSERT INTO activity_logs (user_id, activity_type, activity_description)
+            VALUES (%s, %s, %s)
+        """, (user_id, activity_type, description))
+        
+        connection.commit()
+        
+    except Exception as e:
+        print(f"Failed to log activity: {str(e)}")
     finally:
         if cursor:
             cursor.close()

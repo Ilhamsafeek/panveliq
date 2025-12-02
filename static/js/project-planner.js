@@ -190,6 +190,135 @@ function resetWizard() {
     goToStep(1);
 }
 
+
+
+// Around line 150-200 in submitDiscoveryForm function
+async function submitDiscoveryForm(e) {
+    e.preventDefault();
+    showLoading();
+    
+    try {
+        // Collect form data
+        const formData = new FormData(e.target);
+        const existingPresence = {};
+        
+        // Collect checkboxes
+        document.querySelectorAll('input[type="checkbox"][name^="existing_"]').forEach(checkbox => {
+            const key = checkbox.name.replace('existing_', '');
+            existingPresence[key] = checkbox.checked;
+        });
+        
+        // Build request payload
+        const payload = {
+            lead_name: formData.get('lead_name'),
+            lead_email: formData.get('lead_email'),
+            company_name: formData.get('company_name'),
+            business_type: formData.get('business_type'),
+            budget: parseFloat(formData.get('budget')),
+            target_audience: formData.get('target_audience'),
+            challenges: formData.get('challenges'),
+            existing_presence: existingPresence
+        };
+        
+        console.log('Submitting proposal request:', payload);
+        
+        // Call API to generate proposal
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            hideLoading();
+            showNotification('Session expired. Please login again.', 'error');
+            setTimeout(() => {
+                window.location.href = '/auth/login';
+            }, 2000);
+            return;
+        }
+        
+        const response = await fetch(`${API_BASE}/project-planner/generate-proposal`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.detail || result.message || 'Failed to generate proposal');
+        }
+        
+        if (result.success) {
+            // Store proposal data
+            proposalData = result.proposal;
+            currentProposalId = result.proposal_id;
+            
+            console.log('Proposal generated successfully:', result);
+            
+            // Show success notification
+            showNotification('AI Strategy generated successfully!', 'success');
+            
+            // Move to step 2 after short delay
+            setTimeout(() => {
+                hideLoading();
+                goToStep(2);
+                loadGeneratedContent(result.proposal);
+            }, 1000);
+        } else {
+            throw new Error(result.message || 'Failed to generate proposal');
+        }
+    } catch (error) {
+        console.error('Error generating proposal:', error);
+        hideLoading();
+        
+        // Show error with retry option
+        showRetryDialog(error.message || 'Failed to generate proposal. Please try again.');
+    }
+}
+
+// Add this new function for retry functionality
+function showRetryDialog(errorMessage) {
+    const dialogHTML = `
+        <div class="retry-dialog-overlay" id="retryDialog">
+            <div class="retry-dialog">
+                <div class="retry-dialog-icon">
+                    <i class="ti ti-alert-circle" style="font-size: 48px; color: #EF4444;"></i>
+                </div>
+                <h3>Proposal Generation Failed</h3>
+                <p>${errorMessage}</p>
+                <div class="retry-dialog-actions">
+                    <button class="btn btn-secondary" onclick="closeRetryDialog()">
+                        Cancel
+                    </button>
+                    <button class="btn btn-primary" onclick="retryProposalGeneration()">
+                        <i class="ti ti-refresh"></i>
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', dialogHTML);
+}
+
+function closeRetryDialog() {
+    const dialog = document.getElementById('retryDialog');
+    if (dialog) {
+        dialog.remove();
+    }
+}
+
+function retryProposalGeneration() {
+    closeRetryDialog();
+    // Get the form and submit it again
+    const form = document.getElementById('clientDetailsForm');
+    if (form) {
+        submitDiscoveryForm({ preventDefault: () => {}, target: form });
+    }
+}
+
+
 // =====================================================
 // STEP 1: CLIENT FORM HANDLING
 // =====================================================
@@ -474,7 +603,7 @@ function generateProposalHTML(proposal, strategy, differentiators, timeline) {
         
         <h2><strong>Executive Summary</strong></h2>
         <p>This comprehensive digital marketing proposal has been specifically designed for <strong>${companyName}</strong>, a ${businessType} looking to enhance their digital presence and drive measurable growth.</p>
-        <p>Our AI-powered approach combines cutting-edge marketing technology with proven strategies to deliver exceptional results within your investment budget of <strong>$${budget.toLocaleString()}</strong>.</p>
+        <p>Our AI-powered approach combines cutting-edge marketing technology with proven strategies to deliver exceptional results within your investment budget of <strong>₹${budget.toLocaleString()}</strong>.</p>
         
         <h2><strong>Current Challenges</strong></h2>
         <p>${challenges}</p>
@@ -507,7 +636,7 @@ function generateProposalHTML(proposal, strategy, differentiators, timeline) {
         <hr style="margin: 2rem 0;">
         
         <h2><strong>Investment & ROI</strong></h2>
-        <p><strong>Total Investment:</strong> $${budget.toLocaleString()}</p>
+        <p><strong>Total Investment:</strong> ₹${budget.toLocaleString()}</p>
         <p>Our data-driven approach ensures maximum return on investment through:</p>
         <ul>
             <li>Continuous performance optimization</li>
@@ -580,7 +709,7 @@ function populateProposalSummary() {
     const summary = [
         { label: 'Company', value: proposalData.company_name || 'N/A', icon: 'building' },
         { label: 'Business Type', value: proposalData.business_type || 'N/A', icon: 'briefcase' },
-        { label: 'Budget', value: `$${(proposalData.budget || 0).toLocaleString()}`, icon: 'currency-dollar' },
+        { label: 'Budget', value: `₹${(proposalData.budget || 0).toLocaleString()}`, icon: 'currency-dollar' },
         { label: 'Contact', value: proposalData.full_name || 'N/A', icon: 'user' },
         { label: 'Email', value: proposalData.lead_email || 'N/A', icon: 'mail' },
         { label: 'Status', value: 'Draft', icon: 'file' }
@@ -698,6 +827,13 @@ function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
 }
 
+
+// ============================================
+// FIX: Replace the sendEmail() function in static/js/project-planner.js
+// The issue is missing Authorization header
+// ============================================
+
+
 async function sendEmail() {
     const recipientEmail = document.getElementById('recipientEmail').value;
     const subject = document.getElementById('emailSubject').value;
@@ -708,6 +844,13 @@ async function sendEmail() {
         return;
     }
     
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        showNotification('Session expired. Please login again.', 'error');
+        window.location.href = '/auth/login';
+        return;
+    }
+    
     showLoading();
     closeModal('emailModal');
     
@@ -715,7 +858,8 @@ async function sendEmail() {
         const response = await fetch(`${API_BASE}/project-planner/proposals/${currentProposalId}/send-email`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
                 recipient_email: recipientEmail,
@@ -729,15 +873,16 @@ async function sendEmail() {
         if (result.success) {
             showNotification('Proposal sent via email successfully!', 'success');
         } else {
-            throw new Error(result.message || 'Failed to send email');
+            throw new Error(result.message || result.detail || 'Failed to send email');
         }
     } catch (error) {
         console.error('Email error:', error);
-        showNotification('Failed to send email', 'error');
+        showNotification('Failed to send email: ' + error.message, 'error');
     } finally {
         hideLoading();
     }
 }
+
 
 async function sendToDashboard() {
     if (!currentProposalId) {
@@ -748,39 +893,97 @@ async function sendToDashboard() {
     showLoading();
     
     try {
-     
         const token = localStorage.getItem('access_token');
         if (!token) {
+            hideLoading();
+            showNotification('Session expired. Please login again.', 'error');
+            setTimeout(() => {
+                window.location.href = '/auth/login';
+            }, 2000);
             return;
         }
-        
-        const content = quillEditor.root.innerHTML;
         
         const response = await fetch(`${API_BASE}/project-planner/proposals/${currentProposalId}/send-to-dashboard`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                content: content
-            })
+            }
         });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to send to dashboard');
+        }
         
         const result = await response.json();
         
         if (result.success) {
+            // Show success message
             showNotification('Proposal added to client dashboard!', 'success');
+            
+            // Update UI to show proposal was sent
+            setTimeout(() => {
+                hideLoading();
+                showSuccessDialog();
+            }, 500);
         } else {
             throw new Error(result.message || 'Failed to send to dashboard');
         }
     } catch (error) {
         console.error('Dashboard error:', error);
-        showNotification('Failed to send to dashboard', 'error');
-    } finally {
         hideLoading();
+        showNotification(error.message || 'Failed to send to dashboard', 'error');
     }
 }
+
+// Add success dialog function
+function showSuccessDialog() {
+    const dialogHTML = `
+        <div class="success-dialog-overlay" id="successDialog">
+            <div class="success-dialog">
+                <div class="success-dialog-icon">
+                    <i class="ti ti-circle-check" style="font-size: 64px; color: #10B981;"></i>
+                </div>
+                <h3>Proposal Sent Successfully!</h3>
+                <p>The proposal has been added to the client's dashboard. They will receive a notification to review it.</p>
+                <div class="success-dialog-details">
+                    <div class="detail-item">
+                        <i class="ti ti-check"></i>
+                        <span>Client notified</span>
+                    </div>
+                    <div class="detail-item">
+                        <i class="ti ti-check"></i>
+                        <span>Added to dashboard</span>
+                    </div>
+                    <div class="detail-item">
+                        <i class="ti ti-check"></i>
+                        <span>Ready for review</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="closeSuccessDialog()">
+                    Done
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', dialogHTML);
+}
+
+function closeSuccessDialog() {
+    const dialog = document.getElementById('successDialog');
+    if (dialog) {
+        dialog.remove();
+    }
+    // Optionally redirect to proposals list
+    setTimeout(() => {
+        switchTab('proposals');
+        loadProposals();
+    }, 500);
+}
+
+
 
 function finishProposal() {
     showNotification('Proposal completed successfully!', 'success');
@@ -865,7 +1068,7 @@ function createProposalCard(proposal) {
                         <i class="ti ti-currency-dollar"></i>
                         Budget
                     </span>
-                    <span class="detail-value">$${(proposal.budget || 0).toLocaleString()}</span>
+                    <span class="detail-value">₹${(proposal.budget || 0).toLocaleString()}</span>
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">

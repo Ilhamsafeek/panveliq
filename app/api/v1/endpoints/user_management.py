@@ -210,12 +210,12 @@ async def get_all_users(
             connection.close()
 
 
-@router.get("/users/{user_id}", summary="Get user by ID")
+@router.get("/users/{user_id}", summary="Get user by ID with full details")
 async def get_user_by_id(
     user_id: int,
     current_user: dict = Depends(require_admin)
 ):
-    """Get detailed user information (Admin only)"""
+    """Get comprehensive user information with related data (Admin only)"""
     connection = None
     cursor = None
     
@@ -223,7 +223,7 @@ async def get_user_by_id(
         connection = get_db_connection()
         cursor = connection.cursor(pymysql.cursors.DictCursor)
         
-        # Get user
+        # Get basic user info
         cursor.execute("""
             SELECT 
                 user_id, email, full_name, phone, role, status,
@@ -247,13 +247,14 @@ async def get_user_by_id(
             JOIN permissions p ON up.permission_id = p.permission_id
             LEFT JOIN users granter ON up.granted_by = granter.user_id
             WHERE up.user_id = %s
+            AND (up.expires_at IS NULL OR up.expires_at > NOW())
         """, (user_id,))
         
         user['custom_permissions'] = cursor.fetchall()
         
         # Get role permissions
         cursor.execute("""
-            SELECT p.permission_id, p.permission_name, p.permission_key, p.module
+            SELECT p.permission_name, p.permission_key, p.module
             FROM role_permissions rp
             JOIN permissions p ON rp.permission_id = p.permission_id
             WHERE rp.role = %s
@@ -261,29 +262,68 @@ async def get_user_by_id(
         
         user['role_permissions'] = cursor.fetchall()
         
-        # Get assigned clients (if employee)
-        if user['role'] == 'employee':
+        # Additional data based on role
+        if user['role'] == 'client':
+            # Get client profile
+            cursor.execute("""
+                SELECT business_name, business_type, website_url, current_budget
+                FROM client_profiles
+                WHERE client_id = %s
+            """, (user_id,))
+            user['client_profile'] = cursor.fetchone()
+            
+            # Get active subscription
             cursor.execute("""
                 SELECT 
-                    c.user_id, c.full_name, c.email,
-                    ea.assigned_at
-                FROM employee_assignments ea
-                JOIN users c ON ea.client_id = c.user_id
-                WHERE ea.employee_id = %s
+                    cs.subscription_id, cs.start_date, cs.end_date, cs.status,
+                    p.package_name, p.package_tier, p.price, p.billing_cycle
+                FROM client_subscriptions cs
+                JOIN packages p ON cs.package_id = p.package_id
+                WHERE cs.client_id = %s AND cs.status = 'active'
+                ORDER BY cs.created_at DESC
+                LIMIT 1
             """, (user_id,))
+            user['subscription'] = cursor.fetchone()
             
-            user['assigned_clients'] = cursor.fetchall()
-        
-        # Get activity stats
+            # Get assigned employee
+            cursor.execute("""
+                SELECT u.full_name as employee_name, u.email as employee_email, ea.assigned_at
+                FROM employee_assignments ea
+                JOIN users u ON ea.employee_id = u.user_id
+                WHERE ea.client_id = %s
+                LIMIT 1
+            """, (user_id,))
+            user['assigned_employee'] = cursor.fetchone()
+            
+        elif user['role'] == 'employee':
+            # Get assigned clients count
+            cursor.execute("""
+                SELECT COUNT(*) as count
+                FROM employee_assignments
+                WHERE employee_id = %s
+            """, (user_id,))
+            user['assigned_clients_count'] = cursor.fetchone()['count']
+            
+        # Get tasks count
         cursor.execute("""
             SELECT 
-                COUNT(*) as total_activities,
-                MAX(created_at) as last_activity
-            FROM user_activity_log
-            WHERE user_id = %s
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
+            FROM tasks
+            WHERE assigned_to = %s
         """, (user_id,))
+        user['tasks_summary'] = cursor.fetchone()
         
-        user['activity_stats'] = cursor.fetchone()
+        # Get recent activity count
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM activity_logs
+            WHERE user_id = %s
+            AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        """, (user_id,))
+        user['recent_activity_count'] = cursor.fetchone()['count']
         
         return {
             "success": True,
@@ -295,7 +335,7 @@ async def get_user_by_id(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch user: {str(e)}"
+            detail=f"Failed to fetch user details: {str(e)}"
         )
     finally:
         if cursor:
@@ -303,7 +343,7 @@ async def get_user_by_id(
         if connection:
             connection.close()
 
-
+            
 @router.post("/users", summary="Create new user")
 async def create_user(
     user: UserCreate,

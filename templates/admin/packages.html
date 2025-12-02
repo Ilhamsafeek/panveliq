@@ -482,7 +482,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Price ($)</label>
+                        <label class="form-label">Price (₹)</label>
                         <input type="number" id="packagePrice" class="form-control" step="0.01" min="0" required>
                     </div>
 
@@ -594,7 +594,7 @@
                 <p class="package-description">${pkg.description}</p>
                 
                 <div class="package-price">
-                    <span class="price-amount">$${parseFloat(pkg.price).toFixed(0)}</span>
+                    <span class="price-amount">₹${parseFloat(pkg.price).toLocaleString('en-IN')}</span>
                     <span class="price-period">/${pkg.billing_cycle}</span>
                 </div>
                 
@@ -770,8 +770,9 @@
     }
 
     // Delete package
+    // Delete package
     async function deletePackage(packageId) {
-        if (!confirm('Are you sure you want to deactivate this package?')) {
+        if (!confirm('⚠️ WARNING: This will PERMANENTLY DELETE this package.\n\nThis action CANNOT be undone!\n\nAre you absolutely sure?')) {
             return;
         }
 
@@ -786,17 +787,17 @@
             const data = await response.json();
 
             if (response.ok) {
-                alert(data.message || 'Package deactivated successfully');
-                loadPackages();
+                alert('✅ ' + (data.message || 'Package deleted successfully'));
+                loadPackages(); // Reload the packages list
             } else {
-                alert(data.detail || 'Failed to delete package');
+                // Show specific error message (e.g., if subscriptions exist)
+                alert('❌ Error: ' + (data.detail || 'Failed to delete package'));
             }
         } catch (error) {
             console.error('Error deleting package:', error);
-            alert('Failed to delete package');
+            alert('❌ Failed to delete package. Please try again.');
         }
     }
-
     // Close modal on outside click
     document.getElementById('packageModal').addEventListener('click', (e) => {
         if (e.target.id === 'packageModal') {

@@ -39,7 +39,7 @@ pytz==2023.3
 
 # File Handling
 python-magic==0.4.27
-Pillow==10.1.0
+Pillow==11.0.0
 
 # WhatsApp Business API
 twilio==8.11.0

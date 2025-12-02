@@ -57,6 +57,16 @@ class Settings(BaseSettings):
     MAILCHIMP_API_KEY: Optional[str] = None
     MAILCHIMP_SERVER_PREFIX: Optional[str] = None
     MAILCHIMP_LIST_ID: Optional[str] = None
+    FRONTEND_URL="https://panvel-iq.calim.ai"
+
+
+    # SMTP Email Configuration
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = 465
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    FROM_EMAIL: str = "hello@panvel-iq.calim.ai"
+    FROM_NAME: str = "PanvelIQ"
     
     # WhatsApp
     WHATSAPP_ACCESS_TOKEN: Optional[str] = None
@@ -94,6 +104,7 @@ class Settings(BaseSettings):
     GOOGLE_ANALYTICS_4_PROPERTY_ID: Optional[str] = None
     
     # Moz
+    
     MOZ_ACCESS_ID: Optional[str] = None
     MOZ_SECRET_KEY: Optional[str] = None
     
@@ -113,6 +124,8 @@ class Settings(BaseSettings):
     
 
     GOOGLE_API_KEY: Optional[str] = None
+    SEARCH_CONSOLE_SERVICE_ACCOUNT_EMAIL: Optional[str] = None
+    SEARCH_CONSOLE_CREDENTIALS_JSON: Optional[str] = None
 
     # Synthesia
     SYNTHESIA_API_KEY: Optional[str] = None
@@ -130,7 +143,7 @@ class Settings(BaseSettings):
     LOG_FILE: str = "./logs/app.log"
     
     # Frontend
-    FRONTEND_URL: str = "http://localhost:8000"
+    FRONTEND_URL: str = "https://panvel-iq.calim.ai"
     STATIC_URL: str = "/static"
     
     # Admin Credentials

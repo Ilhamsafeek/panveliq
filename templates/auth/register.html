@@ -25,15 +25,11 @@
     .auth-logo {
         width: 70px;
         height: 70px;
-        background: var(--gradient-primary);
-        border-radius: var(--radius-lg);
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0 auto 1.5rem;
-        font-size: 32px;
-        font-weight: 700;
-        color: white;
+
     }
 
     .auth-header h1 {
@@ -253,13 +249,143 @@
             padding: 2rem 1.5rem;
         }
     }
+
+    /* Password Strength Indicator */
+    .password-strength {
+        margin-top: 0.75rem;
+    }
+
+    .password-strength-label {
+        font-size: 12px;
+        color: var(--color-gray-600);
+        margin-bottom: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .strength-text {
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .strength-text.weak {
+        color: #EF4444;
+    }
+
+    .strength-text.medium {
+        color: #F59E0B;
+    }
+
+    .strength-text.strong {
+        color: #10B981;
+    }
+
+    .password-strength-bar {
+        width: 100%;
+        height: 6px;
+        background: var(--color-gray-200);
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .password-strength-fill {
+        height: 100%;
+        width: 0%;
+        transition: all 0.4s ease;
+        border-radius: 10px;
+    }
+
+    .password-strength-fill.weak {
+        width: 33%;
+        background: linear-gradient(90deg, #EF4444, #DC2626);
+    }
+
+    .password-strength-fill.medium {
+        width: 66%;
+        background: linear-gradient(90deg, #F59E0B, #D97706);
+    }
+
+    .password-strength-fill.strong {
+        width: 100%;
+        background: linear-gradient(90deg, #10B981, #059669);
+    }
+
+    .password-requirements {
+        margin-top: 0.75rem;
+        padding: 0.75rem;
+        background: var(--color-gray-50);
+        border-radius: 8px;
+        display: none;
+    }
+
+    .password-requirements.show {
+        display: block;
+    }
+
+    .password-requirements p {
+        font-size: 12px;
+        color: var(--color-gray-600);
+        margin: 0 0 0.5rem 0;
+        font-weight: 600;
+    }
+
+    .requirement-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .requirement-item {
+        font-size: 12px;
+        color: var(--color-gray-600);
+        padding: 0.25rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .requirement-item i {
+        font-size: 14px;
+        color: var(--color-gray-400);
+    }
+
+    .requirement-item.met {
+        color: #10B981;
+    }
+
+    .requirement-item.met i {
+        color: #10B981;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 15px;
+        align-items: flex-start;
+    }
+
+    .form-row .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid var(--color-gray-200);
+        border-radius: 8px;
+        font-size: 0.9375rem;
+        transition: all 0.2s ease;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="auth-wrapper">
     <div class="auth-container">
-        <div class="auth-logo">P</div>
+        <div class="auth-logo"><img src="{{ url_for('static', path='images/panvel-logo.webp') }}" alt="PanvelIQ"
+                width="40px"></div>
 
         <div class="auth-header">
             <h1 class="gradient-text">Create Account</h1>
@@ -279,7 +405,7 @@
                     </label>
                     <div class="input-wrapper">
                         <i class="ti ti-user input-icon"></i>
-                        <input type="text" id="firstName" name="firstName" class="form-input" placeholder="John"
+                        <input type="text" id="firstName" name="firstName" class="form-input" placeholder="Linson"
                             required>
                     </div>
                     <div class="error-message" id="firstName-error"></div>
@@ -291,7 +417,8 @@
                     </label>
                     <div class="input-wrapper">
                         <i class="ti ti-user input-icon"></i>
-                        <input type="text" id="lastName" name="lastName" class="form-input" placeholder="Doe" required>
+                        <input type="text" id="lastName" name="lastName" class="form-input" placeholder="Dominic"
+                            required>
                     </div>
                     <div class="error-message" id="lastName-error"></div>
                 </div>
@@ -311,15 +438,46 @@
             </div>
 
             <!-- Phone -->
-            <div class="form-group">
-                <label class="form-label" for="phone">
-                    Phone Number
-                </label>
-                <div class="input-wrapper">
-                    <i class="ti ti-phone input-icon"></i>
-                    <input type="tel" id="phone" name="phone" class="form-input" placeholder="+1234567890">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Country Code <span class="required">*</span></label>
+                    <select id="countryCode" class="form-control" required>
+                        <option value="+1">+1 (US/Canada)</option>
+                        <option value="+44">+44 (UK)</option>
+                        <option value="+91">+91 (India)</option>
+                        <option value="+61">+61 (Australia)</option>
+                        <option value="+86">+86 (China)</option>
+                        <option value="+81">+81 (Japan)</option>
+                        <option value="+82">+82 (South Korea)</option>
+                        <option value="+49">+49 (Germany)</option>
+                        <option value="+33">+33 (France)</option>
+                        <option value="+39">+39 (Italy)</option>
+                        <option value="+34">+34 (Spain)</option>
+                        <option value="+7">+7 (Russia)</option>
+                        <option value="+55">+55 (Brazil)</option>
+                        <option value="+52">+52 (Mexico)</option>
+                        <option value="+27">+27 (South Africa)</option>
+                        <option value="+234">+234 (Nigeria)</option>
+                        <option value="+20">+20 (Egypt)</option>
+                        <option value="+971">+971 (UAE)</option>
+                        <option value="+966">+966 (Saudi Arabia)</option>
+                        <option value="+60">+60 (Malaysia)</option>
+                        <option value="+65">+65 (Singapore)</option>
+                        <option value="+63">+63 (Philippines)</option>
+                        <option value="+62">+62 (Indonesia)</option>
+                        <option value="+66">+66 (Thailand)</option>
+                        <option value="+84">+84 (Vietnam)</option>
+                        <option value="+92">+92 (Pakistan)</option>
+                        <option value="+880">+880 (Bangladesh)</option>
+                        <option value="+94" selected>+94 (Sri Lanka)</option>
+                    </select>
                 </div>
-                <div class="error-message" id="phone-error"></div>
+                <div class="form-group">
+                    <label class="form-label">Phone Number <span class="required">*</span></label>
+                    <input type="tel" id="phone" class="form-input" placeholder="712345678" required
+                        pattern="[0-9]{7,15}" title="Please enter 7-15 digits">
+                    <div class="error-message" id="phone-error"></div>
+                </div>
             </div>
 
             <!-- Password -->
@@ -335,6 +493,45 @@
                         <i class="ti ti-eye"></i>
                     </button>
                 </div>
+
+                <!-- Password Strength Indicator -->
+                <div class="password-strength" id="passwordStrength" style="display: none;">
+                    <div class="password-strength-label">
+                        <span>Password Strength:</span>
+                        <span class="strength-text" id="strengthText">Weak</span>
+                    </div>
+                    <div class="password-strength-bar">
+                        <div class="password-strength-fill" id="strengthFill"></div>
+                    </div>
+                </div>
+
+                <!-- Password Requirements -->
+                <div class="password-requirements" id="passwordRequirements">
+                    <p>Password must contain:</p>
+                    <ul class="requirement-list">
+                        <li class="requirement-item" id="req-length">
+                            <i class="ti ti-circle"></i>
+                            At least 8 characters
+                        </li>
+                        <li class="requirement-item" id="req-uppercase">
+                            <i class="ti ti-circle"></i>
+                            One uppercase letter
+                        </li>
+                        <li class="requirement-item" id="req-lowercase">
+                            <i class="ti ti-circle"></i>
+                            One lowercase letter
+                        </li>
+                        <li class="requirement-item" id="req-number">
+                            <i class="ti ti-circle"></i>
+                            One number
+                        </li>
+                        <li class="requirement-item" id="req-special">
+                            <i class="ti ti-circle"></i>
+                            One special character
+                        </li>
+                    </ul>
+                </div>
+
                 <div class="error-message" id="password-error"></div>
             </div>
 
@@ -383,244 +580,386 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const registerForm = document.getElementById('registerForm');
-    const registerBtn = document.getElementById('registerBtn');
-    const alertContainer = document.getElementById('alert-container'); // ← FIXED: with hyphen
-    
-    // Password toggle functionality
-    const togglePassword = document.getElementById('togglePassword');
-    const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
-    const passwordInput = document.getElementById('password');
-    const confirmPasswordInput = document.getElementById('confirmPassword');
-    
-    if (togglePassword) {
-        togglePassword.addEventListener('click', function() {
-            const type = passwordInput.type === 'password' ? 'text' : 'password';
-            passwordInput.type = type;
-            this.querySelector('i').classList.toggle('ti-eye');
-            this.querySelector('i').classList.toggle('ti-eye-off');
-        });
-    }
-    
-    if (toggleConfirmPassword) {
-        toggleConfirmPassword.addEventListener('click', function() {
-            const type = confirmPasswordInput.type === 'password' ? 'text' : 'password';
-            confirmPasswordInput.type = type;
-            this.querySelector('i').classList.toggle('ti-eye');
-            this.querySelector('i').classList.toggle('ti-eye-off');
-        });
-    }
-    
-    // Error handling functions
-    function showError(fieldId, message) {
-        const field = document.getElementById(fieldId);
-        const errorDiv = document.getElementById(`${fieldId}-error`);
-        
-        if (field && errorDiv) {
-            field.classList.add('error');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
+    document.addEventListener('DOMContentLoaded', function () {
+        const registerForm = document.getElementById('registerForm');
+        const registerBtn = document.getElementById('registerBtn');
+        const alertContainer = document.getElementById('alert-container'); // ← FIXED: with hyphen
+
+        // Password toggle functionality
+        const togglePassword = document.getElementById('togglePassword');
+        const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+
+        if (togglePassword) {
+            togglePassword.addEventListener('click', function () {
+                const type = passwordInput.type === 'password' ? 'text' : 'password';
+                passwordInput.type = type;
+                this.querySelector('i').classList.toggle('ti-eye');
+                this.querySelector('i').classList.toggle('ti-eye-off');
+            });
         }
-    }
-    
-    function clearError(fieldId) {
-        const field = document.getElementById(fieldId);
-        const errorDiv = document.getElementById(`${fieldId}-error`);
-        
-        if (field && errorDiv) {
-            field.classList.remove('error');
-            errorDiv.textContent = '';
-            errorDiv.style.display = 'none';
+
+        if (toggleConfirmPassword) {
+            toggleConfirmPassword.addEventListener('click', function () {
+                const type = confirmPasswordInput.type === 'password' ? 'text' : 'password';
+                confirmPasswordInput.type = type;
+                this.querySelector('i').classList.toggle('ti-eye');
+                this.querySelector('i').classList.toggle('ti-eye-off');
+            });
         }
-    }
-    
-    function showAlert(message, type) {
-        if (!alertContainer) {
-            console.error('Alert container not found!');
-            return;
+
+
+
+        // Password Strength Checker
+        const passwordStrength = document.getElementById('passwordStrength');
+        const passwordRequirements = document.getElementById('passwordRequirements');
+        const strengthFill = document.getElementById('strengthFill');
+        const strengthText = document.getElementById('strengthText');
+
+        if (passwordInput) {
+            // Show requirements on focus
+            passwordInput.addEventListener('focus', function () {
+                passwordRequirements.classList.add('show');
+            });
+
+            // Hide requirements on blur if password is strong
+            passwordInput.addEventListener('blur', function () {
+                const strength = calculatePasswordStrength(passwordInput.value);
+                if (strength.score >= 4) {
+                    passwordRequirements.classList.remove('show');
+                }
+            });
+
+            // Check strength on input
+            passwordInput.addEventListener('input', function () {
+                const password = passwordInput.value;
+
+                if (password.length === 0) {
+                    passwordStrength.style.display = 'none';
+                    passwordRequirements.classList.remove('show');
+                    return;
+                }
+
+                passwordStrength.style.display = 'block';
+                const strength = calculatePasswordStrength(password);
+                updateStrengthIndicator(strength);
+                updateRequirements(password);
+            });
         }
-        
-        const alert = document.createElement('div');
-        alert.className = `alert alert-${type}`;
-        alert.innerHTML = `
+
+        function calculatePasswordStrength(password) {
+            let score = 0;
+            let feedback = 'Weak';
+            let cssClass = 'weak';
+
+            const checks = {
+                length: password.length >= 8,
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /[0-9]/.test(password),
+                special: /[^A-Za-z0-9]/.test(password)
+            };
+
+            // Calculate score
+            if (checks.length) score++;
+            if (checks.uppercase) score++;
+            if (checks.lowercase) score++;
+            if (checks.number) score++;
+            if (checks.special) score++;
+
+            // Determine strength level
+            if (score <= 2) {
+                feedback = 'Weak';
+                cssClass = 'weak';
+            } else if (score <= 4) {
+                feedback = 'Medium';
+                cssClass = 'medium';
+            } else {
+                feedback = 'Strong';
+                cssClass = 'strong';
+            }
+
+            return {
+                score: score,
+                feedback: feedback,
+                cssClass: cssClass,
+                checks: checks
+            };
+        }
+
+        function updateStrengthIndicator(strength) {
+            // Update fill bar
+            strengthFill.className = 'password-strength-fill ' + strength.cssClass;
+
+            // Update text
+            strengthText.textContent = strength.feedback;
+            strengthText.className = 'strength-text ' + strength.cssClass;
+        }
+
+        function updateRequirements(password) {
+            const requirements = {
+                'req-length': password.length >= 8,
+                'req-uppercase': /[A-Z]/.test(password),
+                'req-lowercase': /[a-z]/.test(password),
+                'req-number': /[0-9]/.test(password),
+                'req-special': /[^A-Za-z0-9]/.test(password)
+            };
+
+            for (const [id, met] of Object.entries(requirements)) {
+                const element = document.getElementById(id);
+                if (element) {
+                    if (met) {
+                        element.classList.add('met');
+                        element.querySelector('i').className = 'ti ti-circle-check';
+                    } else {
+                        element.classList.remove('met');
+                        element.querySelector('i').className = 'ti ti-circle';
+                    }
+                }
+            }
+        }
+
+
+
+        // Error handling functions
+        function showError(field, message) {
+            const errorDiv = document.getElementById(`${field}-error`);
+            const inputField = document.getElementById(field);
+            if (errorDiv) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+            }
+            if (inputField) {
+                inputField.classList.add('error');
+            }
+        }
+
+        function clearError(field) {
+            const errorDiv = document.getElementById(`${field}-error`);
+            const inputField = document.getElementById(field);
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+            }
+            if (inputField) {
+                inputField.classList.remove('error');
+            }
+        }
+
+        function showAlert(message, type) {
+            if (!alertContainer) {
+                console.error('Alert container not found!');
+                return;
+            }
+
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `
             <i class="ti ti-${type === 'success' ? 'check-circle' : 'alert-circle'}"></i>
             <span>${message}</span>
         `;
-        
-        alertContainer.innerHTML = '';
-        alertContainer.appendChild(alert);
-        
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            alert.remove();
-        }, 5000);
-    }
-    
-    function validateEmail(email) {
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return re.test(email);
-    }
-    
-    // Form Submit Handler with Auto-Login
-    registerForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        // Clear previous errors
-        ['firstName', 'lastName', 'email', 'phone', 'password', 'confirmPassword', 'terms'].forEach(clearError);
-        if (alertContainer) {
+
             alertContainer.innerHTML = '';
-        }
-        
-        // Get form data
-        const firstName = document.getElementById('firstName').value.trim();
-        const lastName = document.getElementById('lastName').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const phone = document.getElementById('phone').value.trim();
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        const terms = document.getElementById('terms').checked;
-        
-        // Validation
-        let isValid = true;
-        
-        if (!firstName) {
-            showError('firstName', 'First name is required');
-            isValid = false;
-        }
-        
-        if (!lastName) {
-            showError('lastName', 'Last name is required');
-            isValid = false;
-        }
-        
-        if (!email) {
-            showError('email', 'Email is required');
-            isValid = false;
-        } else if (!validateEmail(email)) {
-            showError('email', 'Please enter a valid email address');
-            isValid = false;
-        }
-        
-        if (!password) {
-            showError('password', 'Password is required');
-            isValid = false;
-        } else if (password.length < 8) {
-            showError('password', 'Password must be at least 8 characters');
-            isValid = false;
-        }
-        
-        if (!confirmPassword) {
-            showError('confirmPassword', 'Please confirm your password');
-            isValid = false;
-        } else if (password !== confirmPassword) {
-            showError('confirmPassword', 'Passwords do not match');
-            isValid = false;
-        }
-        
-        if (!terms) {
-            showError('terms', 'You must agree to the Terms of Service');
-            isValid = false;
-        }
-        
-        if (!isValid) return;
-        
-        // Show loading
-        registerBtn.classList.add('loading');
-        registerBtn.disabled = true;
-        
-        try {
-            console.log('🚀 Starting registration process...');
-            
-            // Step 1: Register the user
-            const registerResponse = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: email,
-                    password: password,
-                    full_name: `${firstName} ${lastName}`,
-                    phone: phone
-                })
-            });
-            
-            const registerData = await registerResponse.json();
-            
-            if (!registerResponse.ok) {
-                throw new Error(registerData.detail || 'Registration failed');
-            }
-            
-            console.log('✅ Registration successful!');
-            console.log('User ID:', registerData.user_id);
-            
-            // Step 2: Automatically log in the user
-            console.log('🔐 Auto-login starting...');
-            
-            const loginResponse = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: email,
-                    password: password
-                })
-            });
-            
-            const loginData = await loginResponse.json();
-            
-            if (!loginResponse.ok) {
-                // Registration succeeded but login failed
-                console.warn('⚠️ Auto-login failed, redirecting to login page');
-                showAlert('Account created successfully! Please login.', 'success');
-                setTimeout(() => {
-                    window.location.href = '/auth/login';
-                }, 2000);
-                return;
-            }
-            
-            console.log('✅ Auto-login successful!');
-            
-            // Step 3: Store the access token
-            if (loginData.access_token) {
-                localStorage.setItem('access_token', loginData.access_token);
-                console.log('✅ Token stored in localStorage');
-                console.log('Token preview:', loginData.access_token.substring(0, 30) + '...');
-            } else {
-                throw new Error('No access token received');
-            }
-            
-            // Step 4: Show success message and redirect
-            showAlert('Account created successfully! Redirecting to package selection...', 'success');
-            
-            console.log('🎉 Registration complete! Redirecting...');
-            
+            alertContainer.appendChild(alert);
+
+            // Auto-remove after 5 seconds
             setTimeout(() => {
-                window.location.href = '/onboarding/select-package';
-            }, 1500);
-            
-        } catch (error) {
-            console.error('❌ Registration error:', error);
-            showAlert(error.message || 'Registration failed. Please try again.', 'error');
-            registerBtn.classList.remove('loading');
-            registerBtn.disabled = false;
+                alert.remove();
+            }, 5000);
+        }
+
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        // Form Submit Handler with Auto-Login
+        registerForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            // Clear previous errors
+            ['firstName', 'lastName', 'email', 'phone', 'password', 'confirmPassword', 'terms'].forEach(clearError);
+            if (alertContainer) {
+                alertContainer.innerHTML = '';
+            }
+
+            // Get form data
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const countryCode = document.getElementById('countryCode').value;
+            const phone = document.getElementById('phone').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const terms = document.getElementById('terms').checked;
+
+            // Validation
+            let isValid = true;
+
+            if (!firstName) {
+                showError('firstName', 'First name is required');
+                isValid = false;
+            }
+
+            if (!lastName) {
+                showError('lastName', 'Last name is required');
+                isValid = false;
+            }
+
+            if (!email) {
+                showError('email', 'Email is required');
+                isValid = false;
+            } else if (!validateEmail(email)) {
+                showError('email', 'Please enter a valid email address');
+                isValid = false;
+            }
+
+
+            if (!phone) {
+                showError('phone', 'Phone number is required');
+                isValid = false;
+            } else if (!/^[0-9]{7,15}$/.test(phone)) {
+                showError('phone', 'Phone number must be 7-15 digits');
+                isValid = false;
+            }
+
+            // Combine country code with phone
+            const fullPhone = countryCode + phone;
+
+            // Then in the registration API call:
+            body: JSON.stringify({
+                email: email,
+                password: password,
+                full_name: `${firstName} ${lastName}`,
+                phone: fullPhone  // This now includes country code
+            })
+
+            if (!password) {
+                showError('password', 'Password is required');
+                isValid = false;
+            } else {
+                const strength = calculatePasswordStrength(password);
+
+                if (password.length < 8) {
+                    showError('password', 'Password must be at least 8 characters');
+                    isValid = false;
+                } else if (strength.score < 3) {
+                    showError('password', 'Password is too weak. Please use a stronger password.');
+                    isValid = false;
+                }
+            }
+
+            if (!confirmPassword) {
+                showError('confirmPassword', 'Please confirm your password');
+                isValid = false;
+            } else if (password !== confirmPassword) {
+                showError('confirmPassword', 'Passwords do not match');
+                isValid = false;
+            }
+
+            if (!terms) {
+                showError('terms', 'You must agree to the Terms of Service');
+                isValid = false;
+            }
+
+            if (!isValid) return;
+
+            // Show loading
+            registerBtn.classList.add('loading');
+            registerBtn.disabled = true;
+
+            try {
+                console.log('🚀 Starting registration process...');
+
+                // Step 1: Register the user
+                const registerResponse = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password,
+                        full_name: `${firstName} ${lastName}`,
+                        phone: phone
+                    })
+                });
+
+                const registerData = await registerResponse.json();
+
+                if (!registerResponse.ok) {
+                    throw new Error(registerData.detail || 'Registration failed');
+                }
+
+                console.log('✅ Registration successful!');
+                console.log('User ID:', registerData.user_id);
+
+                // Step 2: Automatically log in the user
+                console.log('🔐 Auto-login starting...');
+
+                const loginResponse = await fetch(`${APP_CONFIG.apiBaseUrl}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+
+                const loginData = await loginResponse.json();
+
+                if (!loginResponse.ok) {
+                    // Registration succeeded but login failed
+                    console.warn('⚠️ Auto-login failed, redirecting to login page');
+                    showAlert('Account created successfully! Please login.', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/auth/login';
+                    }, 2000);
+                    return;
+                }
+
+                console.log('✅ Auto-login successful!');
+
+                // Step 3: Store the access token
+                if (loginData.access_token) {
+                    localStorage.setItem('access_token', loginData.access_token);
+                    console.log('✅ Token stored in localStorage');
+                    console.log('Token preview:', loginData.access_token.substring(0, 30) + '...');
+                } else {
+                    throw new Error('No access token received');
+                }
+
+                // Step 4: Show success message and redirect
+                showAlert('Account created successfully! Redirecting to package selection...', 'success');
+
+                console.log('🎉 Registration complete! Redirecting...');
+
+                setTimeout(() => {
+                    window.location.href = '/onboarding/select-package';
+                }, 1500);
+
+            } catch (error) {
+                console.error('❌ Registration error:', error);
+                showAlert(error.message || 'Registration failed. Please try again.', 'error');
+                registerBtn.classList.remove('loading');
+                registerBtn.disabled = false;
+            }
+        });
+
+        // Clear errors on input
+        ['firstName', 'lastName', 'email', 'phone', 'password', 'confirmPassword'].forEach(id => {
+            const field = document.getElementById(id);
+            if (field) {
+                field.addEventListener('input', () => clearError(id));
+            }
+        });
+
+        const termsCheckbox = document.getElementById('terms');
+        if (termsCheckbox) {
+            termsCheckbox.addEventListener('change', () => clearError('terms'));
         }
     });
-    
-    // Clear errors on input
-    ['firstName', 'lastName', 'email', 'phone', 'password', 'confirmPassword'].forEach(id => {
-        const field = document.getElementById(id);
-        if (field) {
-            field.addEventListener('input', () => clearError(id));
-        }
-    });
-    
-    const termsCheckbox = document.getElementById('terms');
-    if (termsCheckbox) {
-        termsCheckbox.addEventListener('change', () => clearError('terms'));
-    }
-});
 </script>
 {% endblock %}

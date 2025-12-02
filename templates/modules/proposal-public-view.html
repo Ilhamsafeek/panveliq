@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketing Proposal | PanvelIQ</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tabler Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #9926F3 0%, #1DD8FC 100%);
+            --primary-start: #9926F3;
+            --primary-end: #1DD8FC;
+            --bg-dark: #0f0f1a;
+            --bg-card: #1a1a2e;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --text-muted: #6b7280;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --success: #10B981;
+            --warning: #F59E0B;
+            --error: #EF4444;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Gilroy', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        /* Header */
+        .public-header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .expiry-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .expiry-badge i {
+            color: var(--primary-end);
+        }
+        
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+        
+        /* Loading State */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            gap: 20px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary-start);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Error State */
+        .error-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            gap: 20px;
+            text-align: center;
+        }
+        
+        .error-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .error-icon i {
+            font-size: 36px;
+            color: var(--error);
+        }
+        
+        .error-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .error-message {
+            color: var(--text-secondary);
+            max-width: 400px;
+        }
+        
+        /* Proposal Content */
+        .proposal-container {
+            display: none;
+        }
+        
+        /* Proposal Header */
+        .proposal-header {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .proposal-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .proposal-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+        
+        .proposal-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .meta-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .meta-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        
+        .meta-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        /* Sections */
+        .proposal-section {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .section-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--primary-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .section-icon i {
+            font-size: 22px;
+            color: #fff;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .section-content {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.8;
+        }
+        
+        .section-content h3 {
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 600;
+            margin: 20px 0 10px 0;
+        }
+        
+        .section-content h3:first-child {
+            margin-top: 0;
+        }
+        
+        .section-content ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        
+        .section-content li {
+            margin-bottom: 8px;
+        }
+        
+        /* Timeline */
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        
+        .timeline-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+        
+        .timeline-phase {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--primary-end);
+            margin-bottom: 8px;
+        }
+        
+        .timeline-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .timeline-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        /* Differentiators */
+        .differentiator-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        
+        .differentiator-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            gap: 16px;
+        }
+        
+        .differentiator-icon {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            background: rgba(153, 38, 243, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .differentiator-icon i {
+            font-size: 20px;
+            color: var(--primary-start);
+        }
+        
+        .differentiator-text h4 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        
+        .differentiator-text p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+        
+        /* Footer */
+        .proposal-footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        
+        .footer-cta {
+            margin-top: 20px;
+        }
+        
+        .btn-contact {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--primary-gradient);
+            color: #fff;
+            padding: 14px 32px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn-contact:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(153, 38, 243, 0.3);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .proposal-header {
+                padding: 24px;
+            }
+            
+            .proposal-title {
+                font-size: 24px;
+            }
+            
+            .proposal-section {
+                padding: 20px;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="public-header">
+        <div class="header-content">
+            <div class="logo">PanvelIQ</div>
+            <div class="header-info">
+                <div class="expiry-badge" id="expiryBadge">
+                    <i class="ti ti-clock"></i>
+                    <span id="expiryText">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Loading State -->
+        <div class="loading-container" id="loadingState">
+            <div class="spinner"></div>
+            <p style="color: var(--text-secondary);">Loading your proposal...</p>
+        </div>
+        
+        <!-- Error State -->
+        <div class="error-container" id="errorState">
+            <div class="error-icon">
+                <i class="ti ti-alert-circle"></i>
+            </div>
+            <h2 class="error-title" id="errorTitle">Link Expired</h2>
+            <p class="error-message" id="errorMessage">This proposal link has expired or is no longer valid.</p>
+        </div>
+        
+        <!-- Proposal Content -->
+        <div class="proposal-container" id="proposalContainer">
+            <!-- Proposal Header -->
+            <div class="proposal-header">
+                <h1 class="proposal-title">Marketing Proposal</h1>
+                <p class="proposal-subtitle" id="proposalSubtitle">Prepared for <span id="clientName">Client</span></p>
+                
+                <div class="proposal-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Company</div>
+                        <div class="meta-value" id="companyName">-</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Industry</div>
+                        <div class="meta-value" id="businessType">-</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Budget</div>
+                        <div class="meta-value" id="budget">-</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Created</div>
+                        <div class="meta-value" id="createdDate">-</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Challenges & Audience -->
+            <div class="proposal-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="ti ti-target"></i>
+                    </div>
+                    <h2 class="section-title">Understanding Your Needs</h2>
+                </div>
+                <div class="section-content">
+                    <h3>Current Challenges</h3>
+                    <p id="challenges">-</p>
+                    
+                    <h3>Target Audience</h3>
+                    <p id="targetAudience">-</p>
+                </div>
+            </div>
+            
+            <!-- AI Strategy -->
+            <div class="proposal-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="ti ti-brain"></i>
+                    </div>
+                    <h2 class="section-title">AI-Generated Strategy</h2>
+                </div>
+                <div class="section-content" id="strategyContent">
+                    <!-- Strategy content will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Competitive Differentiators -->
+            <div class="proposal-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="ti ti-trophy"></i>
+                    </div>
+                    <h2 class="section-title">Why Choose Us</h2>
+                </div>
+                <div class="differentiator-grid" id="differentiatorGrid">
+                    <!-- Differentiators will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Timeline -->
+            <div class="proposal-section">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="ti ti-calendar"></i>
+                    </div>
+                    <h2 class="section-title">Suggested Timeline</h2>
+                </div>
+                <div class="timeline-grid" id="timelineGrid">
+                    <!-- Timeline will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="proposal-footer">
+                <p>Prepared by <strong>PanvelIQ Team</strong></p>
+                <p style="margin-top: 8px;">AI-Powered Digital Marketing Intelligence</p>
+                <div class="footer-cta">
+                    <a href="mailto:contact@panveliq.com" class="btn-contact">
+                        <i class="ti ti-mail"></i>
+                        Get in Touch
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        // Get share token from URL
+        const pathParts = window.location.pathname.split('/');
+        const shareToken = pathParts[pathParts.length - 1];
+        
+        // API Base URL
+        const API_BASE = '/api/v1';
+        
+        // Load proposal on page load
+        document.addEventListener('DOMContentLoaded', loadProposal);
+        
+        async function loadProposal() {
+            try {
+                const response = await fetch(`${API_BASE}/project-planner/proposals/shared/${shareToken}`);
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    showError(
+                        response.status === 410 ? 'Link Expired' : 'Invalid Link',
+                        result.detail || 'This proposal link is no longer valid.'
+                    );
+                    return;
+                }
+                
+                if (result.success) {
+                    displayProposal(result.proposal, result.link_info);
+                } else {
+                    showError('Error', result.message || 'Failed to load proposal');
+                }
+            } catch (error) {
+                console.error('Error loading proposal:', error);
+                showError('Connection Error', 'Unable to load the proposal. Please try again later.');
+            }
+        }
+        
+        function showError(title, message) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('proposalContainer').style.display = 'none';
+            document.getElementById('errorState').style.display = 'flex';
+            document.getElementById('errorTitle').textContent = title;
+            document.getElementById('errorMessage').textContent = message;
+        }
+        
+        function displayProposal(proposal, linkInfo) {
+            // Hide loading, show proposal
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('proposalContainer').style.display = 'block';
+            
+            // Update expiry badge
+            if (linkInfo && linkInfo.days_remaining !== undefined) {
+                const expiryText = linkInfo.days_remaining > 0 
+                    ? `Expires in ${linkInfo.days_remaining} day${linkInfo.days_remaining !== 1 ? 's' : ''}`
+                    : 'Expires today';
+                document.getElementById('expiryText').textContent = expiryText;
+            }
+            
+            // Populate header info
+            document.getElementById('clientName').textContent = proposal.client_name || 'Valued Client';
+            document.getElementById('companyName').textContent = proposal.company_name || '-';
+            document.getElementById('businessType').textContent = proposal.business_type || '-';
+            document.getElementById('budget').textContent = proposal.budget 
+                ? `₹${Number(proposal.budget).toLocaleString()}` 
+                : '-';
+            document.getElementById('createdDate').textContent = proposal.created_at 
+                ? new Date(proposal.created_at).toLocaleDateString('en-US', { 
+                    year: 'numeric', month: 'long', day: 'numeric' 
+                }) 
+                : '-';
+            
+            // Populate challenges and audience
+            document.getElementById('challenges').textContent = proposal.challenges || 'No specific challenges mentioned.';
+            document.getElementById('targetAudience').textContent = proposal.target_audience || 'Target audience not specified.';
+            
+            // Populate strategy
+            populateStrategy(proposal.ai_generated_strategy);
+            
+            // Populate differentiators
+            populateDifferentiators(proposal.competitive_differentiators);
+            
+            // Populate timeline
+            populateTimeline(proposal.suggested_timeline);
+        }
+        
+        function populateStrategy(strategy) {
+            const container = document.getElementById('strategyContent');
+            
+            if (!strategy || Object.keys(strategy).length === 0) {
+                container.innerHTML = '<p>Strategy details will be provided upon further consultation.</p>';
+                return;
+            }
+            
+            let html = '';
+            
+            // Handle different strategy formats
+            if (strategy.campaigns) {
+                html += '<h3>Recommended Campaigns</h3><ul>';
+                const campaigns = Array.isArray(strategy.campaigns) ? strategy.campaigns : [strategy.campaigns];
+                campaigns.forEach(c => {
+                    html += `<li>${typeof c === 'object' ? c.name || c.type || JSON.stringify(c) : c}</li>`;
+                });
+                html += '</ul>';
+            }
+            
+            if (strategy.platforms) {
+                html += '<h3>Platform Recommendations</h3><ul>';
+                const platforms = Array.isArray(strategy.platforms) ? strategy.platforms : [strategy.platforms];
+                platforms.forEach(p => {
+                    html += `<li>${typeof p === 'object' ? p.name || JSON.stringify(p) : p}</li>`;
+                });
+                html += '</ul>';
+            }
+            
+            if (strategy.content_topics) {
+                html += '<h3>Content Topics</h3><ul>';
+                const topics = Array.isArray(strategy.content_topics) ? strategy.content_topics : [strategy.content_topics];
+                topics.forEach(t => {
+                    html += `<li>${typeof t === 'object' ? t.topic || JSON.stringify(t) : t}</li>`;
+                });
+                html += '</ul>';
+            }
+            
+            if (strategy.creative_formats) {
+                html += '<h3>Creative Formats</h3><ul>';
+                const formats = Array.isArray(strategy.creative_formats) ? strategy.creative_formats : [strategy.creative_formats];
+                formats.forEach(f => {
+                    html += `<li>${typeof f === 'object' ? f.format || JSON.stringify(f) : f}</li>`;
+                });
+                html += '</ul>';
+            }
+            
+            // If no specific sections, display raw
+            if (!html && typeof strategy === 'object') {
+                html = '<div>' + JSON.stringify(strategy, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;') + '</div>';
+            }
+            
+            container.innerHTML = html || '<p>Strategy details will be provided upon further consultation.</p>';
+        }
+        
+        function populateDifferentiators(differentiators) {
+            const container = document.getElementById('differentiatorGrid');
+            
+            const defaultDifferentiators = [
+                { icon: 'ti-bolt', title: 'Faster Deployment', desc: 'Automation-powered rapid implementation' },
+                { icon: 'ti-brain', title: 'AI-Personalized Targeting', desc: 'Smart audience segmentation and targeting' },
+                { icon: 'ti-world', title: 'Hybrid Approach', desc: 'Integrated online-offline strategy' },
+                { icon: 'ti-currency-dollar', title: 'Cost Efficiency', desc: 'Optimized media spend for maximum ROI' },
+                { icon: 'ti-chart-line', title: 'Predictive Analytics', desc: 'Advanced tracking with predictive insights' }
+            ];
+            
+            let items = defaultDifferentiators;
+            
+            if (differentiators && Array.isArray(differentiators) && differentiators.length > 0) {
+                items = differentiators.map((d, i) => ({
+                    icon: d.icon || defaultDifferentiators[i % defaultDifferentiators.length].icon,
+                    title: d.title || d.name || `Advantage ${i + 1}`,
+                    desc: d.description || d.desc || d.text || ''
+                }));
+            }
+            
+            container.innerHTML = items.map(item => `
+                <div class="differentiator-item">
+                    <div class="differentiator-icon">
+                        <i class="ti ${item.icon}"></i>
+                    </div>
+                    <div class="differentiator-text">
+                        <h4>${item.title}</h4>
+                        <p>${item.desc}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function populateTimeline(timeline) {
+            const container = document.getElementById('timelineGrid');
+            
+            const defaultTimeline = [
+                { phase: 'Phase 1', title: 'Discovery & Planning', desc: 'Initial assessment and strategy development', duration: 'Week 1-2' },
+                { phase: 'Phase 2', title: 'Setup & Configuration', desc: 'Platform setup and campaign creation', duration: 'Week 3-4' },
+                { phase: 'Phase 3', title: 'Launch & Optimization', desc: 'Campaign launch with continuous optimization', duration: 'Week 5-8' },
+                { phase: 'Phase 4', title: 'Scale & Report', desc: 'Performance analysis and scaling strategies', duration: 'Week 9-12' }
+            ];
+            
+            let items = defaultTimeline;
+            
+            if (timeline && Array.isArray(timeline) && timeline.length > 0) {
+                items = timeline.map((t, i) => ({
+                    phase: t.phase || `Phase ${i + 1}`,
+                    title: t.title || t.name || `Stage ${i + 1}`,
+                    desc: t.description || t.desc || '',
+                    duration: t.duration || t.time || ''
+                }));
+            }
+            
+            container.innerHTML = items.map(item => `
+                <div class="timeline-item">
+                    <div class="timeline-phase">${item.phase} ${item.duration ? `• ${item.duration}` : ''}</div>
+                    <div class="timeline-title">${item.title}</div>
+                    <div class="timeline-description">${item.desc}</div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

@@ -28,7 +28,7 @@
         background: var(--color-gray-50);
         min-height: 100vh;
     }
-    
+
 
 
     .header-subtitle {
@@ -36,12 +36,12 @@
         color: var(--color-gray-600);
         margin-top: 0.5rem;
     }
-    
+
     .header-actions {
         display: flex;
         gap: 1rem;
     }
-    
+
     /* =====================================================
        BUTTONS
        ===================================================== */
@@ -58,13 +58,13 @@
         transition: all 0.3s ease;
         text-decoration: none;
     }
-    
+
     .btn-primary {
         background: var(--gradient-primary);
         color: white;
         box-shadow: var(--shadow-md);
     }
-    
+
     .btn-primary:hover {
         transform: translateY(-2px);
         box-shadow: var(--shadow-lg);
@@ -91,13 +91,13 @@
         transform: translateY(-2px);
         box-shadow: var(--shadow-lg);
     }
-    
+
     .btn-outline {
         background: white;
         color: var(--primary-purple);
         border: 2px solid var(--primary-purple);
     }
-    
+
     .btn-outline:hover {
         background: rgba(153, 38, 243, 0.05);
     }
@@ -106,7 +106,7 @@
         padding: 0.5rem 1rem;
         font-size: 13px;
     }
-    
+
     /* =====================================================
        TAB NAVIGATION
        ===================================================== */
@@ -119,7 +119,7 @@
         gap: 0.5rem;
         box-shadow: var(--shadow-sm);
     }
-    
+
     .tab-btn {
         padding: 0.875rem 1.5rem;
         border: none;
@@ -134,16 +134,16 @@
         gap: 0.5rem;
         color: var(--color-gray-600);
     }
-    
+
     .tab-btn.active {
         background: var(--gradient-primary);
         color: white;
     }
-    
+
     .tab-btn:not(.active):hover {
         background: var(--color-gray-100);
     }
-    
+
     /* =====================================================
        TAB CONTENT
        ===================================================== */
@@ -151,14 +151,21 @@
         display: none;
         animation: fadeIn 0.3s ease;
     }
-    
+
     .tab-content.active {
         display: block;
     }
 
     @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     /* =====================================================
@@ -282,6 +289,7 @@
             opacity: 0;
             transform: translateY(30px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
@@ -364,7 +372,9 @@
         color: #EF4444;
     }
 
-    .form-input, .form-textarea, .form-select {
+    .form-input,
+    .form-textarea,
+    .form-select {
         padding: 0.875rem 1rem;
         border: 2px solid var(--color-gray-300);
         border-radius: 10px;
@@ -374,7 +384,9 @@
         background: white;
     }
 
-    .form-input:focus, .form-textarea:focus, .form-select:focus {
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus {
         outline: none;
         border-color: var(--primary-purple);
         box-shadow: 0 0 0 4px rgba(153, 38, 243, 0.1);
@@ -571,7 +583,9 @@
     }
 
     @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .loading-state p {
@@ -748,7 +762,7 @@
         grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
         gap: 1.5rem;
     }
-    
+
     .proposal-card {
         background: white;
         border-radius: 16px;
@@ -757,35 +771,35 @@
         transition: all 0.3s ease;
         border: 1px solid var(--color-gray-200);
     }
-    
+
     .proposal-card:hover {
         transform: translateY(-4px);
         box-shadow: var(--shadow-xl);
     }
-    
+
     .proposal-header {
         display: flex;
         justify-content: space-between;
         align-items: start;
         margin-bottom: 1rem;
     }
-    
+
     .proposal-client {
         flex: 1;
     }
-    
+
     .proposal-client h3 {
         font-size: 18px;
         font-weight: 700;
         color: var(--color-gray-900);
         margin-bottom: 0.25rem;
     }
-    
+
     .proposal-client p {
         font-size: 14px;
         color: var(--color-gray-600);
     }
-    
+
     .status-badge {
         padding: 0.375rem 0.75rem;
         border-radius: 8px;
@@ -793,34 +807,34 @@
         font-weight: 600;
         text-transform: uppercase;
     }
-    
+
     .status-draft {
         background: rgba(251, 191, 36, 0.1);
         color: #F59E0B;
     }
-    
+
     .status-sent {
         background: rgba(59, 130, 246, 0.1);
         color: #3B82F6;
     }
-    
+
     .status-accepted {
         background: rgba(16, 185, 129, 0.1);
         color: #10B981;
     }
-    
+
     .status-rejected {
         background: rgba(239, 68, 68, 0.1);
         color: #EF4444;
     }
-    
+
     .proposal-details {
         margin: 1rem 0;
         padding: 1rem;
         background: var(--color-gray-50);
         border-radius: 12px;
     }
-    
+
     .detail-item {
         display: flex;
         justify-content: space-between;
@@ -828,29 +842,29 @@
         padding: 0.5rem 0;
         font-size: 14px;
     }
-    
+
     .detail-item:not(:last-child) {
         border-bottom: 1px solid var(--color-gray-200);
     }
-    
+
     .detail-label {
         color: var(--color-gray-600);
         display: flex;
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .detail-value {
         font-weight: 600;
         color: var(--color-gray-900);
     }
-    
+
     .proposal-actions {
         display: flex;
         gap: 0.5rem;
         margin-top: 1rem;
     }
-    
+
     .proposal-actions .btn {
         flex: 1;
     }
@@ -865,20 +879,20 @@
         border-radius: 16px;
         box-shadow: var(--shadow-sm);
     }
-    
+
     .empty-state i {
         font-size: 80px;
         color: var(--color-gray-300);
         margin-bottom: 1rem;
     }
-    
+
     .empty-state h3 {
         font-size: 20px;
         font-weight: 700;
         color: var(--color-gray-900);
         margin-bottom: 0.5rem;
     }
-    
+
     .empty-state p {
         color: var(--color-gray-600);
         margin-bottom: 1.5rem;
@@ -979,11 +993,11 @@
         justify-content: center;
         z-index: 9999;
     }
-    
+
     .loading-overlay.active {
         display: flex;
     }
-    
+
     .loading-content {
         background: white;
         padding: 2rem 3rem;
@@ -991,7 +1005,7 @@
         text-align: center;
         max-width: 400px;
     }
-    
+
     .spinner {
         width: 50px;
         height: 50px;
@@ -1001,14 +1015,14 @@
         animation: spin 1s linear infinite;
         margin: 0 auto 1rem;
     }
-    
+
     .loading-content h3 {
         font-size: 18px;
         font-weight: 700;
         color: var(--color-gray-900);
         margin-bottom: 0.5rem;
     }
-    
+
     .loading-content p {
         color: var(--color-gray-600);
         font-size: 14px;
@@ -1021,23 +1035,23 @@
         .planner-container {
             padding: 1rem;
         }
-        
+
         .planner-header {
             flex-direction: column;
             gap: 1rem;
             align-items: flex-start;
         }
-        
+
         .header-actions {
             width: 100%;
             flex-direction: column;
         }
-        
+
         .header-actions .btn {
             width: 100%;
             justify-content: center;
         }
-        
+
         .tab-navigation {
             flex-direction: column;
         }
@@ -1057,7 +1071,7 @@
             height: 56px;
             font-size: 1.5rem;
         }
-        
+
         .form-grid {
             grid-template-columns: 1fr;
         }
@@ -1069,7 +1083,7 @@
         .export-grid {
             grid-template-columns: 1fr;
         }
-        
+
         .proposals-grid {
             grid-template-columns: 1fr;
         }
@@ -1086,6 +1100,146 @@
             padding: 1rem !important;
             min-height: 400px !important;
         }
+    }
+
+
+    /* Retry Dialog Styles */
+    .retry-dialog-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .retry-dialog {
+        background: white;
+        border-radius: 12px;
+        padding: 32px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+    }
+
+    .retry-dialog-icon {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .retry-dialog h3 {
+        font-family: 'Gilroy-SemiBold', sans-serif;
+        font-size: 24px;
+        color: #1a1a1a;
+        margin-bottom: 12px;
+        text-align: center;
+    }
+
+    .retry-dialog p {
+        color: #666;
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 24px;
+        text-align: center;
+    }
+
+    .retry-dialog-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    .retry-dialog-actions .btn {
+        min-width: 120px;
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+
+    /* Success Dialog Styles */
+    .success-dialog-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .success-dialog {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        max-width: 480px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        animation: slideUp 0.3s ease;
+    }
+
+    .success-dialog-icon {
+        margin-bottom: 24px;
+    }
+
+    .success-dialog h3 {
+        font-family: 'Gilroy-Bold', sans-serif;
+        font-size: 28px;
+        color: #1a1a1a;
+        margin-bottom: 16px;
+    }
+
+    .success-dialog p {
+        color: #666;
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 32px;
+    }
+
+    .success-dialog-details {
+        background: #F0FDF4;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 32px;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #059669;
+        font-family: 'Gilroy-Medium', sans-serif;
+        font-size: 15px;
+        padding: 8px 0;
+    }
+
+    .detail-item i {
+        font-size: 20px;
+    }
+
+    .success-dialog .btn {
+        min-width: 160px;
+        padding: 12px 32px;
     }
 </style>
 {% endblock %}
@@ -1108,7 +1262,7 @@
             </button>
         </div>
     </div>
-    
+
     <!-- Tab Navigation -->
     <div class="tab-navigation">
         <button class="tab-btn" data-tab="create" onclick="switchTab('create')">
@@ -1120,7 +1274,7 @@
             All Proposals
         </button>
     </div>
-    
+
     <!-- Tab: Create Proposal (3-Step Wizard) -->
     <div class="tab-content" id="tab-create">
         <!-- Stepper -->
@@ -1128,7 +1282,7 @@
             <div class="stepper-wrapper">
                 <div class="stepper-line-bg"></div>
                 <div class="stepper-line-progress" id="stepperProgress"></div>
-                
+
                 <div class="stepper-item active" data-step="1">
                     <div class="step-counter">
                         <i class="ti ti-user"></i>
@@ -1138,7 +1292,7 @@
                         <!-- <div class="step-desc">Basic information</div> -->
                     </div>
                 </div>
-                
+
                 <div class="stepper-item" data-step="2">
                     <div class="step-counter">
                         <i class="ti ti-brain"></i>
@@ -1148,7 +1302,7 @@
                         <!-- <div class="step-desc">Generated & editable</div> -->
                     </div>
                 </div>
-                
+
                 <div class="stepper-item" data-step="3">
                     <div class="step-counter">
                         <i class="ti ti-send"></i>
@@ -1171,7 +1325,7 @@
                     </h2>
                     <p>Enter the client's business details to generate a personalized proposal</p>
                 </div>
-                
+
                 <div class="step-card-body">
                     <form id="clientDetailsForm">
                         <div class="form-grid">
@@ -1181,8 +1335,8 @@
                                     <i class="ti ti-user"></i>
                                     Contact Person Name <span class="required">*</span>
                                 </label>
-                                <input type="text" id="leadName" name="lead_name" required 
-                                       placeholder="John Doe" class="form-input">
+                                <input type="text" id="leadName" name="lead_name" required placeholder="Linson Dominic"
+                                    class="form-input">
                             </div>
 
                             <!-- Lead Email -->
@@ -1191,8 +1345,8 @@
                                     <i class="ti ti-mail"></i>
                                     Email Address <span class="required">*</span>
                                 </label>
-                                <input type="email" id="leadEmail" name="lead_email" required 
-                                       placeholder="john@company.com" class="form-input">
+                                <input type="email" id="leadEmail" name="lead_email" required
+                                    placeholder="linson@company.com" class="form-input">
                             </div>
 
                             <!-- Company Name -->
@@ -1201,8 +1355,8 @@
                                     <i class="ti ti-building"></i>
                                     Company Name <span class="required">*</span>
                                 </label>
-                                <input type="text" id="companyName" name="company_name" required 
-                                       placeholder="Acme Corporation" class="form-input">
+                                <input type="text" id="companyName" name="company_name" required
+                                    placeholder="Acme Corporation" class="form-input">
                             </div>
 
                             <!-- Business Type -->
@@ -1232,10 +1386,10 @@
                             <div class="form-group full-width">
                                 <label class="form-label">
                                     <i class="ti ti-currency-dollar"></i>
-                                    Marketing Budget (USD) <span class="required">*</span>
+                                    Marketing Budget (INR) <span class="required">*</span>
                                 </label>
-                                <input type="number" id="budget" name="budget" required 
-                                       placeholder="50000" min="0" class="form-input">
+                                <input type="number" id="budget" name="budget" required placeholder="50000" min="0"
+                                    class="form-input">
                             </div>
 
                             <!-- Target Audience -->
@@ -1244,9 +1398,9 @@
                                     <i class="ti ti-users"></i>
                                     Target Audience <span class="required">*</span>
                                 </label>
-                                <textarea id="targetAudience" name="target_audience" required 
-                                          placeholder="Describe the target audience: demographics, interests, pain points..." 
-                                          rows="3" class="form-textarea"></textarea>
+                                <textarea id="targetAudience" name="target_audience" required
+                                    placeholder="Describe the target audience: demographics, interests, pain points..."
+                                    rows="3" class="form-textarea"></textarea>
                             </div>
 
                             <!-- Current Challenges -->
@@ -1255,9 +1409,9 @@
                                     <i class="ti ti-alert-circle"></i>
                                     Current Marketing Challenges <span class="required">*</span>
                                 </label>
-                                <textarea id="challenges" name="challenges" required 
-                                          placeholder="What are the main marketing challenges the client is facing?" 
-                                          rows="3" class="form-textarea"></textarea>
+                                <textarea id="challenges" name="challenges" required
+                                    placeholder="What are the main marketing challenges the client is facing?" rows="3"
+                                    class="form-textarea"></textarea>
                             </div>
 
                             <!-- Existing Digital Presence -->
@@ -1329,7 +1483,7 @@
                     </h2>
                     <p>Review and customize the AI-generated proposal using the rich text editor</p>
                 </div>
-                
+
                 <div class="step-card-body">
                     <!-- Loading State -->
                     <div id="aiLoadingState" class="loading-state">
@@ -1347,20 +1501,20 @@
                                 <select class="ql-font"></select>
                                 <select class="ql-size"></select>
                             </span>
-                            
+
                             <span class="ql-formats">
                                 <button class="ql-bold"></button>
                                 <button class="ql-italic"></button>
                                 <button class="ql-underline"></button>
                                 <button class="ql-strike"></button>
                             </span>
-                            
+
                             <!-- Color -->
                             <span class="ql-formats">
                                 <select class="ql-color"></select>
                                 <select class="ql-background"></select>
                             </span>
-                            
+
                             <!-- Text Alignment -->
                             <span class="ql-formats">
                                 <button class="ql-align" value=""></button>
@@ -1368,7 +1522,7 @@
                                 <button class="ql-align" value="right"></button>
                                 <button class="ql-align" value="justify"></button>
                             </span>
-                            
+
                             <!-- Lists -->
                             <span class="ql-formats">
                                 <button class="ql-list" value="ordered"></button>
@@ -1376,20 +1530,20 @@
                                 <button class="ql-indent" value="-1"></button>
                                 <button class="ql-indent" value="+1"></button>
                             </span>
-                            
+
                             <!-- Headings -->
                             <span class="ql-formats">
                                 <button class="ql-header" value="1"></button>
                                 <button class="ql-header" value="2"></button>
                                 <button class="ql-blockquote"></button>
                             </span>
-                            
+
                             <!-- Insert -->
                             <span class="ql-formats">
                                 <button class="ql-link"></button>
                                 <button class="ql-image"></button>
                             </span>
-                            
+
                             <!-- Clear Formatting -->
                             <span class="ql-formats">
                                 <button class="ql-clean"></button>
@@ -1436,7 +1590,7 @@
                     </h2>
                     <p>Choose how to deliver the proposal to your client</p>
                 </div>
-                
+
                 <div class="step-card-body">
                     <!-- Preview Summary -->
                     <div class="proposal-summary">
@@ -1455,7 +1609,7 @@
                             <i class="ti ti-download"></i>
                             Export Options
                         </h3>
-                        
+
                         <div class="export-grid">
                             <!-- PDF Export -->
                             <div class="export-card" onclick="exportProposal('pdf')">
@@ -1547,7 +1701,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Tab: All Proposals -->
     <div class="tab-content active" id="tab-proposals">
         <div id="proposalsContainer">
@@ -1577,16 +1731,16 @@
                     </label>
                     <input type="email" id="recipientEmail" class="form-input" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">
                         <i class="ti ti-edit"></i>
                         Subject
                     </label>
-                    <input type="text" id="emailSubject" class="form-input" 
-                           value="Marketing Proposal for Your Review" required>
+                    <input type="text" id="emailSubject" class="form-input" value="Marketing Proposal for Your Review"
+                        required>
                 </div>
-                
+
                 <div class="form-group">
                     <label class="form-label">
                         <i class="ti ti-message"></i>
@@ -1627,5 +1781,5 @@ PanvelIQ Team</textarea>
 
 {% block extra_js %}
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-<script src="/static/js/project-planner.js?v=2"></script>
+<script src="/static/js/project-planner.js?v=3"></script>
 {% endblock %}

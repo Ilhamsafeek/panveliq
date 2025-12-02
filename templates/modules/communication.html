@@ -4,6 +4,506 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', path='/css/communication.css') }}">
+
+<style>
+    /* Visual Flow Builder Styles */
+    .flow-builder-container {
+        background: linear-gradient(135deg, #f8f9fc 0%, #eef1f8 100%);
+        border: 2px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .flow-builder-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .flow-builder-header h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #1a202c;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0;
+    }
+
+    .flow-builder-header h3 i {
+        color: #9926F3;
+    }
+
+    .flow-canvas {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem 1rem;
+        min-height: 300px;
+        position: relative;
+    }
+
+    /* Flow Nodes */
+    .flow-node {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        width: 100%;
+        max-width: 380px;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .flow-node:hover {
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
+    }
+
+    .flow-trigger {
+        border: 2px solid #4299e1;
+        border-top: 4px solid #4299e1;
+    }
+
+    .node-icon {
+        position: absolute;
+        top: -18px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.125rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        background: linear-gradient(135deg, #4299e1, #3182ce);
+    }
+
+    .node-content {
+        padding: 1.75rem 1.25rem 1.25rem;
+    }
+
+    .node-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #1a202c;
+        text-align: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .node-config {
+        margin-bottom: 0.75rem;
+    }
+
+    .node-config label {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.35rem;
+    }
+
+    .node-config select,
+    .node-config input {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        background: #f7fafc;
+        transition: all 0.2s ease;
+    }
+
+    .node-config select:focus,
+    .node-config input:focus {
+        border-color: #9926F3;
+        box-shadow: 0 0 0 3px rgba(153, 38, 243, 0.1);
+        outline: none;
+    }
+
+    .btn-start {
+        display: block;
+        width: 100%;
+        padding: 0.6rem;
+        background: linear-gradient(135deg, #4299e1, #3182ce);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 0.75rem;
+    }
+
+    .btn-start:hover {
+        background: linear-gradient(135deg, #3182ce, #2c5282);
+    }
+
+    /* Connector Lines */
+    .flow-connector {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.25rem 0;
+    }
+
+    .connector-line {
+        width: 2px;
+        height: 24px;
+        background: #cbd5e0;
+    }
+
+    .connector-arrow {
+        color: #a0aec0;
+        font-size: 1rem;
+    }
+
+    /* Actions Container */
+    .flow-actions-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+
+    /* Action Nodes */
+    .flow-action-node {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        width: 100%;
+        max-width: 380px;
+        position: relative;
+        border: 2px solid #e2e8f0;
+    }
+
+    .flow-action-node.create-node {
+        border-color: #48bb78;
+        border-top: 4px solid #48bb78;
+    }
+
+    .flow-action-node.create-node .node-icon {
+        background: linear-gradient(135deg, #48bb78, #38a169);
+    }
+
+    .flow-action-node.update-node {
+        border-color: #4299e1;
+        border-top: 4px solid #4299e1;
+    }
+
+    .flow-action-node.update-node .node-icon {
+        background: linear-gradient(135deg, #4299e1, #3182ce);
+    }
+
+    .flow-action-node.delete-node {
+        border-color: #f56565;
+        border-top: 4px solid #f56565;
+    }
+
+    .flow-action-node.delete-node .node-icon {
+        background: linear-gradient(135deg, #f56565, #e53e3e);
+    }
+
+    .flow-action-node.condition-node {
+        border-color: #d69e2e;
+        border-top: 4px solid #d69e2e;
+    }
+
+    .flow-action-node.condition-node .node-icon {
+        background: linear-gradient(135deg, #d69e2e, #b7791f);
+    }
+
+    .flow-action-node.notification-node {
+        border-color: #ed8936;
+        border-top: 4px solid #ed8936;
+    }
+
+    .flow-action-node.notification-node .node-icon {
+        background: linear-gradient(135deg, #ed8936, #dd6b20);
+    }
+
+    .flow-action-node.question-node {
+        border-color: #9f7aea;
+        border-top: 4px solid #9f7aea;
+    }
+
+    .flow-action-node.question-node .node-icon {
+        background: linear-gradient(135deg, #9f7aea, #805ad5);
+    }
+
+    .flow-action-node.email-node {
+        border-color: #667eea;
+        border-top: 4px solid #667eea;
+    }
+
+    .flow-action-node.email-node .node-icon {
+        background: linear-gradient(135deg, #667eea, #5a67d8);
+    }
+
+    .flow-action-node.whatsapp-node {
+        border-color: #25d366;
+        border-top: 4px solid #25d366;
+    }
+
+    .flow-action-node.whatsapp-node .node-icon {
+        background: linear-gradient(135deg, #25d366, #128c7e);
+    }
+
+    .flow-action-node.wait-node {
+        border-color: #718096;
+        border-top: 4px solid #718096;
+    }
+
+    .flow-action-node.wait-node .node-icon {
+        background: linear-gradient(135deg, #718096, #4a5568);
+    }
+
+    .node-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .btn-delete-node {
+        background: none;
+        border: none;
+        color: #a0aec0;
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-delete-node:hover {
+        background: #fee2e2;
+        color: #ef4444;
+    }
+
+    .node-description {
+        font-size: 0.75rem;
+        color: #718096;
+        text-align: center;
+        margin: 0 0 0.75rem 0;
+    }
+
+    /* Condition Branches */
+    .condition-branches {
+        display: flex;
+        gap: 1.5rem;
+        justify-content: center;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px dashed #e2e8f0;
+    }
+
+    .branch {
+        text-align: center;
+    }
+
+    .branch-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.2rem 0.6rem;
+        border-radius: 10px;
+        margin-bottom: 0.4rem;
+        display: inline-block;
+    }
+
+    .branch-true .branch-label {
+        background: #c6f6d5;
+        color: #276749;
+    }
+
+    .branch-false .branch-label {
+        background: #fed7d7;
+        color: #c53030;
+    }
+
+    .btn-add-branch {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 2px dashed #cbd5e0;
+        background: white;
+        color: #a0aec0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .btn-add-branch:hover {
+        border-color: #9926F3;
+        color: #9926F3;
+    }
+
+    /* Add Action Button */
+    .add-action-wrapper {
+        position: relative;
+        margin-top: 1rem;
+    }
+
+    .btn-add-node {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 2px dashed #9926F3;
+        background: white;
+        color: #9926F3;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-add-node:hover {
+        background: #9926F3;
+        color: white;
+        transform: scale(1.1);
+    }
+
+    /* Action Menu */
+    .action-menu {
+        position: absolute;
+        top: 55px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        width: 200px;
+        z-index: 1000;
+        display: none;
+        overflow: hidden;
+    }
+
+    .action-menu.show {
+        display: block;
+        animation: menuSlideIn 0.2s ease;
+    }
+
+    @keyframes menuSlideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    }
+
+    .action-menu-header {
+        padding: 0.6rem 0.9rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: #f7fafc;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .action-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.6rem 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+        color: #4a5568;
+    }
+
+    .action-menu-item:hover {
+        background: #f7fafc;
+    }
+
+    .action-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        color: white;
+    }
+
+    .action-create .action-icon {
+        background: #48bb78;
+    }
+
+    .action-update .action-icon {
+        background: #4299e1;
+    }
+
+    .action-delete .action-icon {
+        background: #f56565;
+    }
+
+    .action-condition .action-icon {
+        background: #d69e2e;
+    }
+
+    .action-notification .action-icon {
+        background: #ed8936;
+    }
+
+    .action-question .action-icon {
+        background: #9f7aea;
+    }
+
+    .action-email .action-icon {
+        background: #667eea;
+    }
+
+    .action-whatsapp .action-icon {
+        background: #25d366;
+    }
+
+    .action-wait .action-icon {
+        background: #718096;
+    }
+
+    .btn-reset-flow {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        color: #4a5568;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.2s ease;
+    }
+
+    .btn-reset-flow:hover {
+        background: #edf2f7;
+    }
+
+
+    .modal-actions {
+        padding: 30px;
+    }
+</style>
+
+
 {% endblock %}
 
 {% block content %}
@@ -206,16 +706,25 @@
 
                 <div class="form-group">
                     <label>Message Content <span class="required">*</span></label>
-                    <textarea id="wa_message_content" rows="6" required placeholder="Enter your WhatsApp message here..."></textarea>
+                    <textarea id="wa_message_content" rows="6" required
+                        placeholder="Enter your WhatsApp message here..."></textarea>
                     <small class="form-hint">Use variables: {{name}}, {{company}}, {{link}}</small>
                 </div>
 
                 <div class="form-group">
                     <label>Select Audience <span class="required">*</span></label>
-                    <select id="wa_audience_segment" onchange="loadAudienceRecipients('wa')" required>
-                        <option value="">Choose audience segment...</option>
-                    </select>
-                    <small class="form-hint" id="wa_recipient_count">0 recipients selected</small>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="wa_audience_segment" onchange="loadAudienceRecipients('wa')" required
+                            style="flex: 1;">
+                            <option value="">Choose audience segment...</option>
+                        </select>
+                        <button type="button" class="btn-secondary" onclick="openQuickCreateSegment('wa')"
+                            title="Create New Segment">
+                            <i class="ti ti-plus"></i>
+                        </button>
+                    </div>
+                    <small class="form-hint" id="wa_recipient_count">0 recipients selected. <strong>No segments yet?
+                            Click + to create one.</strong></small>
                 </div>
 
                 <div class="form-row">
@@ -244,8 +753,64 @@
         </div>
     </div>
 </div>
+<!-- Quick Create Segment Modal -->
+<div class="modal" id="quickSegmentModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><i class="ti ti-users"></i> Quick Create Audience</h2>
+            <button class="modal-close" onclick="closeModal('quickSegmentModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="quickSegmentForm">
+                <input type="hidden" id="quick_return_to" value="">
 
-<!-- Email Campaign Modal -->
+                <div class="form-group">
+                    <label>Segment Name <span class="required">*</span></label>
+                    <input type="text" id="quick_segment_name" required placeholder="e.g., VIP Customers">
+                </div>
+
+                <div class="form-group">
+                    <label>Select Client <span class="required">*</span></label>
+                    <select id="quick_client_id" required>
+                        <option value="">Choose client...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Platform <span class="required">*</span></label>
+                    <select id="quick_platform" required>
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="email">Email</option>
+                        <option value="both">Both</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Add Contacts (Phone Numbers or Emails) <span class="required">*</span></label>
+                    <textarea id="quick_contacts" rows="6" required placeholder="Enter one contact per line:
++91771234567
++91771234568
+john@example.com
+jane@example.com"></textarea>
+                    <small class="form-hint">Enter one contact per line. Use phone numbers with country code for
+                        WhatsApp.</small>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary"
+                        onclick="closeModal('quickSegmentModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="ti ti-check"></i>
+                        Create & Continue
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Email Campaign Modal -->
 <div class="modal" id="emailModal">
     <div class="modal-content modal-large">
@@ -284,7 +849,8 @@
 
                 <div class="form-group">
                     <label>Email Body <span class="required">*</span></label>
-                    <div id="emailEditor" style="min-height: 300px; border: 1px solid #e2e8f0; border-radius: 8px;"></div>
+                    <div id="emailEditor" style="min-height: 300px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -329,9 +895,9 @@
     </div>
 </div>
 
-<!-- Automation Flow Modal -->
+<!-- Automation Flow Modal - Visual Builder -->
 <div class="modal" id="flowModal">
-    <div class="modal-content modal-large">
+    <div class="modal-content modal-xlarge">
         <div class="modal-header">
             <h2><i class="ti ti-git-branch"></i> Create Automation Flow</h2>
             <button class="modal-close" onclick="closeModal('flowModal')">
@@ -340,63 +906,136 @@
         </div>
         <div class="modal-body">
             <form id="flowForm">
-                <div class="form-group">
-                    <label>Flow Name <span class="required">*</span></label>
-                    <input type="text" id="flow_name" required>
+                <!-- Basic Info Row -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Flow Name <span class="required">*</span></label>
+                        <input type="text" id="flow_name" required placeholder="e.g., Welcome Series">
+                    </div>
+                    <div class="form-group">
+                        <label>Select Client <span class="required">*</span></label>
+                        <select id="flow_client_id" required>
+                            <option value="">Choose client...</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Select Client <span class="required">*</span></label>
-                    <select id="flow_client_id" required>
-                        <option value="">Choose client...</option>
-                    </select>
+                <!-- Visual Flow Builder Canvas -->
+                <div class="flow-builder-container">
+                    <div class="flow-builder-header">
+                        <h3><i class="ti ti-arrows-right"></i> Flow Builder</h3>
+                        <button type="button" class="btn-reset-flow" onclick="resetFlowBuilder()">
+                            <i class="ti ti-refresh"></i> Reset
+                        </button>
+                    </div>
+
+                    <!-- Flow Canvas -->
+                    <div class="flow-canvas" id="flowCanvas">
+                        <!-- Trigger Block -->
+                        <div class="flow-node flow-trigger" id="triggerNode">
+                            <div class="node-icon">
+                                <i class="ti ti-player-play"></i>
+                            </div>
+                            <div class="node-content">
+                                <div class="node-title">Flow Trigger</div>
+                                <div class="node-config">
+                                    <label>When</label>
+                                    <select id="flow_trigger_type" required>
+                                        <option value="">Select trigger...</option>
+                                        <option value="lead_signup">New Lead Signup</option>
+                                        <option value="form_submission">Form Submitted</option>
+                                        <option value="email_opened">Email Opened</option>
+                                        <option value="link_clicked">Link Clicked</option>
+                                        <option value="cart_abandonment">Cart Abandoned</option>
+                                        <option value="purchase_complete">Purchase Completed</option>
+                                        <option value="subscription_renewal">Subscription Renewal</option>
+                                        <option value="inactive_user">User Inactive (30 days)</option>
+                                        <option value="user_clicks">User Clicks Button</option>
+                                        <option value="scheduled">Scheduled Time</option>
+                                    </select>
+                                </div>
+                                <div class="node-config">
+                                    <label>Channel</label>
+                                    <select id="flow_channel" required>
+                                        <option value="email">Email</option>
+                                        <option value="whatsapp">WhatsApp</option>
+                                        <option value="both">Both Channels</option>
+                                    </select>
+                                </div>
+                                <button type="button" class="btn-start" onclick="startFlow()">
+                                    START
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Connection Line -->
+                        <div class="flow-connector">
+                            <div class="connector-line"></div>
+                            <div class="connector-arrow">
+                                <i class="ti ti-chevron-down"></i>
+                            </div>
+                        </div>
+
+                        <!-- Actions Container -->
+                        <div class="flow-actions-container" id="flowActionsContainer">
+                            <!-- Action nodes will be added here -->
+                        </div>
+
+                        <!-- Add Action Button -->
+                        <div class="add-action-wrapper" id="addActionWrapper">
+                            <button type="button" class="btn-add-node" onclick="showActionMenu()">
+                                <i class="ti ti-plus"></i>
+                            </button>
+
+                            <!-- Action Type Menu -->
+                            <div class="action-menu" id="actionMenu">
+                                <div class="action-menu-header">Action type</div>
+                                <div class="action-menu-item action-create" onclick="addFlowNode('create')">
+                                    <span class="action-icon"><i class="ti ti-plus"></i></span>
+                                    <span>Create</span>
+                                </div>
+                                <div class="action-menu-item action-update" onclick="addFlowNode('update')">
+                                    <span class="action-icon"><i class="ti ti-refresh"></i></span>
+                                    <span>Update</span>
+                                </div>
+                                <div class="action-menu-item action-delete" onclick="addFlowNode('delete')">
+                                    <span class="action-icon"><i class="ti ti-square-x"></i></span>
+                                    <span>Delete</span>
+                                </div>
+                                <div class="action-menu-item action-condition" onclick="addFlowNode('condition')">
+                                    <span class="action-icon"><i class="ti ti-git-branch"></i></span>
+                                    <span>Add condition</span>
+                                </div>
+                                <div class="action-menu-item action-notification" onclick="addFlowNode('notification')">
+                                    <span class="action-icon"><i class="ti ti-bell"></i></span>
+                                    <span>Show notification</span>
+                                </div>
+                                <div class="action-menu-item action-question" onclick="addFlowNode('question')">
+                                    <span class="action-icon"><i class="ti ti-help"></i></span>
+                                    <span>Question</span>
+                                </div>
+                                <div class="action-menu-item action-email" onclick="addFlowNode('send_email')">
+                                    <span class="action-icon"><i class="ti ti-mail"></i></span>
+                                    <span>Send Email</span>
+                                </div>
+                                <div class="action-menu-item action-whatsapp" onclick="addFlowNode('send_whatsapp')">
+                                    <span class="action-icon"><i class="ti ti-brand-whatsapp"></i></span>
+                                    <span>Send WhatsApp</span>
+                                </div>
+                                <div class="action-menu-item action-wait" onclick="addFlowNode('wait')">
+                                    <span class="action-icon"><i class="ti ti-clock"></i></span>
+                                    <span>Wait / Delay</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Trigger Type <span class="required">*</span></label>
-                    <select id="flow_trigger_type" required>
-                        <option value="">Select trigger...</option>
-                        <option value="lead_signup">Lead Signup</option>
-                        <option value="form_submission">Form Submission</option>
-                        <option value="email_opened">Email Opened</option>
-                        <option value="link_clicked">Link Clicked</option>
-                        <option value="cart_abandonment">Cart Abandonment</option>
-                        <option value="purchase_complete">Purchase Complete</option>
-                        <option value="subscription_renewal">Subscription Renewal</option>
-                        <option value="inactive_user">Inactive User (30 days)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Communication Channel <span class="required">*</span></label>
-                    <select id="flow_channel" required>
-                        <option value="email">Email</option>
-                        <option value="whatsapp">WhatsApp</option>
-                        <option value="both">Both Channels</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Flow Actions (JSON) <span class="required">*</span></label>
-                    <textarea id="flow_actions" rows="10" required placeholder='[
-  {
-    "action": "send_email",
-    "delay": "0",
-    "template": "welcome_email"
-  },
-  {
-    "action": "send_whatsapp",
-    "delay": "1_day",
-    "template": "followup_message"
-  }
-]'></textarea>
-                    <small class="form-hint">Define sequential actions in JSON format</small>
-                </div>
-
-                <div class="form-group">
+                <!-- Active Toggle -->
+                <div class="form-group" style="margin-top: 1.5rem;">
                     <label class="checkbox-label">
                         <input type="checkbox" id="flow_active" checked>
-                        <span>Activate flow immediately</span>
+                        <span>Activate flow immediately after creation</span>
                     </label>
                 </div>
 
@@ -411,6 +1050,247 @@
         </div>
     </div>
 </div>
+
+
+<!-- ADD THIS VIEW FLOW MODAL AFTER THE FLOW MODAL IN communication.html -->
+
+<!-- View Flow Details Modal -->
+<div class="modal" id="viewFlowModal">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h2><i class="ti ti-eye"></i> Flow Details</h2>
+            <button class="modal-close" onclick="closeModal('viewFlowModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="viewFlowContent">
+            <div class="loading-state">
+                <div class="loader-spinner"></div>
+                <p>Loading flow details...</p>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-secondary" onclick="closeModal('viewFlowModal')">Close</button>
+            <button type="button" class="btn-primary" id="btnEditFromView" onclick="editFlowFromView()">
+                <i class="ti ti-edit"></i> Edit Flow
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* View Flow Modal Styles */
+    .flow-details-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .flow-details-section h4 {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .flow-details-section h4 i {
+        color: #9926F3;
+    }
+
+    .flow-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        background: #f7fafc;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .flow-info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .flow-info-item .label {
+        font-size: 0.75rem;
+        color: #718096;
+        font-weight: 500;
+    }
+
+    .flow-info-item .value {
+        font-size: 0.95rem;
+        color: #1a202c;
+        font-weight: 600;
+    }
+
+    .flow-trigger-display {
+        background: linear-gradient(135deg, #ebf8ff, #e6fffa);
+        border: 1px solid #90cdf4;
+        border-radius: 10px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .trigger-icon-display {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4299e1, #3182ce);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.25rem;
+    }
+
+    .trigger-info h5 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1rem;
+        color: #2d3748;
+    }
+
+    .trigger-info p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #718096;
+    }
+
+    .flow-actions-display {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .action-item-display {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        position: relative;
+    }
+
+    .action-item-display::before {
+        content: '';
+        position: absolute;
+        left: -12px;
+        top: 50%;
+        width: 12px;
+        height: 2px;
+        background: #cbd5e0;
+    }
+
+    .action-number {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #9926F3;
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .action-icon-display {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.9rem;
+    }
+
+    .action-icon-display.create {
+        background: #48bb78;
+    }
+
+    .action-icon-display.update {
+        background: #4299e1;
+    }
+
+    .action-icon-display.delete {
+        background: #f56565;
+    }
+
+    .action-icon-display.condition {
+        background: #d69e2e;
+    }
+
+    .action-icon-display.notification {
+        background: #ed8936;
+    }
+
+    .action-icon-display.question {
+        background: #9f7aea;
+    }
+
+    .action-icon-display.send_email {
+        background: #667eea;
+    }
+
+    .action-icon-display.send_whatsapp {
+        background: #25d366;
+    }
+
+    .action-icon-display.wait {
+        background: #718096;
+    }
+
+    .action-details {
+        flex: 1;
+    }
+
+    .action-details .action-type {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 0.9rem;
+    }
+
+    .action-details .action-meta {
+        font-size: 0.8rem;
+        color: #718096;
+    }
+
+    .flow-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .flow-status-badge.active {
+        background: #c6f6d5;
+        color: #276749;
+    }
+
+    .flow-status-badge.inactive {
+        background: #fed7d7;
+        color: #c53030;
+    }
+
+    .empty-actions-message {
+        text-align: center;
+        padding: 2rem;
+        color: #718096;
+        font-style: italic;
+    }
+</style>
 
 <!-- Audience Upload Modal (CSV) -->
 <div class="modal" id="segmentModal">
@@ -594,12 +1474,14 @@
             <form id="aiEmailForm">
                 <div class="form-group">
                     <label>Campaign Goal <span class="required">*</span></label>
-                    <input type="text" id="ai_campaign_goal" required placeholder="e.g., Increase product sales, Drive event registrations">
+                    <input type="text" id="ai_campaign_goal" required
+                        placeholder="e.g., Increase product sales, Drive event registrations">
                 </div>
 
                 <div class="form-group">
                     <label>Target Audience <span class="required">*</span></label>
-                    <input type="text" id="ai_target_audience" required placeholder="e.g., Small business owners, Tech enthusiasts">
+                    <input type="text" id="ai_target_audience" required
+                        placeholder="e.g., Small business owners, Tech enthusiasts">
                 </div>
 
                 <div class="form-group">
@@ -637,11 +1519,2760 @@
 </div>
 
 
+<!-- View Campaign Details Modal -->
+<div class="modal" id="viewCampaignModal">
+    <div class="modal-content modal-comfortable">
+        <div class="modal-header">
+            <h2><i class="ti ti-eye"></i> Campaign Details</h2>
+            <button class="modal-close" onclick="closeModal('viewCampaignModal')">
+                <i class="ti ti-x"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="viewCampaignContent">
+            <div class="loading-state">
+                <div class="loader-spinner"></div>
+                <p>Loading campaign details...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="{{ url_for('static', path='/js/communication.js') }}"></script>
+<!-- <script src="{{ url_for('static', path='/js/communication-hub.js?v=5') }}"></script> -->
+<script>
+
+    /**
+ * Communication Hub - JavaScript Implementation
+ * File: static/js/communication.js
+ */
+
+    const API_BASE = '/api/v1/communication';
+    let emailEditor = null;
+    let currentTab = 'whatsapp';
+    let clientsList = [];
+    let segmentsList = [];
+    let csvData = null;
+
+    // =====================================================
+    // INITIALIZATION
+    // =====================================================
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        await initializePage();
+        initializeEmailEditor();
+        initializeFileUpload();
+    });
+
+    // =====================================================
+    // GET CURRENT USER
+    // =====================================================
+
+
+    async function initializePage() {
+        try {
+            // Get current user
+            // await getCurrentUser();
+
+            // Load clients for dropdowns
+            await loadClients();
+
+            // Load segments for audience selection
+            await loadSegmentsForDropdown();
+
+            // Load analytics
+            await loadAnalytics();
+
+            // Load initial tab content
+            await loadWhatsAppCampaigns();
+
+            // Setup form handlers
+            setupFormHandlers();
+
+        } catch (error) {
+            console.error('Initialization error:', error);
+            showNotification('Failed to initialize page', 'error');
+        }
+    }
+
+    // =====================================================
+    // LOAD CLIENTS FOR DROPDOWNS
+    // =====================================================
+
+    async function loadClients() {
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch('/api/v1/clients/list', {  // Use absolute path
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                console.error('Response status:', response.status);
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                return;
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                clientsList = data.clients;
+                populateClientDropdowns();
+            }
+        } catch (error) {
+            console.error('Error loading clients:', error);
+        }
+    }
+
+    function populateClientDropdowns() {
+        const dropdowns = [
+            'wa_client_id',
+            'email_client_id',
+            'flow_client_id',
+            'segment_client_id',
+            'csv_client_id'
+        ];
+
+        dropdowns.forEach(id => {
+            const select = document.getElementById(id);
+            if (select) {
+                select.innerHTML = '<option value="">Choose client...</option>';
+                clientsList.forEach(client => {
+                    const option = document.createElement('option');
+                    option.value = client.user_id;
+                    option.textContent = `${client.full_name} ${client.business_name ? '(' + client.business_name + ')' : ''}`;
+                    select.appendChild(option);
+                });
+            }
+        });
+    }
+
+    // =====================================================
+    // LOAD SEGMENTS FOR DROPDOWN
+    // =====================================================
+
+    async function loadSegmentsForDropdown() {
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/segments/list`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                segmentsList = data.segments;
+                populateSegmentDropdowns();
+            }
+        } catch (error) {
+            console.error('Error loading segments:', error);
+        }
+    }
+
+
+    function populateSegmentDropdowns() {
+        const dropdowns = [
+            { id: 'wa_audience_segment', platform: 'whatsapp' },
+            { id: 'email_audience_segment', platform: 'email' }
+        ];
+
+        dropdowns.forEach(({ id, platform }) => {
+            const select = document.getElementById(id);
+            if (select) {
+                select.innerHTML = '<option value="">Choose audience segment...</option>';
+
+                // Filter segments by platform - match with 'both' or exact platform
+                const filteredSegments = segmentsList.filter(seg => {
+                    const segPlatform = seg.platform ? seg.platform.toLowerCase() : '';
+                    const targetPlatform = platform.toLowerCase();
+
+                    return segPlatform === targetPlatform ||
+                        segPlatform === 'both' ||
+                        segPlatform === 'all' ||
+                        segPlatform === 'email' && targetPlatform === 'email' ||
+                        segPlatform === 'whatsapp' && targetPlatform === 'whatsapp';
+                });
+
+                console.log(`Populating ${id} with ${filteredSegments.length} segments`);
+
+                filteredSegments.forEach(segment => {
+                    const option = document.createElement('option');
+                    option.value = segment.segment_id;
+                    option.textContent = `${segment.segment_name} (${segment.estimated_size || 0} contacts)`;
+                    option.dataset.recipients = segment.estimated_size || 0;
+                    select.appendChild(option);
+                });
+            }
+        });
+    }
+
+    // =====================================================
+    // LOAD AUDIENCE RECIPIENTS
+    // =====================================================
+    async function loadAudienceRecipients(type) {
+        const segmentSelect = document.getElementById(`${type}_audience_segment`);
+        const countElement = document.getElementById(`${type}_recipient_count`);
+
+        if (!segmentSelect || !countElement) return;
+
+        const segmentId = segmentSelect.value;
+
+        if (!segmentId) {
+            countElement.textContent = '0 recipients selected. No segments yet? Click + to create one.';
+            return;
+        }
+
+        try {
+            // Get segment details from the dropdown option
+            const selectedOption = segmentSelect.options[segmentSelect.selectedIndex];
+            const recipientCount = selectedOption.dataset.recipients || 0;
+
+            countElement.textContent = `${recipientCount} recipients selected`;
+
+            // For now, create a placeholder array with the count
+            // The actual recipient list will be fetched from the backend when sending
+            if (type === 'wa') {
+                window.waRecipients = Array(parseInt(recipientCount)).fill('placeholder');
+            } else {
+                window.emailRecipients = Array(parseInt(recipientCount)).fill('placeholder');
+            }
+
+            console.log(`Segment selected with ${recipientCount} recipients for ${type}`);
+
+        } catch (error) {
+            console.error('Error loading recipients:', error);
+            countElement.textContent = 'Error loading recipients';
+        }
+    }
+
+
+    // =====================================================
+    // FILE UPLOAD & CSV HANDLING
+    // =====================================================
+
+    function initializeFileUpload() {
+        const fileInput = document.getElementById('csv_file');
+        const uploadArea = document.getElementById('fileUploadArea');
+
+        if (!fileInput || !uploadArea) return;
+
+        // Drag and drop handlers
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--primary-purple)';
+            uploadArea.style.background = 'var(--color-gray-100)';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = 'var(--color-gray-300)';
+            uploadArea.style.background = 'var(--color-gray-50)';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--color-gray-300)';
+            uploadArea.style.background = 'var(--color-gray-50)';
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect({ target: fileInput });
+            }
+        });
+    }
+
+
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        document.getElementById('fileName').textContent = `Selected: ${file.name}`;
+
+        // Parse CSV
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function (results) {
+                csvData = results.data;
+                displayCSVPreview(results.data);
+            },
+            error: function (error) {
+                console.error('CSV Parse Error:', error);
+                showNotification('Error parsing CSV file', 'error');
+            }
+        });
+    }
+
+    function displayCSVPreview(data) {
+        const previewDiv = document.getElementById('csvPreview');
+        const previewTable = document.getElementById('previewTable');
+        const previewStats = document.getElementById('previewStats');
+
+        if (data.length === 0) {
+            showNotification('CSV file is empty', 'error');
+            return;
+        }
+
+        // Show preview
+        previewDiv.style.display = 'block';
+
+        // Create table
+        const headers = Object.keys(data[0]);
+        const previewData = data.slice(0, 5); // First 5 rows
+
+        let tableHTML = '<table><thead><tr>';
+        headers.forEach(header => {
+            tableHTML += `<th>${header}</th>`;
+        });
+        tableHTML += '</tr></thead><tbody>';
+
+        previewData.forEach(row => {
+            tableHTML += '<tr>';
+            headers.forEach(header => {
+                tableHTML += `<td>${row[header] || ''}</td>`;
+            });
+            tableHTML += '</tr>';
+        });
+        tableHTML += '</tbody></table>';
+
+        previewTable.innerHTML = tableHTML;
+
+        // Show stats
+        previewStats.innerHTML = `
+        <span><strong>${data.length}</strong> contacts found</span>
+        <span><strong>${headers.length}</strong> columns</span>
+    `;
+    }
+
+    // Download CSV template
+    function downloadCSVTemplate() {
+        const csvContent = 'name,email,phone,company\nLinson Dominic,linson@example.com,+1234567890,Example Corp\nJane Smith,jane@example.com,+0987654321,Another Company';
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'audience_template.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+
+
+    async function loadAnalytics() {
+        try {
+            // For demo, use first client or allow admin to select
+            const clientId = clientsList[0]?.user_id || 1;
+
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/analytics/overview?client_id=${clientId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const analytics = data.analytics;
+
+                // Update WhatsApp stats - check if elements exist first
+                const whatsappCampaigns = document.getElementById('whatsappCampaigns');
+                const whatsappDeliveryRate = document.getElementById('whatsappDeliveryRate');
+                if (whatsappCampaigns) whatsappCampaigns.textContent = analytics.whatsapp.total_campaigns;
+                if (whatsappDeliveryRate) whatsappDeliveryRate.textContent = `${analytics.whatsapp.delivery_rate}% delivery rate`;
+
+                // Update Email stats - check if elements exist first
+                const emailCampaigns = document.getElementById('emailCampaigns');
+                const emailOpenRate = document.getElementById('emailOpenRate');
+                if (emailCampaigns) emailCampaigns.textContent = analytics.email.total_campaigns;
+                if (emailOpenRate) emailOpenRate.textContent = `${analytics.email.open_rate}% open rate`;
+
+                // Update Flows stats - check if elements exist first
+                const activeFlows = document.getElementById('activeFlows');
+                const totalFlows = document.getElementById('totalFlows');
+                if (activeFlows) activeFlows.textContent = analytics.flows.active_flows;
+                if (totalFlows) totalFlows.textContent = `${analytics.flows.total_flows} total automation flows`;
+            }
+        } catch (error) {
+            console.error('Error loading analytics:', error);
+            // Don't show error to user as analytics cards may be intentionally hidden
+        }
+    }
+
+
+    // =====================================================
+    // TAB SWITCHING
+    // =====================================================
+
+    function switchTab(tabName) {
+        currentTab = tabName;
+
+        // Update tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+
+        // Load content based on tab
+        switch (tabName) {
+            case 'whatsapp':
+                loadWhatsAppCampaigns();
+                break;
+            case 'email':
+                loadEmailCampaigns();
+                break;
+            case 'flows':
+                loadAutomationFlows();
+                break;
+            case 'segments':
+                loadAudienceSegments();
+                break;
+        }
+    }
+
+    // =====================================================
+    // WHATSAPP CAMPAIGNS
+    // =====================================================
+
+    async function loadWhatsAppCampaigns() {
+        const container = document.getElementById('whatsappCampaignsList');
+        container.innerHTML = '<div class="loading-state"><div class="loader-spinner"></div><p>Loading campaigns...</p></div>';
+
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/whatsapp/campaigns/list`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.campaigns.length > 0) {
+                container.innerHTML = data.campaigns.map(campaign => `
+                <div class="campaign-card whatsapp-campaign">
+                    <div class="campaign-header">
+                        <div class="campaign-icon">
+                            <i class="ti ti-brand-whatsapp"></i>
+                        </div>
+                        <div class="campaign-info">
+                            <h3>${campaign.campaign_name}</h3>
+                            <p class="campaign-meta">
+                                <i class="ti ti-user"></i> ${campaign.client_name}
+                                <span class="separator">•</span>
+                                <i class="ti ti-calendar"></i> ${formatDate(campaign.created_at)}
+                            </p>
+                        </div>
+                        <div class="campaign-status">
+                            <span class="status-badge status-${campaign.status}">${campaign.status}</span>
+                        </div>
+                    </div>
+                    <div class="campaign-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${campaign.total_recipients}</div>
+                            <div class="stat-label">Recipients</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${campaign.delivered_count}</div>
+                            <div class="stat-label">Delivered</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${campaign.total_recipients > 0 ? Math.round((campaign.delivered_count / campaign.total_recipients) * 100) : 0}%</div>
+                            <div class="stat-label">Delivery Rate</div>
+                        </div>
+                    </div>
+                    <div class="campaign-actions">
+                        <button class="btn-action" onclick="viewCampaign('whatsapp', ${campaign.campaign_id})">
+                            <i class="ti ti-eye"></i> View
+                        </button>
+                        ${campaign.status === 'draft' ? `
+                            <button class="btn-action" onclick="editCampaign('whatsapp', ${campaign.campaign_id})">
+                                <i class="ti ti-edit"></i> Edit
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+            } else {
+                container.innerHTML = `
+                <div class="empty-state">
+                    <i class="ti ti-brand-whatsapp"></i>
+                    <h3>No WhatsApp Campaigns Yet</h3>
+                    <p>Create your first WhatsApp campaign to engage with your audience</p>
+                    
+                </div>
+            `;
+            }
+        } catch (error) {
+            console.error('Error loading WhatsApp campaigns:', error);
+            container.innerHTML = '<div class="error-state">Failed to load campaigns</div>';
+        }
+    }
+
+    // =====================================================
+    // EMAIL CAMPAIGNS
+    // =====================================================
+
+    async function loadEmailCampaigns() {
+        const container = document.getElementById('emailCampaignsList');
+        container.innerHTML = '<div class="loading-state"><div class="loader-spinner"></div><p>Loading campaigns...</p></div>';
+
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/email/campaigns/list`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.campaigns.length > 0) {
+                container.innerHTML = data.campaigns.map(campaign => `
+                <div class="campaign-card email-campaign">
+                    <div class="campaign-header">
+                        <div class="campaign-icon">
+                            <i class="ti ti-mail"></i>
+                        </div>
+                        <div class="campaign-info">
+                            <h3>${campaign.campaign_name}</h3>
+                            <p class="campaign-subject">${campaign.subject_line}</p>
+                            <p class="campaign-meta">
+                                <i class="ti ti-user"></i> ${campaign.client_name}
+                                <span class="separator">•</span>
+                                <i class="ti ti-calendar"></i> ${formatDate(campaign.created_at)}
+                                ${campaign.is_ab_test ? '<span class="ab-badge">A/B Test</span>' : ''}
+                            </p>
+                        </div>
+                        <div class="campaign-status">
+                            <span class="status-badge status-${campaign.status}">${campaign.status}</span>
+                        </div>
+                    </div>
+                    <div class="campaign-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${campaign.total_recipients}</div>
+                            <div class="stat-label">Sent</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${campaign.open_rate}%</div>
+                            <div class="stat-label">Open Rate</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${campaign.click_rate}%</div>
+                            <div class="stat-label">Click Rate</div>
+                        </div>
+                    </div>
+                    <div class="campaign-actions">
+                        <button class="btn-action" onclick="viewCampaign('email', ${campaign.email_campaign_id})">
+                            <i class="ti ti-eye"></i> View
+                        </button>
+                        ${campaign.status === 'draft' ? `
+                            <button class="btn-action" onclick="editCampaign('email', ${campaign.email_campaign_id})">
+                                <i class="ti ti-edit"></i> Edit
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+            } else {
+                container.innerHTML = `
+                <div class="empty-state">
+                    <i class="ti ti-mail"></i>
+                    <h3>No Email Campaigns Yet</h3>
+                    <p>Create your first email campaign with AI-powered copy</p>
+                   
+                </div>
+            `;
+            }
+        } catch (error) {
+            console.error('Error loading email campaigns:', error);
+            container.innerHTML = '<div class="error-state">Failed to load campaigns</div>';
+        }
+    }
+
+    // =====================================================
+    // AUTOMATION FLOWS
+    // =====================================================
+
+    async function loadAutomationFlows() {
+        const container = document.getElementById('flowsList');
+        container.innerHTML = '<div class="loading-state"><div class="loader-spinner"></div><p>Loading flows...</p></div>';
+
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/flows/list`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.flows.length > 0) {
+                container.innerHTML = data.flows.map(flow => `
+                <div class="flow-card">
+                    <div class="flow-header">
+                        <div class="flow-icon">
+                            <i class="ti ti-git-branch"></i>
+                        </div>
+                        <div class="flow-info">
+                            <h3>${flow.flow_name}</h3>
+                            <p class="flow-meta">
+                                <span class="trigger-type"><i class="ti ti-bolt"></i> ${formatTriggerType(flow.trigger_type)}</span>
+                                <span class="separator">•</span>
+                                <span class="channel-badge channel-${flow.channel}">
+                                    <i class="ti ti-${flow.channel === 'whatsapp' ? 'brand-whatsapp' : flow.channel === 'email' ? 'mail' : 'device-mobile'}"></i>
+                                    ${flow.channel}
+                                </span>
+                            </p>
+                            <p class="flow-client">
+                                <i class="ti ti-user"></i> ${flow.client_name}
+                            </p>
+                        </div>
+                        <div class="flow-toggle">
+                            <label class="toggle-switch">
+                                <input type="checkbox" ${flow.is_active ? 'checked' : ''} onchange="toggleFlow(${flow.flow_id}, this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label">${flow.is_active ? 'Active' : 'Inactive'}</span>
+                        </div>
+                    </div>
+                    <div class="flow-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${flow.total_executions}</div>
+                            <div class="stat-label">Total Executions</div>
+                        </div>
+                    </div>
+                    <div class="flow-actions">
+                        <button class="btn-action" onclick="viewFlow(${flow.flow_id})">
+                            <i class="ti ti-eye"></i> View Details
+                        </button>
+                        <button class="btn-action" onclick="editFlow(${flow.flow_id})">
+                            <i class="ti ti-edit"></i> Edit
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            } else {
+                container.innerHTML = `
+                <div class="empty-state">
+                    <i class="ti ti-git-branch"></i>
+                    <h3>No Automation Flows Yet</h3>
+                    <p>Set up automated workflows to engage users at the right time</p>
+                   
+                </div>
+            `;
+            }
+        } catch (error) {
+            console.error('Error loading automation flows:', error);
+            container.innerHTML = '<div class="error-state">Failed to load flows</div>';
+        }
+    }
+
+    // =====================================================
+    // AUDIENCE SEGMENTS
+    // =====================================================
+
+    async function loadAudienceSegments() {
+        const container = document.getElementById('segmentsList');
+        container.innerHTML = '<div class="loading-state"><div class="loader-spinner"></div><p>Loading segments...</p></div>';
+
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/segments/list`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.segments.length > 0) {
+                container.innerHTML = data.segments.map(segment => `
+                <div class="segment-card">
+                    <div class="segment-header">
+                        <div class="segment-icon">
+                            <i class="ti ti-users"></i>
+                        </div>
+                        <div class="segment-info">
+                            <h3>${segment.segment_name}</h3>
+                            <p class="segment-description">${segment.description || 'No description'}</p>
+                            <p class="segment-meta">
+                                <span class="platform-badge platform-${segment.platform}">
+                                    <i class="ti ti-device-mobile"></i> ${segment.platform}
+                                </span>
+                                <span class="separator">•</span>
+                                <i class="ti ti-user"></i> ${segment.client_name}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="segment-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${segment.estimated_size || 'N/A'}</div>
+                            <div class="stat-label">Estimated Size</div>
+                        </div>
+                    </div>
+                    <div class="segment-actions">
+                        <button class="btn-action" onclick="viewSegment(${segment.segment_id})">
+                            <i class="ti ti-eye"></i> View
+                        </button>
+                        <button class="btn-action" onclick="editSegment(${segment.segment_id})">
+                            <i class="ti ti-edit"></i> Edit
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            } else {
+                container.innerHTML = `
+                <div class="empty-state">
+                    <i class="ti ti-users"></i>
+                    <h3>No Audience Segments Yet</h3>
+                    <p>Create targeted segments to personalize your campaigns</p>
+                    
+                </div>
+            `;
+            }
+        } catch (error) {
+            console.error('Error loading segments:', error);
+            container.innerHTML = '<div class="error-state">Failed to load segments</div>';
+        }
+    }
+
+    // =====================================================
+    // MODAL FUNCTIONS
+    // =====================================================
+    function openWhatsAppModal() {
+        const modal = document.getElementById('whatsappModal');
+        const form = document.getElementById('whatsappForm');
+
+        // ✅ Reset form
+        form.reset();
+
+        // ✅ Clear edit mode data
+        delete form.dataset.editMode;
+        delete form.dataset.campaignId;
+
+        // ✅ Clear recipient count
+        const recipientCount = document.getElementById('wa_recipient_count');
+        if (recipientCount) {
+            recipientCount.textContent = '0 recipients selected. No segments yet? Click + to create one.';
+        }
+
+        // ✅ Show modal
+        modal.classList.add('show');
+    }
+
+    function openEmailModal() {
+        const modal = document.getElementById('emailModal');
+        const form = document.getElementById('emailForm');
+
+        // ✅ Reset form
+        form.reset();
+
+        // ✅ Clear edit mode data
+        delete form.dataset.editMode;
+        delete form.dataset.campaignId;
+
+        // ✅ Reset Quill editor
+        if (emailEditor) {
+            emailEditor.setContents([]);
+        }
+
+        // ✅ Clear recipient count
+        const recipientCount = document.getElementById('email_recipient_count');
+        if (recipientCount) {
+            recipientCount.textContent = '0 recipients selected';
+        }
+
+        // ✅ Show modal
+        modal.classList.add('show');
+    }
+
+
+
+
+    function openSegmentModal() {
+        document.getElementById('segmentModal').classList.add('show');
+        document.getElementById('segmentForm').reset();
+
+        // Reset CSV data and preview
+        csvData = null;
+        document.getElementById('csvPreview').style.display = 'none';
+        document.getElementById('fileName').textContent = '';
+    }
+
+    function openCreateCampaignModal() {
+        // Show selection modal or default to email
+        openEmailModal();
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('show');
+    }
+
+    // Close modal on backdrop click
+    document.addEventListener('click', function (e) {
+        if (e.target.classList.contains('modal')) {
+            e.target.classList.remove('show');
+        }
+    });
+
+    // =====================================================
+    // EMAIL EDITOR
+    // =====================================================
+
+    function initializeEmailEditor() {
+        const editorElement = document.getElementById('emailEditor');
+        if (editorElement && !emailEditor) {
+            emailEditor = new Quill('#emailEditor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        [{ 'align': [] }],
+                        ['link', 'image'],
+                        ['clean']
+                    ]
+                },
+                placeholder: 'Write your email content here...'
+            });
+        }
+    }
+
+    // =====================================================
+    // AI EMAIL GENERATION
+    // =====================================================
+
+    async function generateEmailCopy() {
+        document.getElementById('aiEmailModal').classList.add('show');
+    }
+
+    // =====================================================
+    // FORM HANDLERS
+    // =====================================================
+    // Update the setupFormHandlers function to include the flow form
+    function setupFormHandlers() {
+        // WhatsApp Form
+        const whatsappForm = document.getElementById('whatsappForm');
+        if (whatsappForm) {
+            whatsappForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                await submitWhatsAppCampaign();
+            });
+        }
+
+        // Email Form
+        const emailForm = document.getElementById('emailForm');
+        if (emailForm) {
+            emailForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                await submitEmailCampaign();
+            });
+        }
+
+        // Flow Form - ADD THIS
+        const flowForm = document.getElementById('flowForm');
+        if (flowForm) {
+            flowForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                await submitAutomationFlow();
+            });
+        }
+
+        // Segment Form
+        const segmentForm = document.getElementById('segmentForm');
+        if (segmentForm) {
+            segmentForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                await submitAudienceSegment();
+            });
+        }
+
+        // Quick Segment Form
+        const quickSegmentForm = document.getElementById('quickSegmentForm');
+        if (quickSegmentForm) {
+            quickSegmentForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                await submitQuickSegment();
+            });
+        }
+    }
+
+
+    async function submitWhatsAppCampaign() {
+        try {
+            const segmentId = document.getElementById('wa_audience_segment').value;
+
+            if (!segmentId) {
+                showNotification('Please select an audience segment', 'error');
+                return;
+            }
+
+            console.log('🔍 Step 1: Selected segment ID:', segmentId);
+
+            // ✅ FETCH ACTUAL RECIPIENTS FROM SEGMENT
+            const token = localStorage.getItem('access_token');
+            const fetchUrl = `${API_BASE}/segments/${segmentId}`;
+
+            console.log('🔍 Step 2: Fetching from URL:', fetchUrl);
+
+            const segmentResponse = await fetch(fetchUrl, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            console.log('🔍 Step 3: Response status:', segmentResponse.status);
+
+            const segmentData = await segmentResponse.json();
+            console.log('🔍 Step 4: Full segment response:', segmentData);
+
+            if (!segmentData.success) {
+                console.error('❌ Segment fetch failed:', segmentData);
+                showNotification('Failed to load segment data', 'error');
+                return;
+            }
+
+            console.log('🔍 Step 5: Segment object:', segmentData.segment);
+            console.log('🔍 Step 6: contacts_data field:', segmentData.segment.contacts_data);
+            console.log('🔍 Step 7: contacts_data type:', typeof segmentData.segment.contacts_data);
+
+            // Extract phone numbers from contacts_data
+            let recipientList = [];
+
+            if (segmentData.segment.contacts_data) {
+                let contactsData;
+
+                // Parse if string, use directly if already an array
+                if (typeof segmentData.segment.contacts_data === 'string') {
+                    console.log('🔍 Step 8a: contacts_data is STRING, parsing...');
+                    contactsData = JSON.parse(segmentData.segment.contacts_data);
+                } else if (Array.isArray(segmentData.segment.contacts_data)) {
+                    console.log('🔍 Step 8b: contacts_data is already ARRAY');
+                    contactsData = segmentData.segment.contacts_data;
+                } else {
+                    console.log('🔍 Step 8c: contacts_data is OBJECT, wrapping in array');
+                    contactsData = [segmentData.segment.contacts_data];
+                }
+
+                console.log('🔍 Step 9: Parsed contactsData:', contactsData);
+                console.log('🔍 Step 10: contactsData length:', contactsData.length);
+
+                // Extract phone numbers
+                recipientList = contactsData.map((contact, index) => {
+                    console.log(`🔍 Step 11.${index}: Processing contact:`, contact);
+
+                    let phone = null;
+
+                    if (contact.type === 'phone' && contact.value) {
+                        phone = contact.value;
+                        console.log(`   ✅ Found phone via type/value: ${phone}`);
+                    } else if (contact.phone) {
+                        phone = contact.phone;
+                        console.log(`   ✅ Found phone via phone field: ${phone}`);
+                    } else if (contact.Phone) {
+                        phone = contact.Phone;
+                        console.log(`   ✅ Found phone via Phone field: ${phone}`);
+                    } else if (contact.mobile) {
+                        phone = contact.mobile;
+                        console.log(`   ✅ Found phone via mobile field: ${phone}`);
+                    } else if (contact.Mobile) {
+                        phone = contact.Mobile;
+                        console.log(`   ✅ Found phone via Mobile field: ${phone}`);
+                    } else if (typeof contact === 'string' && !contact.includes('@')) {
+                        phone = contact;
+                        console.log(`   ✅ Contact is string (phone): ${phone}`);
+                    } else {
+                        console.log(`   ❌ No phone found in contact`);
+                    }
+
+                    return phone;
+                }).filter(phone => phone && phone.trim());
+
+                console.log('🔍 Step 12: Filtered recipientList:', recipientList);
+            } else {
+                console.log('❌ contacts_data is null/undefined');
+            }
+
+            console.log('✅ FINAL: recipient_list:', recipientList);
+            console.log('✅ FINAL: recipient_list length:', recipientList.length);
+
+            if (recipientList.length === 0) {
+                showNotification('No phone numbers found in selected segment', 'error');
+                return;
+            }
+
+            const form = document.getElementById('whatsappForm');
+            const isEditMode = form.dataset.editMode === 'true';
+            const campaignId = form.dataset.campaignId;
+
+            const data = {
+                client_id: parseInt(document.getElementById('wa_client_id').value),
+                campaign_name: document.getElementById('wa_campaign_name').value,
+                template_name: document.getElementById('wa_template_name').value || "",
+                message_content: document.getElementById('wa_message_content').value,
+                recipient_list: recipientList,
+                schedule_type: document.getElementById('wa_schedule_type').value,
+                scheduled_at: document.getElementById('wa_scheduled_at').value || null
+            };
+
+            console.log('Sending WhatsApp campaign data:', data);
+
+            const url = isEditMode
+                ? `${API_BASE}/whatsapp/campaigns/${campaignId}`
+                : `${API_BASE}/whatsapp/campaigns/create`;
+            const method = isEditMode ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            console.log('Backend response:', result);
+
+            if (result.success) {
+                showNotification(`WhatsApp campaign ${isEditMode ? 'updated' : 'created'} successfully!`, 'success');
+                closeModal('whatsappModal');
+                delete form.dataset.editMode;
+                delete form.dataset.campaignId;
+                loadWhatsAppCampaigns();
+                loadAnalytics();
+            } else {
+                showNotification(result.detail || `Failed to ${isEditMode ? 'update' : 'create'} campaign`, 'error');
+            }
+        } catch (error) {
+            console.error('❌ CATCH ERROR:', error);
+            showNotification('An error occurred', 'error');
+        }
+    }
+
+    async function submitEmailCampaign() {
+        try {
+            const segmentId = document.getElementById('email_audience_segment').value;
+
+            if (!segmentId) {
+                showNotification('Please select an audience segment', 'error');
+                return;
+            }
+
+            const data = {
+                client_id: parseInt(document.getElementById('email_client_id').value),
+                campaign_name: document.getElementById('email_campaign_name').value,
+                subject_line: document.getElementById('email_subject').value,
+                email_body: emailEditor ? emailEditor.root.innerHTML : '',
+                segment_id: parseInt(segmentId),  // ✅ Send segment_id instead
+                schedule_type: document.getElementById('email_schedule_type').value,
+                scheduled_at: document.getElementById('email_scheduled_at').value || null,
+                is_ab_test: document.getElementById('email_ab_test').checked
+            };
+
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/email/campaigns/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showNotification('Email campaign created successfully!', 'success');
+                closeModal('emailModal');
+                loadEmailCampaigns();
+                loadAnalytics();
+            } else {
+                showNotification(result.detail || 'Failed to create campaign', 'error');
+            }
+        } catch (error) {
+            console.error('Error creating email campaign:', error);
+            showNotification('An error occurred', 'error');
+        }
+    }
+
+    async function submitAudienceSegment() {
+        try {
+            // Validate CSV upload
+            if (!csvData || csvData.length === 0) {
+                showNotification('Please upload a CSV file with contacts', 'error');
+                return;
+            }
+
+            const clientId = parseInt(document.getElementById('segment_client_id').value);
+            const segmentName = document.getElementById('segment_name').value;
+            const platform = document.getElementById('segment_platform').value;
+            const description = document.getElementById('segment_description')?.value || '';
+
+            if (!clientId || !segmentName) {
+                showNotification('Please fill all required fields', 'error');
+                return;
+            }
+
+            // Prepare segment data with full CSV contact data
+            const data = {
+                client_id: clientId,
+                segment_name: segmentName,
+                description: description || `Uploaded segment with ${csvData.length} contacts`,
+                platform: platform,
+                segment_criteria: {
+                    upload_type: 'csv',
+                    total_contacts: csvData.length,
+                    columns: Object.keys(csvData[0] || {}),
+                    uploaded_at: new Date().toISOString()
+                },
+                estimated_size: csvData.length,
+                contacts_data: csvData  // Send full CSV data to store in database
+            };
+
+            console.log('Submitting segment with', csvData.length, 'contacts');
+
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/segments/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showNotification(`✅ Segment created with ${csvData.length} contacts!`, 'success');
+                closeModal('segmentModal');
+                loadAudienceSegments();
+                loadSegmentsForDropdown(); // Reload dropdowns
+                loadAnalytics();
+
+                // Reset form and CSV data
+                csvData = null;
+                document.getElementById('segmentForm').reset();
+                document.getElementById('csvPreview').style.display = 'none';
+                document.getElementById('fileName').textContent = '';
+            } else {
+                showNotification(result.detail || 'Failed to create segment', 'error');
+            }
+        } catch (error) {
+            console.error('Error creating segment:', error);
+            showNotification('An error occurred while creating segment', 'error');
+        }
+    }
+
+    async function submitAIEmailGeneration() {
+        // Get the submit button
+        const submitButton = document.querySelector('#aiEmailForm button[type="submit"]');
+        const originalContent = submitButton ? submitButton.innerHTML : '';
+
+        try {
+            // Show loading state on button
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = `
+                <div class="spinner-border spinner-border-sm" role="status" style="display: inline-block; width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite;">
+                    <span class="visually-hidden"></span>
+                </div>
+                <span style="margin-left: 8px;">Generating...</span>
+            `;
+            }
+
+            const data = {
+                campaign_goal: document.getElementById('ai_campaign_goal').value,
+                target_audience: document.getElementById('ai_target_audience').value,
+                tone: document.getElementById('ai_tone').value,
+                industry: document.getElementById('ai_industry').value,
+                include_cta: document.getElementById('ai_include_cta').checked
+            };
+
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/email/generate-copy`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success && result.email_copy) {
+                const copy = result.email_copy;
+
+                // Populate email form
+                if (copy.subject_line) {
+                    document.getElementById('email_subject').value = copy.subject_line;
+                }
+
+                if (copy.email_body && emailEditor) {
+                    emailEditor.root.innerHTML = copy.email_body;
+                }
+
+                showNotification('AI email copy generated successfully!', 'success');
+                closeModal('aiEmailModal');
+            } else {
+                showNotification('Failed to generate email copy', 'error');
+            }
+        } catch (error) {
+            console.error('Error generating AI email:', error);
+            showNotification('An error occurred', 'error');
+        } finally {
+            // Restore button state
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalContent;
+            }
+        }
+    }
+
+
+    // =====================================================
+    // TOGGLE FUNCTIONS
+    // =====================================================
+
+    function toggleScheduleTime(type) {
+        const scheduleType = document.getElementById(`${type}_schedule_type`).value;
+        const scheduleGroup = document.getElementById(`${type}_schedule_time_group`);
+
+        if (scheduleType === 'scheduled') {
+            scheduleGroup.style.display = 'block';
+        } else {
+            scheduleGroup.style.display = 'none';
+        }
+    }
+
+    async function toggleFlow(flowId, isActive) {
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/flows/${flowId}/toggle`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showNotification(`Flow ${isActive ? 'activated' : 'deactivated'} successfully`, 'success');
+                loadAutomationFlows();
+            } else {
+                showNotification('Failed to toggle flow status', 'error');
+            }
+        } catch (error) {
+            console.error('Error toggling flow:', error);
+            showNotification('An error occurred', 'error');
+        }
+    }
+
+    // =====================================================
+    // VIEW FUNCTIONS (Placeholder)
+    // =====================================================
+
+
+    async function viewCampaign(type, id) {
+        try {
+            openModal('viewCampaignModal');
+
+            const token = localStorage.getItem('access_token');
+            let endpoint;
+
+            if (type === 'whatsapp') {
+                endpoint = `${API_BASE}/whatsapp/campaigns/${id}`;
+            } else if (type === 'email') {
+                endpoint = `${API_BASE}/email/campaigns/${id}`;
+            }
+
+            const response = await fetch(endpoint, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const campaign = result.campaign;
+
+                let contentHTML = '';
+
+                if (type === 'whatsapp') {
+                    contentHTML = `
+                    <div class="campaign-detail-section">
+                        <h3><i class="ti ti-brand-whatsapp"></i> WhatsApp Campaign</h3>
+                        
+                        <div class="detail-row">
+                            <label>Campaign Name:</label>
+                            <div>${campaign.campaign_name}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Client:</label>
+                            <div>${campaign.client_name || 'N/A'}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Status:</label>
+                            <div><span class="status-badge status-${campaign.status}">${campaign.status}</span></div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Template Name:</label>
+                            <div>${campaign.template_name || 'None'}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Message:</label>
+                            <div class="message-content">${campaign.message_content}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Recipients:</label>
+                            <div>${campaign.total_recipients || 0}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Delivered:</label>
+                            <div>${campaign.delivered_count || 0}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Failed:</label>
+                            <div>${campaign.failed_count || 0}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Schedule Type:</label>
+                            <div>${campaign.schedule_type}</div>
+                        </div>
+                        
+                        ${campaign.scheduled_at ? `
+                        <div class="detail-row">
+                            <label>Scheduled For:</label>
+                            <div>${formatDate(campaign.scheduled_at)}</div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="detail-row">
+                            <label>Created:</label>
+                            <div>${formatDate(campaign.created_at)}</div>
+                        </div>
+                    </div>
+                `;
+                } else if (type === 'email') {
+                    contentHTML = `
+                    <div class="campaign-detail-section">
+                        <h3><i class="ti ti-mail"></i> Email Campaign</h3>
+                        
+                        <div class="detail-row">
+                            <label>Campaign Name:</label>
+                            <div>${campaign.campaign_name}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Client:</label>
+                            <div>${campaign.client_name || 'N/A'}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Status:</label>
+                            <div><span class="status-badge status-${campaign.status}">${campaign.status}</span></div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Subject:</label>
+                            <div><strong>${campaign.subject_line}</strong></div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Email Body:</label>
+                            <div class="email-body-preview">${campaign.email_body || 'No content'}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Recipients:</label>
+                            <div>${campaign.total_recipients || 0}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Open Rate:</label>
+                            <div>${campaign.open_rate || 0}%</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Click Rate:</label>
+                            <div>${campaign.click_rate || 0}%</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>A/B Test:</label>
+                            <div>${campaign.is_ab_test ? 'Yes' : 'No'}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <label>Schedule Type:</label>
+                            <div>${campaign.schedule_type}</div>
+                        </div>
+                        
+                        ${campaign.scheduled_at ? `
+                        <div class="detail-row">
+                            <label>Scheduled For:</label>
+                            <div>${formatDate(campaign.scheduled_at)}</div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="detail-row">
+                            <label>Created:</label>
+                            <div>${formatDate(campaign.created_at)}</div>
+                        </div>
+                    </div>
+                `;
+                }
+
+                document.getElementById('viewCampaignContent').innerHTML = contentHTML;
+            } else {
+                document.getElementById('viewCampaignContent').innerHTML = `
+                <div class="error-state">
+                    <p>Failed to load campaign details</p>
+                </div>
+            `;
+            }
+        } catch (error) {
+            console.error('Error viewing campaign:', error);
+            document.getElementById('viewCampaignContent').innerHTML = `
+            <div class="error-state">
+                <p>An error occurred while loading campaign details</p>
+            </div>
+        `;
+        }
+    }
+
+
+    async function editCampaign(type, id) {
+        try {
+            const token = localStorage.getItem('access_token');
+            let endpoint, modal, formPrefix;
+
+            if (type === 'whatsapp') {
+                endpoint = `${API_BASE}/whatsapp/campaigns/${id}`;
+                modal = 'whatsappModal';
+                formPrefix = 'wa';
+            } else if (type === 'email') {
+                endpoint = `${API_BASE}/email/campaigns/${id}`;
+                modal = 'emailModal';
+                formPrefix = 'email';
+            }
+
+            const response = await fetch(endpoint, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const campaign = result.campaign;
+
+                // Populate form fields
+                if (type === 'whatsapp') {
+                    document.getElementById('wa_campaign_name').value = campaign.campaign_name;
+                    document.getElementById('wa_client_id').value = campaign.client_id;
+                    document.getElementById('wa_template_name').value = campaign.template_name || '';
+                    document.getElementById('wa_message_content').value = campaign.message_content;
+                    document.getElementById('wa_schedule_type').value = campaign.schedule_type;
+
+                    if (campaign.scheduled_at) {
+                        const scheduledDate = new Date(campaign.scheduled_at);
+                        const dateTimeLocalValue = scheduledDate.toISOString().slice(0, 16);
+                        document.getElementById('wa_scheduled_at').value = dateTimeLocalValue;
+                        toggleScheduleTime('wa');
+                    }
+
+                    // Store campaign ID for update
+                    const form = document.getElementById('whatsappForm');
+                    form.dataset.campaignId = id;
+                    form.dataset.editMode = 'true';
+
+                } else if (type === 'email') {
+                    document.getElementById('email_campaign_name').value = campaign.campaign_name;
+                    document.getElementById('email_client_id').value = campaign.client_id;
+                    document.getElementById('email_subject').value = campaign.subject_line;
+
+                    if (emailEditor) {
+                        emailEditor.root.innerHTML = campaign.email_body;
+                    }
+
+                    document.getElementById('email_schedule_type').value = campaign.schedule_type;
+
+                    if (campaign.scheduled_at) {
+                        const scheduledDate = new Date(campaign.scheduled_at);
+                        const dateTimeLocalValue = scheduledDate.toISOString().slice(0, 16);
+                        document.getElementById('email_scheduled_at').value = dateTimeLocalValue;
+                        toggleScheduleTime('email');
+                    }
+
+                    document.getElementById('email_ab_test').checked = campaign.is_ab_test;
+
+                    // Store campaign ID for update
+                    const form = document.getElementById('emailForm');
+                    form.dataset.campaignId = id;
+                    form.dataset.editMode = 'true';
+                }
+
+                // Open modal
+                openModal(modal);
+
+            } else {
+                showNotification('Failed to load campaign details', 'error');
+            }
+
+        } catch (error) {
+            console.error('Error loading campaign for edit:', error);
+            showNotification('Failed to load campaign', 'error');
+        }
+    }
+
+
+    let currentViewingFlowId = null;
+
+    // View Flow Details
+    async function viewFlow(flowId) {
+        try {
+            currentViewingFlowId = flowId;
+            openModal('viewFlowModal');
+
+            const contentDiv = document.getElementById('viewFlowContent');
+            contentDiv.innerHTML = `
+            <div class="loading-state">
+                <div class="loader-spinner"></div>
+                <p>Loading flow details...</p>
+            </div>
+        `;
+
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/flows/${flowId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const flow = result.flow;
+                displayFlowDetails(flow);
+            } else {
+                contentDiv.innerHTML = `
+                <div class="error-state">
+                    <i class="ti ti-alert-circle" style="font-size: 2rem; color: #f56565;"></i>
+                    <p>Failed to load flow details</p>
+                </div>
+            `;
+            }
+        } catch (error) {
+            console.error('Error viewing flow:', error);
+            document.getElementById('viewFlowContent').innerHTML = `
+            <div class="error-state">
+                <i class="ti ti-alert-circle" style="font-size: 2rem; color: #f56565;"></i>
+                <p>An error occurred while loading flow details</p>
+            </div>
+        `;
+        }
+    }
+
+    // Display Flow Details in Modal
+    function displayFlowDetails(flow) {
+        const contentDiv = document.getElementById('viewFlowContent');
+
+        // Parse flow_actions if it's a string
+        let actions = [];
+        if (flow.flow_actions) {
+            if (typeof flow.flow_actions === 'string') {
+                try {
+                    actions = JSON.parse(flow.flow_actions);
+                } catch (e) {
+                    actions = [];
+                }
+            } else {
+                actions = flow.flow_actions;
+            }
+        }
+
+        // Build actions HTML
+        let actionsHTML = '';
+        if (actions.length > 0) {
+            actionsHTML = actions.map((action, index) => {
+                const actionType = action.action || 'unknown';
+                const iconClass = getActionIconClass(actionType);
+                const actionTitle = formatActionType(actionType);
+
+                let metaInfo = '';
+                if (action.template) metaInfo += `Template: ${action.template}`;
+                if (action.delay && action.delay !== '0') metaInfo += `${metaInfo ? ' • ' : ''}Delay: ${formatDelay(action.delay)}`;
+                if (action.resource) metaInfo += `${metaInfo ? ' • ' : ''}Resource: ${action.resource}`;
+                if (action.duration) metaInfo += `${metaInfo ? ' • ' : ''}Duration: ${formatDelay(action.duration)}`;
+
+                return `
+                <div class="action-item-display">
+                    <div class="action-number">${index + 1}</div>
+                    <div class="action-icon-display ${actionType}">
+                        <i class="ti ${iconClass}"></i>
+                    </div>
+                    <div class="action-details">
+                        <div class="action-type">${actionTitle}</div>
+                        ${metaInfo ? `<div class="action-meta">${metaInfo}</div>` : ''}
+                    </div>
+                </div>
+            `;
+            }).join('');
+        } else {
+            actionsHTML = '<div class="empty-actions-message">No actions defined for this flow</div>';
+        }
+
+        contentDiv.innerHTML = `
+        <!-- Basic Info -->
+        <div class="flow-details-section">
+            <h4><i class="ti ti-info-circle"></i> Basic Information</h4>
+            <div class="flow-info-grid">
+                <div class="flow-info-item">
+                    <span class="label">Flow Name</span>
+                    <span class="value">${flow.flow_name}</span>
+                </div>
+                <div class="flow-info-item">
+                    <span class="label">Client</span>
+                    <span class="value">${flow.client_name || 'N/A'}</span>
+                </div>
+                <div class="flow-info-item">
+                    <span class="label">Status</span>
+                    <span class="value">
+                        <span class="flow-status-badge ${flow.is_active ? 'active' : 'inactive'}">
+                            <i class="ti ti-${flow.is_active ? 'check' : 'x'}"></i>
+                            ${flow.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </span>
+                </div>
+                <div class="flow-info-item">
+                    <span class="label">Created</span>
+                    <span class="value">${formatDate(flow.created_at)}</span>
+                </div>
+                <div class="flow-info-item">
+                    <span class="label">Total Executions</span>
+                    <span class="value">${flow.total_executions || 0}</span>
+                </div>
+                <div class="flow-info-item">
+                    <span class="label">Channel</span>
+                    <span class="value" style="text-transform: capitalize;">${flow.channel}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Trigger -->
+        <div class="flow-details-section">
+            <h4><i class="ti ti-bolt"></i> Trigger</h4>
+            <div class="flow-trigger-display">
+                <div class="trigger-icon-display">
+                    <i class="ti ti-player-play"></i>
+                </div>
+                <div class="trigger-info">
+                    <h5>${formatTriggerType(flow.trigger_type)}</h5>
+                    <p>Channel: ${flow.channel}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flow-details-section">
+            <h4><i class="ti ti-list"></i> Flow Actions (${actions.length})</h4>
+            <div class="flow-actions-display">
+                ${actionsHTML}
+            </div>
+        </div>
+    `;
+    }
+
+    // Edit Flow From View Modal
+    function editFlowFromView() {
+        closeModal('viewFlowModal');
+        if (currentViewingFlowId) {
+            editFlow(currentViewingFlowId);
+        }
+    }
+
+
+    async function editFlow(flowId) {
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/flows/${flowId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const flow = result.flow;
+                loadFlowIntoBuilder(flow, flowId);
+            } else {
+                showNotification('Failed to load flow for editing', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading flow for edit:', error);
+            showNotification('An error occurred', 'error');
+        }
+    }
+
+    // Load Flow Data into the Builder Modal for Editing
+    function loadFlowIntoBuilder(flow, flowId) {
+        // Set global edit mode variable
+        editingFlowId = flowId;
+
+        // Open the modal
+        const modal = document.getElementById('flowModal');
+
+        // Reset first
+        resetFlowBuilder();
+
+        // Re-set the editing flow ID after reset (reset clears it)
+        editingFlowId = flowId;
+
+        // Update modal title
+        const modalHeader = modal.querySelector('.modal-header h2');
+        if (modalHeader) {
+            modalHeader.innerHTML = '<i class="ti ti-git-branch"></i> Edit Automation Flow';
+        }
+
+        // Update submit button
+        const submitBtn = modal.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="ti ti-check"></i> Update Flow';
+        }
+
+        // Populate basic fields
+        document.getElementById('flow_name').value = flow.flow_name || '';
+        document.getElementById('flow_client_id').value = flow.client_id || '';
+        document.getElementById('flow_trigger_type').value = flow.trigger_type || '';
+        document.getElementById('flow_channel').value = flow.channel || 'email';
+        document.getElementById('flow_active').checked = flow.is_active;
+
+        // Parse and load flow actions
+        let actions = [];
+        if (flow.flow_actions) {
+            if (typeof flow.flow_actions === 'string') {
+                try {
+                    actions = JSON.parse(flow.flow_actions);
+                } catch (e) {
+                    console.error('Error parsing flow_actions:', e);
+                    actions = [];
+                }
+            } else {
+                actions = flow.flow_actions;
+            }
+        }
+
+        console.log('Loading flow actions:', actions);
+
+        // Add each action to the builder
+        actions.forEach(action => {
+            addFlowNodeWithData(action);
+        });
+
+        // Show modal
+        modal.classList.add('show');
+
+        console.log('Edit mode enabled for flow ID:', editingFlowId);
+    }
+
+
+    // Add Flow Node with Pre-populated Data (for editing)
+    function addFlowNodeWithData(actionData) {
+        const type = actionData.action;
+        const config = nodeTypes[type];
+        if (!config) {
+            console.warn('Unknown action type:', type);
+            return;
+        }
+
+        flowNodeCounter++;
+        const nodeId = `node_${flowNodeCounter}`;
+        const container = document.getElementById('flowActionsContainer');
+
+        const connectorHTML = `
+        <div class="flow-connector" id="connector_${nodeId}">
+            <div class="connector-line"></div>
+            <div class="connector-arrow"><i class="ti ti-chevron-down"></i></div>
+        </div>
+    `;
+
+        let nodeHTML = '';
+        if (type === 'condition') {
+            nodeHTML = createConditionNodeWithData(nodeId, config, actionData);
+        } else if (type === 'wait') {
+            nodeHTML = createWaitNodeWithData(nodeId, config, actionData);
+        } else {
+            nodeHTML = createActionNodeWithData(nodeId, type, config, actionData);
+        }
+
+        container.insertAdjacentHTML('beforeend', connectorHTML + nodeHTML);
+        flowNodes.push({ id: nodeId, type: type, order: flowNodeCounter });
+    }
+
+
+
+    // Create Action Node with Pre-populated Data
+function createActionNodeWithData(nodeId, type, config, data) {
+    const resourceValue = data.resource || data.template || '';
+    const templateValue = data.template || '';
+    const delayValue = data.delay || '0';
+    
+    return `
+        <div class="flow-action-node ${config.class}" id="${nodeId}" data-type="${type}">
+            <div class="node-icon"><i class="ti ${config.icon}"></i></div>
+            <div class="node-content">
+                <div class="node-header">
+                    <div class="node-title">${config.title}</div>
+                    <button type="button" class="btn-delete-node" onclick="deleteFlowNode('${nodeId}')"><i class="ti ti-x"></i></button>
+                </div>
+                <p class="node-description">${config.description}</p>
+                <div class="node-config">
+                    <label>Resource Name</label>
+                    <input type="text" class="node-resource" value="${resourceValue}" placeholder="e.g., resource_name">
+                </div>
+                ${type === 'send_email' || type === 'send_whatsapp' ? `
+                <div class="node-config">
+                    <label>Template</label>
+                    <input type="text" class="node-template" value="${templateValue}" placeholder="Template name">
+                </div>` : ''}
+                <div class="node-config">
+                    <label>Delay Before Action</label>
+                    <select class="node-delay">
+                        <option value="0" ${delayValue === '0' ? 'selected' : ''}>Immediate</option>
+                        <option value="5_minutes" ${delayValue === '5_minutes' ? 'selected' : ''}>5 Minutes</option>
+                        <option value="30_minutes" ${delayValue === '30_minutes' ? 'selected' : ''}>30 Minutes</option>
+                        <option value="1_hour" ${delayValue === '1_hour' ? 'selected' : ''}>1 Hour</option>
+                        <option value="1_day" ${delayValue === '1_day' ? 'selected' : ''}>1 Day</option>
+                        <option value="3_days" ${delayValue === '3_days' ? 'selected' : ''}>3 Days</option>
+                        <option value="1_week" ${delayValue === '1_week' ? 'selected' : ''}>1 Week</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Create Condition Node with Pre-populated Data
+function createConditionNodeWithData(nodeId, config, data) {
+    const condField = data.condition?.field || '';
+    const condValue = data.condition?.value || '';
+    
+    return `
+        <div class="flow-action-node ${config.class}" id="${nodeId}" data-type="condition">
+            <div class="node-icon"><i class="ti ${config.icon}"></i></div>
+            <div class="node-content">
+                <div class="node-header">
+                    <div class="node-title">${config.title}</div>
+                    <button type="button" class="btn-delete-node" onclick="deleteFlowNode('${nodeId}')"><i class="ti ti-x"></i></button>
+                </div>
+                <p class="node-description">Condition on result</p>
+                <div class="node-config">
+                    <label>Condition Field</label>
+                    <select class="node-condition-field">
+                        <option value="" ${!condField ? 'selected' : ''}>Select field...</option>
+                        <option value="email_opened" ${condField === 'email_opened' ? 'selected' : ''}>Email Opened</option>
+                        <option value="link_clicked" ${condField === 'link_clicked' ? 'selected' : ''}>Link Clicked</option>
+                        <option value="form_filled" ${condField === 'form_filled' ? 'selected' : ''}>Form Filled</option>
+                        <option value="purchase_made" ${condField === 'purchase_made' ? 'selected' : ''}>Purchase Made</option>
+                    </select>
+                </div>
+                <div class="node-config">
+                    <label>Value</label>
+                    <input type="text" class="node-condition-value" value="${condValue}" placeholder="Expected value">
+                </div>
+                <div class="condition-branches">
+                    <div class="branch branch-true">
+                        <div class="branch-label">True</div>
+                        <button type="button" class="btn-add-branch" onclick="addBranchAction('${nodeId}', 'true')"><i class="ti ti-plus"></i></button>
+                    </div>
+                    <div class="branch branch-false">
+                        <div class="branch-label">False</div>
+                        <button type="button" class="btn-add-branch" onclick="addBranchAction('${nodeId}', 'false')"><i class="ti ti-plus"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Create Wait Node with Pre-populated Data
+function createWaitNodeWithData(nodeId, config, data) {
+    const duration = data.duration || '1_day';
+    
+    return `
+        <div class="flow-action-node ${config.class}" id="${nodeId}" data-type="wait">
+            <div class="node-icon"><i class="ti ${config.icon}"></i></div>
+            <div class="node-content">
+                <div class="node-header">
+                    <div class="node-title">${config.title}</div>
+                    <button type="button" class="btn-delete-node" onclick="deleteFlowNode('${nodeId}')"><i class="ti ti-x"></i></button>
+                </div>
+                <p class="node-description">Pause the flow for a duration</p>
+                <div class="node-config">
+                    <label>Wait Duration</label>
+                    <select class="node-wait-duration">
+                        <option value="5_minutes" ${duration === '5_minutes' ? 'selected' : ''}>5 Minutes</option>
+                        <option value="1_hour" ${duration === '1_hour' ? 'selected' : ''}>1 Hour</option>
+                        <option value="1_day" ${duration === '1_day' ? 'selected' : ''}>1 Day</option>
+                        <option value="3_days" ${duration === '3_days' ? 'selected' : ''}>3 Days</option>
+                        <option value="1_week" ${duration === '1_week' ? 'selected' : ''}>1 Week</option>
+                        <option value="2_weeks" ${duration === '2_weeks' ? 'selected' : ''}>2 Weeks</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+    // Helper Functions
+    function getActionIconClass(actionType) {
+        const icons = {
+            create: 'ti-plus',
+            update: 'ti-refresh',
+            delete: 'ti-square-x',
+            condition: 'ti-git-branch',
+            notification: 'ti-bell',
+            question: 'ti-help',
+            send_email: 'ti-mail',
+            send_whatsapp: 'ti-brand-whatsapp',
+            wait: 'ti-clock'
+        };
+        return icons[actionType] || 'ti-circle';
+    }
+
+    function formatActionType(type) {
+        const labels = {
+            create: 'Create Resource',
+            update: 'Update Resource',
+            delete: 'Delete Resource',
+            condition: 'Add Condition',
+            notification: 'Show Notification',
+            question: 'Ask Question',
+            send_email: 'Send Email',
+            send_whatsapp: 'Send WhatsApp',
+            wait: 'Wait / Delay'
+        };
+        return labels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    function formatDelay(delay) {
+        const labels = {
+            '0': 'Immediate',
+            '5_minutes': '5 Minutes',
+            '15_minutes': '15 Minutes',
+            '30_minutes': '30 Minutes',
+            '1_hour': '1 Hour',
+            '3_hours': '3 Hours',
+            '6_hours': '6 Hours',
+            '12_hours': '12 Hours',
+            '1_day': '1 Day',
+            '2_days': '2 Days',
+            '3_days': '3 Days',
+            '1_week': '1 Week',
+            '2_weeks': '2 Weeks',
+            '1_month': '1 Month'
+        };
+        return labels[delay] || delay;
+    }
+
+
+    function viewSegment(segmentId) {
+        showNotification(`Viewing segment ${segmentId}`, 'info');
+        // Implement segment details modal
+    }
+
+    function editSegment(segmentId) {
+        showNotification(`Editing segment ${segmentId}`, 'info');
+        // Implement edit functionality
+    }
+
+    // =====================================================
+    // UTILITY FUNCTIONS
+    // =====================================================
+
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
+    function formatTriggerType(trigger) {
+        return trigger.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    function showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+        <i class="ti ti-${type === 'success' ? 'check' : type === 'error' ? 'x' : 'info-circle'}"></i>
+        <span>${message}</span>
+    `;
+
+        document.body.appendChild(notification);
+
+        // Trigger animation
+        setTimeout(() => notification.classList.add('show'), 10);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+
+    // ADD THESE FUNCTIONS TO communication.js
+
+    // =====================================================
+    // FLOW BUILDER - USER FRIENDLY
+    // =====================================================
+
+    let flowActionCounter = 0;
+
+
+    function removeFlowActionVisual(id) {
+        const actionDiv = document.getElementById(`flow_action_visual_${id}`);
+        if (actionDiv) {
+            actionDiv.remove();
+        }
+
+        // Renumber remaining actions
+        const actions = document.querySelectorAll('.flow-action-block');
+        actions.forEach((action, index) => {
+            const numberSpan = action.querySelector('.flow-action-number span');
+            if (numberSpan) {
+                numberSpan.textContent = `Action ${index + 1}`;
+            }
+        });
+    }
+
+    async function submitAutomationFlow() {
+        try {
+            const form = document.getElementById('flowForm');
+            const isEditMode = form.dataset.editMode === 'true';
+            const flowId = form.dataset.flowId;
+
+            const flowName = document.getElementById('flow_name').value;
+            const clientId = document.getElementById('flow_client_id').value;
+            const triggerType = document.getElementById('flow_trigger_type').value;
+            const channel = document.getElementById('flow_channel').value;
+
+            if (!flowName) { showNotification('Please enter a flow name', 'error'); return; }
+            if (!clientId) { showNotification('Please select a client', 'error'); return; }
+            if (!triggerType) { showNotification('Please select a trigger type', 'error'); return; }
+
+            const flowActions = buildFlowActionsJSON();
+
+            if (flowActions.length === 0) {
+                showNotification('Please add at least one action to your flow', 'error');
+                return;
+            }
+
+            const data = {
+                client_id: parseInt(clientId),
+                flow_name: flowName,
+                trigger_type: triggerType,
+                channel: channel,
+                trigger_conditions: {},
+                flow_actions: flowActions,
+                is_active: document.getElementById('flow_active').checked
+            };
+
+            const token = localStorage.getItem('access_token');
+            const url = isEditMode ? `${API_BASE}/flows/${flowId}` : `${API_BASE}/flows/create`;
+            const method = isEditMode ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showNotification(`Automation flow ${isEditMode ? 'updated' : 'created'} successfully!`, 'success');
+                closeModal('flowModal');
+
+                // Reset edit mode
+                delete form.dataset.editMode;
+                delete form.dataset.flowId;
+
+                // Reset modal title and button
+                const modalHeader = document.querySelector('#flowModal .modal-header h2');
+                if (modalHeader) {
+                    modalHeader.innerHTML = '<i class="ti ti-git-branch"></i> Create Automation Flow';
+                }
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<i class="ti ti-check"></i> Create Flow';
+                }
+
+                loadAutomationFlows();
+                loadAnalytics();
+            } else {
+                showNotification(result.detail || `Failed to ${isEditMode ? 'update' : 'create'} flow`, 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification('An error occurred', 'error');
+        }
+    }
+
+    // =====================================================
+    // SEGMENT MANAGEMENT - DELETE & VIEW
+    // =====================================================
+
+    // Handle Quick Segment Form Submission
+    document.addEventListener('DOMContentLoaded', function () {
+        const quickSegmentForm = document.getElementById('quickSegmentForm');
+        if (quickSegmentForm) {
+            quickSegmentForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                await submitQuickSegment();
+            });
+        }
+    });
+
+
+    async function viewSegment(segmentId) {
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/segments/${segmentId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const segment = data.segment;
+
+                // Show segment details in a modal or alert
+                const details = `
+Segment: ${segment.segment_name}
+Platform: ${segment.platform}
+Estimated Size: ${segment.estimated_size || 0} contacts
+Description: ${segment.description || 'No description'}
+Created: ${new Date(segment.created_at).toLocaleDateString()}
+Client: ${segment.client_name}
+            `;
+
+                alert(details);
+            }
+        } catch (error) {
+            console.error('Error viewing segment:', error);
+            showNotification('Failed to load segment details', 'error');
+        }
+    }
+
+    async function deleteSegment(segmentId, segmentName) {
+        if (!confirm(`Are you sure you want to delete "${segmentName}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/segments/${segmentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showNotification('Segment deleted successfully', 'success');
+                loadAudienceSegments();
+                loadAnalytics();
+            } else {
+                showNotification(data.detail || 'Failed to delete segment', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting segment:', error);
+            showNotification('An error occurred', 'error');
+        }
+    }
+
+    function openModal(modalId) {
+
+        document.getElementById(modalId).classList.add('show');
+    }
+
+
+
+    // Quick Segment Creation
+    function openQuickCreateSegment(returnTo) {
+        console.log('opened');
+        document.getElementById('quick_return_to').value = returnTo;
+
+        // Populate client dropdown
+        const clientSelect = document.getElementById('quick_client_id');
+        clientSelect.innerHTML = '<option value="">Choose client...</option>';
+        clientsList.forEach(client => {
+            const option = document.createElement('option');
+            option.value = client.user_id;
+            option.textContent = `${client.full_name}${client.business_name ? ' - ' + client.business_name : ''}`;
+            clientSelect.appendChild(option);
+        });
+
+        // Set platform based on return destination
+        if (returnTo === 'wa') {
+            document.getElementById('quick_platform').value = 'whatsapp';
+        } else if (returnTo === 'email') {
+            document.getElementById('quick_platform').value = 'email';
+        }
+
+        openModal('quickSegmentModal');
+    }
+
+    async function submitQuickSegment() {
+        try {
+            const contactsText = document.getElementById('quick_contacts').value.trim();
+            const contactsList = contactsText.split('\n').map(c => c.trim()).filter(c => c);
+
+            if (contactsList.length === 0) {
+                showNotification('Please add at least one contact', 'error');
+                return;
+            }
+
+            // Parse contacts into structured data
+            const contactsData = contactsList.map(contact => {
+                if (contact.includes('@')) {
+                    return { type: 'email', value: contact };
+                } else {
+                    return { type: 'phone', value: contact };
+                }
+            });
+
+            const data = {
+                client_id: parseInt(document.getElementById('quick_client_id').value),
+                segment_name: document.getElementById('quick_segment_name').value,
+                platform: document.getElementById('quick_platform').value,
+                description: `Quick-created segment with ${contactsList.length} contacts`,
+                segment_criteria: { source: 'manual_upload' },
+                estimated_size: contactsList.length,
+                contacts_data: contactsData
+            };
+
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/segments/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showNotification('Audience segment created successfully!', 'success');
+                closeModal('quickSegmentModal');
+
+                // Reload segments list
+                await loadSegmentsForDropdown();
+
+                // Auto-select the newly created segment
+                const returnTo = document.getElementById('quick_return_to').value;
+                if (returnTo) {
+                    const selectElement = document.getElementById(`${returnTo}_audience_segment`);
+                    if (selectElement && result.segment_id) {
+                        selectElement.value = result.segment_id;
+                        loadAudienceRecipients(returnTo);
+                    }
+                }
+            } else {
+                showNotification(result.detail || 'Failed to create segment', 'error');
+            }
+        } catch (error) {
+            console.error('Error creating quick segment:', error);
+            showNotification('An error occurred', 'error');
+        }
+    }
+    // UPDATE the loadAudienceSegments function to remove Edit button and add Delete
+    async function loadAudienceSegments() {
+        const container = document.getElementById('segmentsList');
+        container.innerHTML = '<div class="loading-state"><div class="loader-spinner"></div><p>Loading segments...</p></div>';
+
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${API_BASE}/segments/list`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.segments.length > 0) {
+                container.innerHTML = data.segments.map(segment => `
+                <div class="segment-card">
+                    <div class="segment-header">
+                        <div class="segment-icon">
+                            <i class="ti ti-users"></i>
+                        </div>
+                        <div class="segment-info">
+                            <h3>${segment.segment_name}</h3>
+                            <p class="segment-description">${segment.description || 'No description'}</p>
+                            <p class="segment-meta">
+                                <span class="platform-badge platform-${segment.platform}">
+                                    <i class="ti ti-device-mobile"></i> ${segment.platform}
+                                </span>
+                                <span class="separator">•</span>
+                                <i class="ti ti-user"></i> ${segment.client_name}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="segment-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${segment.estimated_size || 0}</div>
+                            <div class="stat-label">Contacts</div>
+                        </div>
+                    </div>
+                    <div class="segment-actions">
+                        <button class="btn-action btn-action-view" onclick="viewSegment(${segment.segment_id})">
+                            <i class="ti ti-eye"></i> View
+                        </button>
+                        <button class="btn-action btn-action-delete" onclick="deleteSegment(${segment.segment_id}, '${segment.segment_name}')">
+                            <i class="ti ti-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            } else {
+                container.innerHTML = `
+                <div class="empty-state">
+                    <i class="ti ti-users"></i>
+                    <h3>No Audience Segments Yet</h3>
+                    <p>Create targeted segments to personalize your campaigns</p>
+                </div>
+            `;
+            }
+        } catch (error) {
+            console.error('Error loading segments:', error);
+            container.innerHTML = '<div class="error-state">Failed to load segments</div>';
+        }
+    }
+
+
+    // =====================================================
+    // REPLACE THE EXISTING FLOW BUILDER FUNCTIONS IN communication.html
+    // VISUAL FLOW BUILDER - JAVASCRIPT
+    // =====================================================
+
+    let flowNodes = [];
+    let flowNodeCounter = 0;
+
+    const nodeTypes = {
+        create: { title: 'Create', icon: 'ti-plus', class: 'create-node', description: 'Create a new resource' },
+        update: { title: 'Update', icon: 'ti-refresh', class: 'update-node', description: 'Update existing resource' },
+        delete: { title: 'Delete', icon: 'ti-square-x', class: 'delete-node', description: 'Delete a resource' },
+        condition: { title: 'Add Condition', icon: 'ti-git-branch', class: 'condition-node', description: 'Branch based on condition' },
+        notification: { title: 'Show Notification', icon: 'ti-bell', class: 'notification-node', description: 'Display a notification' },
+        question: { title: 'Question', icon: 'ti-help', class: 'question-node', description: 'Ask user a question' },
+        send_email: { title: 'Send Email', icon: 'ti-mail', class: 'email-node', description: 'Send an email message' },
+        send_whatsapp: { title: 'Send WhatsApp', icon: 'ti-brand-whatsapp', class: 'whatsapp-node', description: 'Send a WhatsApp message' },
+        wait: { title: 'Wait / Delay', icon: 'ti-clock', class: 'wait-node', description: 'Pause the flow' }
+    };
+
+
+    function openFlowModal() {
+        const modal = document.getElementById('flowModal');
+        const form = document.getElementById('flowForm');
+
+        // Reset form
+        form.reset();
+
+        // Clear edit mode
+        editingFlowId = null;
+
+        // Reset modal title
+        const modalHeader = modal.querySelector('.modal-header h2');
+        if (modalHeader) {
+            modalHeader.innerHTML = '<i class="ti ti-git-branch"></i> Create Automation Flow';
+        }
+
+        // Reset submit button
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="ti ti-check"></i> Create Flow';
+        }
+
+        // Reset flow builder
+        resetFlowBuilder();
+
+        // Show modal
+        modal.classList.add('show');
+
+        console.log('Create mode - editingFlowId:', editingFlowId);
+    }
+
+
+    function resetFlowBuilder() {
+        flowNodes = [];
+        flowNodeCounter = 0;
+        editingFlowId = null; // Clear edit mode
+
+        const container = document.getElementById('flowActionsContainer');
+        if (container) container.innerHTML = '';
+
+        const triggerSelect = document.getElementById('flow_trigger_type');
+        if (triggerSelect) triggerSelect.value = '';
+
+        const channelSelect = document.getElementById('flow_channel');
+        if (channelSelect) channelSelect.value = 'email';
+
+        hideActionMenu();
+    }
+
+    function startFlow() {
+        const triggerSelect = document.getElementById('flow_trigger_type');
+        if (!triggerSelect.value) {
+            showNotification('Please select a trigger type first', 'error');
+            return;
+        }
+        showNotification('Flow started! Add actions below.', 'success');
+    }
+
+    function showActionMenu() {
+        const menu = document.getElementById('actionMenu');
+        menu.classList.toggle('show');
+    }
+
+    function hideActionMenu() {
+        const menu = document.getElementById('actionMenu');
+        if (menu) menu.classList.remove('show');
+    }
+
+    function addFlowNode(type) {
+        hideActionMenu();
+        const config = nodeTypes[type];
+        if (!config) return;
+
+        flowNodeCounter++;
+        const nodeId = `node_${flowNodeCounter}`;
+        const container = document.getElementById('flowActionsContainer');
+
+        const connectorHTML = `
+        <div class="flow-connector" id="connector_${nodeId}">
+            <div class="connector-line"></div>
+            <div class="connector-arrow"><i class="ti ti-chevron-down"></i></div>
+        </div>
+    `;
+
+        let nodeHTML = '';
+        if (type === 'condition') {
+            nodeHTML = createConditionNode(nodeId, config);
+        } else if (type === 'wait') {
+            nodeHTML = createWaitNode(nodeId, config);
+        } else {
+            nodeHTML = createActionNode(nodeId, type, config);
+        }
+
+        container.insertAdjacentHTML('beforeend', connectorHTML + nodeHTML);
+        flowNodes.push({ id: nodeId, type: type, order: flowNodeCounter });
+
+        const newNode = document.getElementById(nodeId);
+        if (newNode) newNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function createActionNode(nodeId, type, config) {
+        return `
+        <div class="flow-action-node ${config.class}" id="${nodeId}" data-type="${type}">
+            <div class="node-icon"><i class="ti ${config.icon}"></i></div>
+            <div class="node-content">
+                <div class="node-header">
+                    <div class="node-title">${config.title}</div>
+                    <button type="button" class="btn-delete-node" onclick="deleteFlowNode('${nodeId}')"><i class="ti ti-x"></i></button>
+                </div>
+                <p class="node-description">${config.description}</p>
+                <div class="node-config">
+                    <label>Resource Name</label>
+                    <input type="text" class="node-resource" placeholder="e.g., ${type === 'send_email' ? 'welcome_email' : 'resource_name'}">
+                </div>
+                ${type === 'send_email' || type === 'send_whatsapp' ? `
+                <div class="node-config">
+                    <label>Template</label>
+                    <input type="text" class="node-template" placeholder="Template name">
+                </div>` : ''}
+                <div class="node-config">
+                    <label>Delay Before Action</label>
+                    <select class="node-delay">
+                        <option value="0">Immediate</option>
+                        <option value="5_minutes">5 Minutes</option>
+                        <option value="30_minutes">30 Minutes</option>
+                        <option value="1_hour">1 Hour</option>
+                        <option value="1_day">1 Day</option>
+                        <option value="3_days">3 Days</option>
+                        <option value="1_week">1 Week</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+    }
+
+    function createConditionNode(nodeId, config) {
+        return `
+        <div class="flow-action-node ${config.class}" id="${nodeId}" data-type="condition">
+            <div class="node-icon"><i class="ti ${config.icon}"></i></div>
+            <div class="node-content">
+                <div class="node-header">
+                    <div class="node-title">${config.title}</div>
+                    <button type="button" class="btn-delete-node" onclick="deleteFlowNode('${nodeId}')"><i class="ti ti-x"></i></button>
+                </div>
+                <p class="node-description">Condition on result</p>
+                <div class="node-config">
+                    <label>Condition Field</label>
+                    <select class="node-condition-field">
+                        <option value="">Select field...</option>
+                        <option value="email_opened">Email Opened</option>
+                        <option value="link_clicked">Link Clicked</option>
+                        <option value="form_filled">Form Filled</option>
+                        <option value="purchase_made">Purchase Made</option>
+                    </select>
+                </div>
+                <div class="node-config">
+                    <label>Value</label>
+                    <input type="text" class="node-condition-value" placeholder="Expected value">
+                </div>
+                <div class="condition-branches">
+                    <div class="branch branch-true">
+                        <div class="branch-label">True</div>
+                        <button type="button" class="btn-add-branch" onclick="addBranchAction('${nodeId}', 'true')"><i class="ti ti-plus"></i></button>
+                    </div>
+                    <div class="branch branch-false">
+                        <div class="branch-label">False</div>
+                        <button type="button" class="btn-add-branch" onclick="addBranchAction('${nodeId}', 'false')"><i class="ti ti-plus"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    }
+
+    function createWaitNode(nodeId, config) {
+        return `
+        <div class="flow-action-node ${config.class}" id="${nodeId}" data-type="wait">
+            <div class="node-icon"><i class="ti ${config.icon}"></i></div>
+            <div class="node-content">
+                <div class="node-header">
+                    <div class="node-title">${config.title}</div>
+                    <button type="button" class="btn-delete-node" onclick="deleteFlowNode('${nodeId}')"><i class="ti ti-x"></i></button>
+                </div>
+                <p class="node-description">Pause the flow for a duration</p>
+                <div class="node-config">
+                    <label>Wait Duration</label>
+                    <select class="node-wait-duration">
+                        <option value="5_minutes">5 Minutes</option>
+                        <option value="1_hour">1 Hour</option>
+                        <option value="1_day" selected>1 Day</option>
+                        <option value="3_days">3 Days</option>
+                        <option value="1_week">1 Week</option>
+                        <option value="2_weeks">2 Weeks</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+    }
+
+    function deleteFlowNode(nodeId) {
+        const connector = document.getElementById(`connector_${nodeId}`);
+        if (connector) connector.remove();
+        const node = document.getElementById(nodeId);
+        if (node) node.remove();
+        flowNodes = flowNodes.filter(n => n.id !== nodeId);
+    }
+
+    function addBranchAction(parentNodeId, branch) {
+        showNotification(`Add ${branch} branch action - Feature coming soon!`, 'info');
+    }
+
+    function buildFlowActionsJSON() {
+        const actions = [];
+        const nodeElements = document.querySelectorAll('.flow-action-node');
+
+        nodeElements.forEach(node => {
+            const type = node.dataset.type;
+            const action = { action: type };
+
+            const resourceInput = node.querySelector('.node-resource');
+            const templateInput = node.querySelector('.node-template');
+            const delaySelect = node.querySelector('.node-delay');
+
+            if (resourceInput) action.resource = resourceInput.value;
+            if (templateInput) action.template = templateInput.value;
+            if (delaySelect) action.delay = delaySelect.value;
+
+            if (type === 'condition') {
+                const condField = node.querySelector('.node-condition-field');
+                const condValue = node.querySelector('.node-condition-value');
+                action.condition = {
+                    field: condField ? condField.value : '',
+                    value: condValue ? condValue.value : ''
+                };
+            }
+
+            if (type === 'wait') {
+                const waitDuration = node.querySelector('.node-wait-duration');
+                action.duration = waitDuration ? waitDuration.value : '1_day';
+            }
+
+            actions.push(action);
+        });
+
+        return actions;
+    }
+
+
+    async function submitAutomationFlow() {
+        try {
+            const isEditMode = editingFlowId !== null && editingFlowId !== undefined;
+
+            console.log('Submit called - isEditMode:', isEditMode, 'editingFlowId:', editingFlowId);
+
+            const flowName = document.getElementById('flow_name').value;
+            const clientId = document.getElementById('flow_client_id').value;
+            const triggerType = document.getElementById('flow_trigger_type').value;
+            const channel = document.getElementById('flow_channel').value;
+
+            // Validation
+            if (!flowName) {
+                showNotification('Please enter a flow name', 'error');
+                return;
+            }
+            if (!clientId) {
+                showNotification('Please select a client', 'error');
+                return;
+            }
+            if (!triggerType) {
+                showNotification('Please select a trigger type', 'error');
+                return;
+            }
+
+            const flowActions = buildFlowActionsJSON();
+
+            if (flowActions.length === 0) {
+                showNotification('Please add at least one action to your flow', 'error');
+                return;
+            }
+
+            const data = {
+                client_id: parseInt(clientId),
+                flow_name: flowName,
+                trigger_type: triggerType,
+                channel: channel,
+                trigger_conditions: {},
+                flow_actions: flowActions,
+                is_active: document.getElementById('flow_active').checked
+            };
+
+            // Determine URL and method based on edit mode
+            let url, method;
+            if (isEditMode) {
+                url = `${API_BASE}/flows/${editingFlowId}`;
+                method = 'PUT';
+                console.log('Updating flow at:', url);
+            } else {
+                url = `${API_BASE}/flows/create`;
+                method = 'POST';
+                console.log('Creating new flow at:', url);
+            }
+
+            console.log('Request method:', method);
+            console.log('Request data:', JSON.stringify(data, null, 2));
+
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            console.log('Response:', result);
+
+            if (result.success) {
+                showNotification(`Automation flow ${isEditMode ? 'updated' : 'created'} successfully!`, 'success');
+                closeModal('flowModal');
+
+                // Reset edit mode
+                editingFlowId = null;
+
+                // Reset modal title and button for next use
+                const modal = document.getElementById('flowModal');
+                const modalHeader = modal.querySelector('.modal-header h2');
+                if (modalHeader) {
+                    modalHeader.innerHTML = '<i class="ti ti-git-branch"></i> Create Automation Flow';
+                }
+                const submitBtn = modal.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<i class="ti ti-check"></i> Create Flow';
+                }
+
+                // Reload flows list
+                loadAutomationFlows();
+                loadAnalytics();
+            } else {
+                showNotification(result.detail || `Failed to ${isEditMode ? 'update' : 'create'} flow`, 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification('An error occurred', 'error');
+        }
+    }
+
+
+
+    // Close action menu when clicking outside
+    document.addEventListener('click', function (e) {
+        const menu = document.getElementById('actionMenu');
+        const addBtn = document.querySelector('.btn-add-node');
+        if (menu && addBtn && !menu.contains(e.target) && !addBtn.contains(e.target)) {
+            hideActionMenu();
+        }
+    });
+</script>
 {% endblock %}

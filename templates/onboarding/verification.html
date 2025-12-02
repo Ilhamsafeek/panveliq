@@ -552,7 +552,7 @@
                 <!-- Monthly Marketing Budget -->
                 <div class="form-group">
                     <label class="form-label" for="monthlyBudget">
-                        Monthly Marketing Budget (USD) <span class="required">*</span>
+                        Monthly Marketing Budget (INR) <span class="required">*</span>
                     </label>
                     <input 
                         type="number" 
@@ -599,7 +599,7 @@
                 <button type="submit" class="btn-submit" id="submitBtn">
                     <span class="btn-spinner"></span>
                     <i class="ti ti-send"></i>
-                    <span class="btn-text">Submit for Verification</span>
+                    <span class="btn-text">Submit for Pre-Evaluation</span>
                 </button>
             </form>
         </div>
@@ -627,7 +627,7 @@
                     </div>
                     <div class="package-info-item">
                         <span class="info-label">Price</span>
-                        <span class="info-value price" id="packagePrice">$0</span>
+                        <span class="info-value price" id="packagePrice">₹0</span>
                     </div>
                 </div>
             </div>
@@ -707,7 +707,7 @@ async function loadOnboardingStatus() {
                 document.getElementById('packageName').textContent = session.package_name;
                 document.getElementById('packageTier').textContent = session.package_tier || '-';
                 document.getElementById('billingCycle').textContent = session.billing_cycle || '-';
-                document.getElementById('packagePrice').textContent = `$${parseFloat(session.price || 0).toFixed(0)}`;
+                document.getElementById('packagePrice').textContent = `₹${parseFloat(session.price || 0).toFixed(0)}`;
             }
             
             // Update status badge
